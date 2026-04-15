@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>התחברות - Project Manager</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="../shared/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+    }
+    .logo-area {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    /* Logo placeholder — replace the inner content with your <img> */
+    .logo-placeholder {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 18px;
+      font-size: 32px;
+      box-shadow: 0 8px 24px rgba(59,130,246,0.4);
+    }
+    .logo-area h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 6px;
+    }
+    .logo-area p {
+      font-size: 14px;
+      color: #64748b;
+    }
+    .form-group { margin-bottom: 18px; }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 6px;
+    }
+    input {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: inherit;
+      color: #0f172a;
+      transition: border-color 0.15s;
+      outline: none;
+    }
+    input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    .error-box {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #dc2626;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .btn-login {
+      width: 100%;
+      padding: 13px;
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn-login:hover:not(:disabled) { opacity: 0.92; transform: translateY(-1px); }
+    .btn-login:disabled { opacity: 0.6; cursor: not-allowed; }
+    .footer-note {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo-area">
+      <!-- LOGO PLACEHOLDER: replace div below with <img src="..." alt="Logo"> -->
+      <div class="logo-placeholder">📊</div>
+      <h1>Project Manager</h1>
+      <p>ממשק ניהול</p>
+    </div>
+
+    <div id="error-box" class="error-box"></div>
+
+    <form id="loginForm" onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label>אימייל</label>
+        <input type="email" id="email" required placeholder="your@email.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label>סיסמה</label>
+        <input type="password" id="password" required placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button type="submit" id="submitBtn" class="btn-login">התחבר</button>
+    </form>
+
+    <p class="footer-note">גישת מנהל בלבד</p>
+  </div>
+
+  <script>
+    const { createClient } = supabase;
+    const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Redirect if already logged in
+    db.auth.getSession().then(({ data: { session } }) => {
+      if (session) window.location.href = 'dashboard.html';
+    });
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const btn = document.getElementById('submitBtn');
+      const errorBox = document.getElementById('error-box');
+
+      btn.disabled = true;
+      btn.textContent = 'מתחבר...';
+      errorBox.style.display = 'none';
+
+      const { data, error } = await db.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        errorBox.textContent = 'שגיאת התחברות: ' + (error.message === 'Invalid login credentials'
+          ? 'אימייל או סיסמה שגויים' : error.message);
+        errorBox.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'התחבר';
+        return;
+      }
+
+      // Verify admin role
+      const { data: profile, error: profileError } = await db
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .single();
+
+      if (profileError || !profile || profile.role !== 'admin') {
+        await db.auth.signOut();
+        errorBox.textContent = 'אין לך הרשאות גישה לממשק הניהול';
+        errorBox.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'התחבר';
+        return;
+      }
+
+      window.location.href = 'dashboard.html';
+    }
+  </script>
+</body>
+</html>
