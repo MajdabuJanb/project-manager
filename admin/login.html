@@ -134,7 +134,16 @@
 
   <script>
     const { createClient } = supabase;
-    const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        storage: (() => {
+          try { localStorage.setItem('_t','1'); localStorage.removeItem('_t'); return localStorage; }
+          catch(e) { return sessionStorage; }
+        })(),
+        persistSession: true,
+        autoRefreshToken: true
+      }
+    });
 
     // Redirect if already logged in
     db.auth.getSession().then(({ data: { session } }) => {
