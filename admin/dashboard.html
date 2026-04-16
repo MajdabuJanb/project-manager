@@ -1422,16 +1422,16 @@ function renderClientsTable() {
   }
   empty.style.display = 'none';
   tbody.innerHTML = filtered.map(c => `
-    <tr>
+    <tr onclick="editClient('${c.id}')" style="cursor:pointer">
       <td><strong>${esc(c.name)}</strong></td>
       <td>${esc(c.company||'—')}</td>
       <td>${esc(c.email)}</td>
       <td>${esc(c.phone||'—')}</td>
-      <td><span class="badge b-active" style="cursor:pointer" onclick="goToClientProjects('${c.id}')" title="הצג פרויקטים">${c._projectCount} פרויקטים</span></td>
-      <td>
+      <td onclick="event.stopPropagation()"><span class="badge b-active" style="cursor:pointer" onclick="goToClientProjects('${c.id}')" title="הצג פרויקטים">${c._projectCount} פרויקטים</span></td>
+      <td onclick="event.stopPropagation()">
         <button class="btn-icon" onclick="showPortalLink('${c.access_token}')" title="לינק פורטל">🔗</button>
       </td>
-      <td class="actions-cell">
+      <td class="actions-cell" onclick="event.stopPropagation()">
         <button class="btn-icon" onclick="editClient('${c.id}')" title="ערוך">✏️</button>
         <button class="btn-icon danger" onclick="confirmDelete('client','${c.id}','${esc(c.name)}')" title="מחק">🗑️</button>
       </td>
@@ -1686,7 +1686,7 @@ function renderTasksTable() {
   tbody.innerHTML = filtered.map(t => {
     const proj = state.projects.find(p => p.id === t.project_id);
     const client = proj ? state.clients.find(c => c.id === proj.client_id) : null;
-    return `<tr>
+    return `<tr onclick="editTask('${t.id}')" style="cursor:pointer">
       <td><strong>${esc(t.title)}</strong></td>
       <td>${esc(proj?.name||'—')}</td>
       <td>${esc(client?.name||'—')}</td>
@@ -1694,7 +1694,7 @@ function renderTasksTable() {
       <td>${badge(t.priority, LABELS.priority[t.priority]||t.priority)}</td>
       <td>${fmtDate(t.due_date)}</td>
       <td>${esc(t.assigned_to||'—')}</td>
-      <td class="actions-cell">
+      <td class="actions-cell" onclick="event.stopPropagation()">
         <button class="btn-icon" onclick="editTask('${t.id}')" title="ערוך">✏️</button>
         <button class="btn-icon danger" onclick="confirmDelete('task','${t.id}','${esc(t.title)}')" title="מחק">🗑️</button>
       </td>
