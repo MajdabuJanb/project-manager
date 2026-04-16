@@ -731,6 +731,9 @@
                   <th>סטטוס</th>
                   <th>עדיפות</th>
                   <th>התקדמות</th>
+                  <th>מחיר לשעה</th>
+                  <th>שעות</th>
+                  <th>סך הכל</th>
                   <th>תאריך סיום</th>
                   <th>פעולות</th>
                 </tr>
@@ -934,8 +937,12 @@
             <input type="date" id="p-end">
           </div>
           <div class="form-group">
-            <label>תקציב (₪)</label>
-            <input type="number" id="p-budget" min="0" step="100" placeholder="0">
+            <label>מחיר לשעה (₪)</label>
+            <input type="number" id="p-budget" min="0" step="1" placeholder="0">
+          </div>
+          <div class="form-group">
+            <label>כמות שעות</label>
+            <input type="number" id="p-hours" min="0" step="0.5" placeholder="0">
           </div>
           <div class="form-group">
             <label>התקדמות (%)</label>
@@ -1439,6 +1446,7 @@ function renderProjectsTable() {
   empty.style.display='none';
   tbody.innerHTML = filtered.map(p => {
     const client = state.clients.find(c => c.id === p.client_id);
+    const total = (p.budget && p.hours) ? p.budget * p.hours : null;
     return `<tr onclick="editProject('${p.id}')" style="cursor:pointer">
       <td><strong>${esc(p.name)}</strong></td>
       <td>${esc(client?.name||'—')}</td>
@@ -1450,6 +1458,9 @@ function renderProjectsTable() {
           <span class="prog-pct">${p.progress||0}%</span>
         </div>
       </td>
+      <td>${p.budget ? '₪'+Number(p.budget).toLocaleString('he-IL') : '—'}</td>
+      <td>${p.hours != null ? p.hours : '—'}</td>
+      <td>${total != null ? '<strong>₪'+Number(total).toLocaleString('he-IL')+'</strong>' : '—'}</td>
       <td>${fmtDate(p.end_date)}</td>
       <td class="actions-cell" onclick="event.stopPropagation()">
         <button class="btn-icon" onclick="editProject('${p.id}')" title="ערוך">✏️</button>
@@ -1472,6 +1483,7 @@ function editProject(id) {
   document.getElementById('p-start').value = p.start_date||'';
   document.getElementById('p-end').value = p.end_date||'';
   document.getElementById('p-budget').value = p.budget||'';
+  document.getElementById('p-hours').value = p.hours||'';
   document.getElementById('p-progress').value = p.progress||0;
   document.getElementById('p-desc').value = p.description||'';
   document.getElementById('modal-project').classList.add('open');
@@ -1489,6 +1501,7 @@ async function saveProject(e) {
     start_date: document.getElementById('p-start').value||null,
     end_date: document.getElementById('p-end').value||null,
     budget: parseFloat(document.getElementById('p-budget').value)||null,
+    hours: parseFloat(document.getElementById('p-hours').value)||null,
     progress: parseInt(document.getElementById('p-progress').value)||0,
     description: document.getElementById('p-desc').value.trim()||null
   };
