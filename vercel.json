@@ -1,8 +1,6 @@
 {
   "rewrites": [
-    { "source": "/admin/(.*)", "destination": "/admin/$1" },
-    { "source": "/client/(.*)", "destination": "/client/$1" },
-    { "source": "/shared/(.*)", "destination": "/shared/$1" },
-    { "source": "/", "destination": "/admin/login.html" }
+    { "source": "/dashboard", "destination": "/admin/dashboard.html" },
+    { "source": "/portal",    "destination": "/client/portal.html"  }
   ]
 }

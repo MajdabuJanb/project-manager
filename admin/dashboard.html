@@ -1129,9 +1129,7 @@ function badge(cls, text) {
   return `<span class="badge b-${esc(cls)}">${esc(text)}</span>`;
 }
 function getPortalUrl(token) {
-  const url = new URL('../client/portal.html', window.location.href);
-  url.searchParams.set('token', token);
-  return url.toString();
+  return `${location.origin}/portal?token=${token}`;
 }
 
 // ─── Toast ───
@@ -1192,11 +1190,11 @@ function showSection(name) {
 // ─── Auth ───
 async function checkAuth() {
   const { data: { session } } = await db.auth.getSession();
-  if (!session) { window.location.href = 'login.html'; return; }
+  if (!session) { window.location.href = '/'; return; }
   const { data: profile } = await db.from('profiles').select('role').eq('id', session.user.id).single();
   if (!profile || profile.role !== 'admin') {
     await db.auth.signOut();
-    window.location.href = 'login.html';
+    window.location.href = '/';
     return;
   }
   state.user = session.user;
@@ -1208,7 +1206,7 @@ async function checkAuth() {
 
 async function logout() {
   await db.auth.signOut();
-  window.location.href = 'login.html';
+  window.location.href = '/';
 }
 
 // ─── Activity Logger ───
