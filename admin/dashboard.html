@@ -1301,7 +1301,7 @@ function renderClientsTable() {
       <td>${esc(c.company||'—')}</td>
       <td>${esc(c.email)}</td>
       <td>${esc(c.phone||'—')}</td>
-      <td><span class="badge b-active">${c._projectCount} פרויקטים</span></td>
+      <td><span class="badge b-active" style="cursor:pointer" onclick="goToClientProjects('${c.id}')" title="הצג פרויקטים">${c._projectCount} פרויקטים</span></td>
       <td>
         <button class="btn-icon" onclick="showPortalLink('${c.access_token}')" title="לינק פורטל">🔗</button>
       </td>
@@ -1399,12 +1399,21 @@ function populateClientSelect(selectId, selectedId = '') {
     state.clients.map(c => `<option value="${c.id}" ${c.id===prev?'selected':''}>${esc(c.name)}</option>`).join('');
 }
 
-async function loadProjects() {
+async function loadProjects(filterClientId = '') {
   if (state.clients.length === 0) await loadClients();
   const { data, error } = await db.from('projects').select('*').order('created_at', { ascending: false });
   state.projects = data || [];
   populateClientFilter();
+  if (filterClientId) document.getElementById('proj-filter-client').value = filterClientId;
   renderProjectsTable();
+}
+
+function goToClientProjects(clientId) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('section-projects').classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelector('.nav-item[data-section="projects"]').classList.add('active');
+  loadProjects(clientId);
 }
 
 function populateClientFilter() {
