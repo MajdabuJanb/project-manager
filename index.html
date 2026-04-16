@@ -102,13 +102,13 @@
     });
 
     let recoveryMode = false;
+    let mfaFactorId = null;
+    let mfaChallengeId = null;
 
     db.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
         recoveryMode = true;
         showResetForm();
-      } else if (event === 'SIGNED_IN' && session && !recoveryMode) {
-        window.location.href = '/dashboard';
       }
     });
 
@@ -189,6 +189,62 @@
         return;
       }
 
+      // Check if MFA is required
+      const { data: aal } = await db.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (aal.nextLevel === 'aal2' && aal.nextLevel !== aal.currentLevel) {
+        const { data: factors } = await db.auth.mfa.listFactors();
+        const totp = factors?.totp?.[0];
+        if (totp) {
+          const { data: challenge, error: chErr } = await db.auth.mfa.challenge({ factorId: totp.id });
+          if (chErr) {
+            errorBox.textContent = 'שגיאה ביצירת אתגר 2FA: ' + chErr.message;
+            errorBox.style.display = 'block';
+            btn.disabled = false; btn.textContent = 'התחבר';
+            return;
+          }
+          mfaFactorId = totp.id;
+          mfaChallengeId = challenge.id;
+          showMFAForm();
+          return;
+        }
+      }
+
+      window.location.href = '/dashboard';
+    }
+
+    function showMFAForm() {
+      document.getElementById('loginForm').innerHTML = `
+        <div class="form-group">
+          <label>קוד אימות (Google Authenticator)</label>
+          <input type="text" id="mfa-code" inputmode="numeric" pattern="[0-9]{6}"
+            maxlength="6" required placeholder="000000" autocomplete="one-time-code"
+            style="letter-spacing:6px;font-size:20px;text-align:center">
+        </div>
+        <button type="button" id="mfaBtn" class="btn-login" onclick="verifyMFA()">אמת קוד</button>`;
+      document.querySelector('.logo-area h1').textContent = 'אימות דו-שלבי';
+      document.querySelector('.logo-area p').textContent = 'הכנס את הקוד מהאפליקציה';
+      document.getElementById('mfa-code').focus();
+    }
+
+    async function verifyMFA() {
+      const code = document.getElementById('mfa-code').value.trim();
+      const btn  = document.getElementById('mfaBtn');
+      const errorBox = document.getElementById('error-box');
+      if (code.length !== 6) {
+        errorBox.textContent = 'הקוד חייב להיות 6 ספרות';
+        errorBox.style.display = 'block'; return;
+      }
+      btn.disabled = true; btn.textContent = 'מאמת...';
+      errorBox.style.display = 'none';
+      const { error } = await db.auth.mfa.verify({ factorId: mfaFactorId, challengeId: mfaChallengeId, code });
+      if (error) {
+        errorBox.textContent = 'קוד שגוי, נסה שנית';
+        errorBox.style.display = 'block';
+        btn.disabled = false; btn.textContent = 'אמת קוד';
+        document.getElementById('mfa-code').value = '';
+        document.getElementById('mfa-code').focus();
+        return;
+      }
       window.location.href = '/dashboard';
     }
   </script>

@@ -614,6 +614,9 @@
       <button class="nav-item" data-section="company">
         <span class="icon">🏢</span> נתוני החברה
       </button>
+      <button class="nav-item" data-section="security">
+        <span class="icon">🔐</span> אבטחה
+      </button>
       <button class="nav-item active" data-section="dashboard">
         <span class="icon">📊</span> דף הבית
       </button>
@@ -723,6 +726,19 @@
               <input type="file" id="logo-input" accept="image/*" style="display:none" onchange="handleLogoUpload(this)">
             </div>
             <button type="button" class="btn btn-ghost" id="remove-logo-btn" style="width:100%;margin-top:10px;display:none" onclick="removeLogo()">🗑 הסר לוגו</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════ SECURITY ════ -->
+      <section id="section-security" class="section">
+        <div class="page-header">
+          <div><div class="page-title">אבטחה</div></div>
+        </div>
+        <div class="card" style="max-width:480px">
+          <div class="card-title">אימות דו-שלבי (2FA)</div>
+          <div id="mfa-status-area" style="margin-top:12px">
+            <p style="font-size:14px;color:var(--text-muted);margin-bottom:16px">טוען...</p>
           </div>
         </div>
       </section>
@@ -1470,6 +1486,7 @@ function showSection(name) {
   else if (name === 'tasks') loadTasks();
   else if (name === 'calendar') loadCalendar();
   else if (name === 'reports') loadReports();
+  else if (name === 'security') loadMFAStatus();
 }
 
 // ─── Auth ───
@@ -2308,6 +2325,96 @@ document.querySelectorAll('.nav-item[data-section]').forEach(btn => {
     closeSidebar();
   });
 });
+
+// ─── MFA Management ───
+async function loadMFAStatus() {
+  const area = document.getElementById('mfa-status-area');
+  area.innerHTML = '<p style="font-size:14px;color:var(--text-muted)">טוען...</p>';
+  const { data: factors } = await db.auth.mfa.listFactors();
+  const enrolled = factors?.totp?.[0];
+
+  if (enrolled) {
+    area.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;margin-bottom:20px">
+        <span style="font-size:22px">✅</span>
+        <div>
+          <div style="font-weight:600;color:#166534;font-size:14px">אימות דו-שלבי פעיל</div>
+          <div style="font-size:12px;color:#4ade80">הכניסה שלך מוגנת עם Google Authenticator</div>
+        </div>
+      </div>
+      <button class="btn btn-danger" onclick="disableMFA('${enrolled.id}')">🗑 בטל אימות דו-שלבי</button>`;
+  } else {
+    area.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;margin-bottom:20px">
+        <span style="font-size:22px">⚠️</span>
+        <div>
+          <div style="font-weight:600;color:#991b1b;font-size:14px">אימות דו-שלבי לא מופעל</div>
+          <div style="font-size:12px;color:#f87171">מומלץ מאוד להפעיל להגנה על החשבון</div>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="startMFAEnroll()">🔐 הפעל אימות דו-שלבי</button>`;
+  }
+}
+
+async function startMFAEnroll() {
+  const area = document.getElementById('mfa-status-area');
+  area.innerHTML = '<p style="font-size:14px;color:var(--text-muted)">יוצר קוד QR...</p>';
+
+  const { data, error } = await db.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'MAB-ERP' });
+  if (error) { area.innerHTML = `<p style="color:red">שגיאה: ${error.message}</p>`; return; }
+
+  const factorId = data.id;
+  const qrCode   = data.totp.qr_code;   // SVG data URI
+  const secret   = data.totp.secret;
+
+  area.innerHTML = `
+    <p style="font-size:14px;margin-bottom:16px;line-height:1.6">
+      1. פתח את <strong>Google Authenticator</strong> (או Authy)<br>
+      2. לחץ על + → סרוק QR<br>
+      3. הכנס את הקוד שמופיע לאחר הסריקה
+    </p>
+    <div style="text-align:center;margin-bottom:16px">
+      <img src="${qrCode}" style="width:180px;height:180px;border:1px solid var(--border);border-radius:10px;padding:8px;background:white">
+      <div style="font-size:11px;color:var(--text-muted);margin-top:8px">או הכנס ידנית: <code style="font-size:11px;background:#f1f5f9;padding:2px 6px;border-radius:4px">${secret}</code></div>
+    </div>
+    <div class="form-group">
+      <label>קוד אימות מהאפליקציה</label>
+      <input type="text" id="enroll-code" inputmode="numeric" maxlength="6" placeholder="000000"
+        style="letter-spacing:6px;font-size:20px;text-align:center" onkeydown="if(event.key==='Enter')confirmMFAEnroll('${factorId}')">
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-primary" onclick="confirmMFAEnroll('${factorId}')">✅ אמת והפעל</button>
+      <button class="btn btn-ghost" onclick="cancelMFAEnroll('${factorId}')">ביטול</button>
+    </div>`;
+  document.getElementById('enroll-code').focus();
+}
+
+async function confirmMFAEnroll(factorId) {
+  const code = document.getElementById('enroll-code').value.trim();
+  const area = document.getElementById('mfa-status-area');
+  if (code.length !== 6) { showToast('הכנס קוד בן 6 ספרות', 'error'); return; }
+
+  const { data: challenge } = await db.auth.mfa.challenge({ factorId });
+  const { error } = await db.auth.mfa.verify({ factorId, challengeId: challenge.id, code });
+
+  if (error) { showToast('קוד שגוי, נסה שנית', 'error'); document.getElementById('enroll-code').value = ''; return; }
+
+  showToast('אימות דו-שלבי הופעל בהצלחה! 🎉', 'success');
+  loadMFAStatus();
+}
+
+async function cancelMFAEnroll(factorId) {
+  await db.auth.mfa.unenroll({ factorId });
+  loadMFAStatus();
+}
+
+async function disableMFA(factorId) {
+  if (!confirm('האם אתה בטוח שברצונך לבטל את האימות הדו-שלבי? פעולה זו תחליש את אבטחת החשבון.')) return;
+  const { error } = await db.auth.mfa.unenroll({ factorId });
+  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+  showToast('האימות הדו-שלבי בוטל', 'success');
+  loadMFAStatus();
+}
 
 // ─── Boot ───
 checkAuth();
