@@ -459,6 +459,69 @@
     #toast.error   { background: #7f1d1d; }
     #toast.warning { background: #78350f; }
 
+    /* ─── Mobile header ─── */
+    .mobile-header {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 56px;
+      background: var(--sidebar-bg);
+      z-index: 200;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .mobile-logo { display: flex; align-items: center; gap: 8px; }
+    .mobile-logo .logo-text { font-size: 14px; font-weight: 700; color: white; }
+    .hamburger {
+      width: 36px; height: 36px;
+      background: rgba(255,255,255,0.08);
+      border: none; border-radius: 8px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 5px;
+    }
+    .hamburger span { display: block; width: 18px; height: 2px; background: white; border-radius: 2px; }
+    .sidebar-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5); z-index: 299;
+    }
+    .sidebar-overlay.open { display: block; }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 768px) {
+      .mobile-header { display: flex; }
+      .layout { height: auto; min-height: 100vh; overflow: visible; }
+      .sidebar {
+        position: fixed;
+        top: 0; bottom: 0; right: 0;
+        width: 260px; z-index: 300;
+        transform: translateX(100%);
+        transition: transform 0.25s ease;
+        overflow-y: auto;
+      }
+      .sidebar.open { transform: translateX(0); }
+      .main { width: 100%; padding-top: 56px; overflow-y: auto; }
+      .content { padding: 16px 12px 32px; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+      .stat-card { padding: 12px; gap: 10px; }
+      .stat-val { font-size: 22px; }
+      .stat-icon { width: 38px; height: 38px; font-size: 16px; }
+      .two-col { grid-template-columns: 1fr; gap: 14px; }
+      .page-header { flex-direction: column; align-items: flex-start; gap: 10px; margin-bottom: 16px; }
+      .page-title { font-size: 18px; }
+      .toolbar { flex-wrap: wrap; }
+      .toolbar input, .toolbar select { min-width: 0; flex: 1 1 45%; }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-group.full { grid-column: 1; }
+      .modal-overlay { align-items: flex-end; padding: 0; }
+      .modal { border-radius: 16px 16px 0 0; max-height: 92vh; max-width: 100%; }
+      table { font-size: 12px; }
+      thead th, td { padding: 8px 8px; }
+      #toast { left: 12px; right: 12px; bottom: 16px; max-width: none; }
+    }
+
     /* ─── PDF Report (hidden, rendered for export) ─── */
     #pdf-report {
       display: none;
@@ -480,6 +543,18 @@
   </style>
 </head>
 <body>
+
+<!-- Mobile Header -->
+<div class="mobile-header">
+  <div class="mobile-logo">
+    <div class="logo-mark" style="width:30px;height:30px;font-size:15px;border-radius:7px">📊</div>
+    <span class="logo-text">M.A.B-ERP</span>
+  </div>
+  <button class="hamburger" onclick="toggleSidebar()" aria-label="תפריט">
+    <span></span><span></span><span></span>
+  </button>
+</div>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
 <div class="layout">
 
@@ -1614,9 +1689,22 @@ document.addEventListener('keydown', e => {
   }
 });
 
+// ─── Mobile sidebar ───
+function toggleSidebar() {
+  document.querySelector('.sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('open');
+}
+function closeSidebar() {
+  document.querySelector('.sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+}
+
 // ─── Nav click handlers ───
 document.querySelectorAll('.nav-item[data-section]').forEach(btn => {
-  btn.addEventListener('click', () => showSection(btn.dataset.section));
+  btn.addEventListener('click', () => {
+    showSection(btn.dataset.section);
+    closeSidebar();
+  });
 });
 
 // ─── Boot ───
