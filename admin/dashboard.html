@@ -491,6 +491,26 @@
     }
     .sidebar-overlay.open { display: block; }
 
+    /* ─── Calendar ─── */
+    .cal-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:10px; }
+    .cal-title { font-size:17px; font-weight:700; min-width:160px; text-align:center; }
+    .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
+    .cal-dow { text-align:center; font-size:11px; font-weight:600; color:var(--text-muted); padding:8px 0; }
+    .cal-day { min-height:88px; background:white; border:1px solid var(--border); border-radius:7px; padding:6px; cursor:pointer; transition:border-color 0.12s, background 0.12s; overflow:hidden; }
+    .cal-day:hover { border-color:var(--primary); background:#f8fafc; }
+    .cal-day.today { border-color:var(--primary); background:var(--primary-light); }
+    .cal-day.other-month { opacity:0.35; pointer-events:none; }
+    .cal-day-num { font-size:12px; font-weight:600; width:22px; height:22px; display:flex; align-items:center; justify-content:center; border-radius:50%; margin-bottom:3px; }
+    .cal-day.today .cal-day-num { background:var(--primary); color:white; font-size:11px; }
+    .cal-evt { font-size:10px; font-weight:500; padding:2px 5px; border-radius:3px; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer; }
+    .cal-evt:hover { opacity:0.8; }
+    .cal-evt.work     { background:#dbeafe; color:#1e40af; }
+    .cal-evt.meeting  { background:#ede9fe; color:#6d28d9; }
+    .cal-evt.reminder { background:#fef3c7; color:#92400e; }
+    .cal-evt.note     { background:#d1fae5; color:#065f46; }
+    .cal-more { font-size:9px; color:var(--text-muted); padding:1px 4px; }
+    .event-type-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600; }
+
     /* ─── Responsive ─── */
     @media (max-width: 768px) {
       .mobile-header { display: flex; }
@@ -588,6 +608,9 @@
         <span class="icon">✅</span> משימות
       </button>
       <div class="nav-section-label">כלים</div>
+      <button class="nav-item" data-section="calendar">
+        <span class="icon">📅</span> יומן
+      </button>
       <button class="nav-item" data-section="reports">
         <span class="icon">📄</span> דוחות & PDF
       </button>
@@ -794,6 +817,26 @@
             <div class="empty-icon">✅</div>
             <p>לא נמצאו משימות.</p>
           </div>
+        </div>
+      </section>
+
+      <!-- ════ CALENDAR ════ -->
+      <section id="section-calendar" class="section">
+        <div class="page-header">
+          <div><div class="page-title">יומן</div></div>
+          <button class="btn btn-primary" onclick="openModal('event')">+ הוסף אירוע</button>
+        </div>
+        <div class="card">
+          <div class="cal-nav">
+            <button class="btn btn-ghost" onclick="goToToday()">היום</button>
+            <div style="display:flex;align-items:center;gap:10px">
+              <button class="btn btn-ghost" onclick="changeMonth(-1)" style="padding:8px 14px;font-size:16px">›</button>
+              <div class="cal-title" id="cal-title"></div>
+              <button class="btn btn-ghost" onclick="changeMonth(1)" style="padding:8px 14px;font-size:16px">‹</button>
+            </div>
+            <div style="width:70px"></div>
+          </div>
+          <div class="cal-grid" id="cal-grid"></div>
         </div>
       </section>
 
@@ -1039,6 +1082,70 @@
   </div>
 </div>
 
+<!-- Event Modal -->
+<div id="modal-event" class="modal-overlay" onclick="overlayClose(event,'modal-event')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title" id="event-modal-title">הוסף אירוע</span>
+      <button class="modal-close" onclick="closeModal('modal-event')">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="event-form" onsubmit="saveEvent(event)">
+        <div class="form-grid">
+          <div class="form-group full">
+            <label>כותרת *</label>
+            <input type="text" id="ev-title" required placeholder="שם האירוע">
+          </div>
+          <div class="form-group">
+            <label>סוג</label>
+            <select id="ev-type" onchange="toggleEventFields()">
+              <option value="work">⏱ שעות עבודה</option>
+              <option value="meeting">🤝 פגישה</option>
+              <option value="reminder">🔔 תזכורת</option>
+              <option value="note">📝 הערה</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>תאריך *</label>
+            <input type="date" id="ev-date" required>
+          </div>
+          <div class="form-group">
+            <label>שעת התחלה</label>
+            <input type="time" id="ev-start">
+          </div>
+          <div class="form-group">
+            <label>שעת סיום</label>
+            <input type="time" id="ev-end">
+          </div>
+          <div class="form-group" id="ev-hours-grp">
+            <label>שעות עבודה</label>
+            <input type="number" id="ev-hours" min="0" step="0.5" placeholder="0">
+          </div>
+          <div class="form-group" id="ev-project-grp">
+            <label>פרויקט</label>
+            <select id="ev-project"><option value="">ללא פרויקט</option></select>
+          </div>
+          <div class="form-group" id="ev-task-grp">
+            <label>משימה</label>
+            <select id="ev-task"><option value="">ללא משימה</option></select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>הערות</label>
+          <textarea id="ev-notes" placeholder="הערות נוספות..."></textarea>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+          <button type="button" class="btn btn-danger" id="event-delete-btn" style="display:none" onclick="deleteEvent()">🗑 מחק</button>
+          <div style="display:flex;gap:10px;margin-right:auto">
+            <button type="button" class="btn btn-ghost" onclick="closeModal('modal-event')">ביטול</button>
+            <button type="submit" class="btn btn-primary" id="event-submit-btn">שמור</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <!-- Portal Link Modal -->
 <div id="modal-portal" class="modal-overlay" onclick="overlayClose(event,'modal-portal')">
   <div class="modal" style="max-width:480px" onclick="event.stopPropagation()">
@@ -1155,7 +1262,7 @@ function showToast(msg, type = 'default') {
 }
 
 // ─── Modals ───
-function openModal(type) {
+async function openModal(type) {
   if (type === 'client') {
     state.editingId = null;
     document.getElementById('client-modal-title').textContent = 'הוסף לקוח';
@@ -1173,6 +1280,17 @@ function openModal(type) {
     document.getElementById('task-form').reset();
     populateProjectSelect('t-project');
     document.getElementById('modal-task').classList.add('open');
+  } else if (type === 'event') {
+    state.editingId = null;
+    document.getElementById('event-modal-title').textContent = 'הוסף אירוע';
+    document.getElementById('event-form').reset();
+    document.getElementById('ev-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('event-delete-btn').style.display = 'none';
+    if (state.projects.length === 0) await loadProjects();
+    if (state.tasks.length === 0) await loadTasks();
+    populateEventSelects();
+    toggleEventFields();
+    document.getElementById('modal-event').classList.add('open');
   }
 }
 function closeModal(id) {
@@ -1192,6 +1310,7 @@ function showSection(name) {
   else if (name === 'clients') loadClients();
   else if (name === 'projects') loadProjects();
   else if (name === 'tasks') loadTasks();
+  else if (name === 'calendar') loadCalendar();
   else if (name === 'reports') loadReports();
 }
 
@@ -1701,6 +1820,145 @@ async function exportPDF() {
 
   report.style.display = 'none';
   showToast('PDF הורד בהצלחה!', 'success');
+}
+
+// ─── CALENDAR ───
+const calState = { year: new Date().getFullYear(), month: new Date().getMonth(), events: [] };
+const MONTHS_HE = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+const DAYS_HE   = ["א'","ב'","ג'","ד'","ה'","ו'","ש'"];
+const EVENT_TYPES = { work:'⏱ שעות עבודה', meeting:'🤝 פגישה', reminder:'🔔 תזכורת', note:'📝 הערה' };
+
+function changeMonth(delta) {
+  calState.month += delta;
+  if (calState.month > 11) { calState.month = 0; calState.year++; }
+  if (calState.month < 0)  { calState.month = 11; calState.year--; }
+  loadCalendar();
+}
+function goToToday() {
+  const n = new Date();
+  calState.year = n.getFullYear(); calState.month = n.getMonth();
+  loadCalendar();
+}
+
+async function loadCalendar() {
+  const firstDay = new Date(calState.year, calState.month, 1).toISOString().split('T')[0];
+  const lastDay  = new Date(calState.year, calState.month + 1, 0).toISOString().split('T')[0];
+  const { data } = await db.from('calendar_events')
+    .select('*, projects(name), tasks(title)')
+    .gte('date', firstDay).lte('date', lastDay)
+    .order('start_time', { nullsFirst: true });
+  calState.events = data || [];
+  renderCalendar();
+}
+
+function renderCalendar() {
+  document.getElementById('cal-title').textContent = `${MONTHS_HE[calState.month]} ${calState.year}`;
+  const todayStr = new Date().toISOString().split('T')[0];
+  const firstDow = new Date(calState.year, calState.month, 1).getDay();
+  const totalDays = new Date(calState.year, calState.month + 1, 0).getDate();
+
+  let html = DAYS_HE.map(d => `<div class="cal-dow">${d}</div>`).join('');
+  for (let i = 0; i < firstDow; i++) html += `<div class="cal-day other-month"></div>`;
+
+  for (let d = 1; d <= totalDays; d++) {
+    const ds = `${calState.year}-${String(calState.month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday = ds === todayStr;
+    const evs = calState.events.filter(e => e.date === ds);
+    const evHtml = evs.slice(0,3).map(e =>
+      `<div class="cal-evt ${e.type}" onclick="event.stopPropagation();editEvent('${e.id}')" title="${esc(e.title)}">
+        ${e.start_time ? e.start_time.slice(0,5)+' ' : ''}${esc(e.title)}
+      </div>`).join('');
+    const moreHtml = evs.length > 3 ? `<div class="cal-more">+${evs.length-3} עוד</div>` : '';
+    html += `<div class="cal-day${isToday?' today':''}" onclick="openEventOnDate('${ds}')">
+      <div class="cal-day-num">${d}</div>${evHtml}${moreHtml}
+    </div>`;
+  }
+
+  const remaining = (firstDow + totalDays) % 7;
+  if (remaining) for (let i = 0; i < 7 - remaining; i++) html += `<div class="cal-day other-month"></div>`;
+  document.getElementById('cal-grid').innerHTML = html;
+}
+
+function populateEventSelects(projId = '', taskId = '') {
+  document.getElementById('ev-project').innerHTML = '<option value="">ללא פרויקט</option>' +
+    state.projects.map(p => `<option value="${p.id}" ${p.id===projId?'selected':''}>${esc(p.name)}</option>`).join('');
+  document.getElementById('ev-task').innerHTML = '<option value="">ללא משימה</option>' +
+    state.tasks.map(t => `<option value="${t.id}" ${t.id===taskId?'selected':''}>${esc(t.title)}</option>`).join('');
+}
+
+function toggleEventFields() {
+  const type = document.getElementById('ev-type').value;
+  document.getElementById('ev-hours-grp').style.display   = type === 'work' ? '' : 'none';
+  document.getElementById('ev-project-grp').style.display = (type === 'work' || type === 'meeting') ? '' : 'none';
+  document.getElementById('ev-task-grp').style.display    = type === 'work' ? '' : 'none';
+}
+
+async function openEventOnDate(dateStr) {
+  state.editingId = null;
+  document.getElementById('event-modal-title').textContent = 'הוסף אירוע';
+  document.getElementById('event-form').reset();
+  document.getElementById('ev-date').value = dateStr;
+  document.getElementById('ev-type').value = 'work';
+  document.getElementById('event-delete-btn').style.display = 'none';
+  if (state.projects.length === 0) await loadProjects();
+  if (state.tasks.length === 0) await loadTasks();
+  populateEventSelects();
+  toggleEventFields();
+  document.getElementById('modal-event').classList.add('open');
+}
+
+async function editEvent(id) {
+  const { data: ev } = await db.from('calendar_events').select('*').eq('id', id).single();
+  if (!ev) return;
+  state.editingId = id;
+  if (state.projects.length === 0) await loadProjects();
+  if (state.tasks.length === 0) await loadTasks();
+  populateEventSelects(ev.project_id||'', ev.task_id||'');
+  document.getElementById('event-modal-title').textContent = 'עריכת אירוע';
+  document.getElementById('ev-title').value  = ev.title;
+  document.getElementById('ev-type').value   = ev.type;
+  document.getElementById('ev-date').value   = ev.date;
+  document.getElementById('ev-start').value  = ev.start_time?.slice(0,5) || '';
+  document.getElementById('ev-end').value    = ev.end_time?.slice(0,5) || '';
+  document.getElementById('ev-hours').value  = ev.hours || '';
+  document.getElementById('ev-notes').value  = ev.notes || '';
+  document.getElementById('event-delete-btn').style.display = 'inline-flex';
+  toggleEventFields();
+  document.getElementById('modal-event').classList.add('open');
+}
+
+async function saveEvent(e) {
+  e.preventDefault();
+  const btn = document.getElementById('event-submit-btn');
+  btn.disabled = true; btn.textContent = 'שומר...';
+  const payload = {
+    title:      document.getElementById('ev-title').value.trim(),
+    type:       document.getElementById('ev-type').value,
+    date:       document.getElementById('ev-date').value,
+    start_time: document.getElementById('ev-start').value || null,
+    end_time:   document.getElementById('ev-end').value   || null,
+    hours:      parseFloat(document.getElementById('ev-hours').value) || null,
+    project_id: document.getElementById('ev-project').value || null,
+    task_id:    document.getElementById('ev-task').value    || null,
+    notes:      document.getElementById('ev-notes').value.trim() || null
+  };
+  const { error } = state.editingId
+    ? await db.from('calendar_events').update(payload).eq('id', state.editingId)
+    : await db.from('calendar_events').insert(payload);
+  btn.disabled = false; btn.textContent = 'שמור';
+  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+  showToast(state.editingId ? 'האירוע עודכן!' : 'האירוע נוסף!', 'success');
+  closeModal('modal-event');
+  loadCalendar();
+}
+
+async function deleteEvent() {
+  if (!state.editingId) return;
+  const { error } = await db.from('calendar_events').delete().eq('id', state.editingId);
+  if (error) { showToast('שגיאה במחיקה', 'error'); return; }
+  showToast('האירוע נמחק', 'success');
+  closeModal('modal-event');
+  loadCalendar();
 }
 
 // ─── Keyboard shortcut (Escape closes modals) ───
