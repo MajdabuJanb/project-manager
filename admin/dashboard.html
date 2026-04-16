@@ -193,6 +193,8 @@
       font-size: 20px;
       flex-shrink: 0;
     }
+    .stat-card[onclick] { transition: transform 0.15s, box-shadow 0.15s; }
+    .stat-card[onclick]:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
     .stat-icon.blue   { background: #eff6ff; }
     .stat-icon.green  { background: #ecfdf5; }
     .stat-icon.amber  { background: #fffbeb; }
@@ -614,28 +616,28 @@
         </div>
 
         <div class="stats-grid">
-          <div class="stat-card">
+          <div class="stat-card" onclick="showSection('clients')" style="cursor:pointer">
             <div class="stat-icon blue">👥</div>
             <div>
               <div class="stat-val" id="stat-clients">—</div>
               <div class="stat-lbl">לקוחות</div>
             </div>
           </div>
-          <div class="stat-card">
+          <div class="stat-card" onclick="showSection('projects')" style="cursor:pointer">
             <div class="stat-icon green">📁</div>
             <div>
               <div class="stat-val" id="stat-active-projects">—</div>
               <div class="stat-lbl">פרויקטים פעילים</div>
             </div>
           </div>
-          <div class="stat-card">
+          <div class="stat-card" onclick="showSection('tasks')" style="cursor:pointer">
             <div class="stat-icon amber">⏳</div>
             <div>
               <div class="stat-val" id="stat-pending-tasks">—</div>
               <div class="stat-lbl">משימות ממתינות</div>
             </div>
           </div>
-          <div class="stat-card">
+          <div class="stat-card" onclick="showSection('projects')" style="cursor:pointer">
             <div class="stat-icon purple">🎯</div>
             <div>
               <div class="stat-val" id="stat-completed-projects">—</div>
