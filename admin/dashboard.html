@@ -1486,6 +1486,7 @@ async function checkAuth() {
   const email = session.user.email;
   document.getElementById('userEmail').textContent = email;
   document.getElementById('userAvatar').textContent = email[0].toUpperCase();
+  resetIdleTimer();
   loadDashboard();
 }
 
@@ -1493,6 +1494,53 @@ async function logout() {
   await db.auth.signOut();
   window.location.href = '/';
 }
+
+// ─── Idle Timeout (30 min) ───
+const IDLE_MINUTES = 30;
+let idleTimer = null;
+let warningTimer = null;
+let warningEl = null;
+
+function resetIdleTimer() {
+  clearTimeout(idleTimer);
+  clearTimeout(warningTimer);
+  if (warningEl) { warningEl.remove(); warningEl = null; }
+
+  // Show warning 2 min before logout
+  warningTimer = setTimeout(() => {
+    warningEl = document.createElement('div');
+    warningEl.id = 'idle-warning';
+    warningEl.innerHTML = `
+      <div style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;
+        background:#1e293b;color:white;border-radius:12px;padding:16px 24px;
+        box-shadow:0 8px 32px rgba(0,0,0,0.4);display:flex;align-items:center;gap:16px;font-size:14px">
+        <span>⚠️ תנותק אוטומטית בעוד <strong id="idle-countdown">2:00</strong> דקות עקב חוסר פעילות</span>
+        <button onclick="resetIdleTimer()" style="background:#3b82f6;color:white;border:none;border-radius:8px;
+          padding:7px 14px;cursor:pointer;font-weight:600;font-family:inherit;font-size:13px">אני פה</button>
+      </div>`;
+    document.body.appendChild(warningEl);
+
+    // Countdown display
+    let secs = 120;
+    const tick = setInterval(() => {
+      secs--;
+      const el = document.getElementById('idle-countdown');
+      if (el) el.textContent = Math.floor(secs/60) + ':' + String(secs%60).padStart(2,'0');
+      if (secs <= 0) clearInterval(tick);
+    }, 1000);
+  }, (IDLE_MINUTES - 2) * 60 * 1000);
+
+  // Auto logout after full idle period
+  idleTimer = setTimeout(async () => {
+    await db.auth.signOut();
+    window.location.href = '/';
+  }, IDLE_MINUTES * 60 * 1000);
+}
+
+// Listen for any user activity
+['mousemove','mousedown','keydown','touchstart','scroll','click'].forEach(ev =>
+  document.addEventListener(ev, resetIdleTimer, { passive: true })
+);
 
 // ─── Activity Logger ───
 async function logActivity(entityType, entityId, entityName, action) {
