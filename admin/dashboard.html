@@ -1880,10 +1880,12 @@ function renderCalendar() {
 }
 
 function populateEventSelects(projId = '', taskId = '') {
+  const activeProjects = state.projects.filter(p => !['completed','cancelled'].includes(p.status));
+  const activeTasks    = state.tasks.filter(t => !['completed','blocked'].includes(t.status));
   document.getElementById('ev-project').innerHTML = '<option value="">ללא פרויקט</option>' +
-    state.projects.map(p => `<option value="${p.id}" ${p.id===projId?'selected':''}>${esc(p.name)}</option>`).join('');
+    activeProjects.map(p => `<option value="${p.id}" ${p.id===projId?'selected':''}>${esc(p.name)}</option>`).join('');
   document.getElementById('ev-task').innerHTML = '<option value="">ללא משימה</option>' +
-    state.tasks.map(t => `<option value="${t.id}" ${t.id===taskId?'selected':''}>${esc(t.title)}</option>`).join('');
+    activeTasks.map(t => `<option value="${t.id}" ${t.id===taskId?'selected':''}>${esc(t.title)}</option>`).join('');
 }
 
 function toggleEventFields() {
