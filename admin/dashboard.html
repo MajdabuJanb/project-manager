@@ -1439,7 +1439,7 @@ function renderProjectsTable() {
   empty.style.display='none';
   tbody.innerHTML = filtered.map(p => {
     const client = state.clients.find(c => c.id === p.client_id);
-    return `<tr>
+    return `<tr onclick="editProject('${p.id}')" style="cursor:pointer">
       <td><strong>${esc(p.name)}</strong></td>
       <td>${esc(client?.name||'—')}</td>
       <td>${badge(p.status, LABELS.status[p.status]||p.status)}</td>
@@ -1451,7 +1451,7 @@ function renderProjectsTable() {
         </div>
       </td>
       <td>${fmtDate(p.end_date)}</td>
-      <td class="actions-cell">
+      <td class="actions-cell" onclick="event.stopPropagation()">
         <button class="btn-icon" onclick="editProject('${p.id}')" title="ערוך">✏️</button>
         <button class="btn-icon danger" onclick="confirmDelete('project','${p.id}','${esc(p.name)}')" title="מחק">🗑️</button>
       </td>
