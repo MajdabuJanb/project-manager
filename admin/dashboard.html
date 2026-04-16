@@ -649,7 +649,11 @@
     <div class="content">
 
       <!-- ════ COMPANY ════ -->
-      <section id="section-company" class="section">
+      <section id="section-company" class="section" style="position:relative">
+        <div id="company-bg" style="position:fixed;inset:0;pointer-events:none;z-index:0;display:flex;align-items:center;justify-content:center;opacity:0.06;display:none">
+          <img id="company-bg-img" style="max-width:50vw;max-height:50vh;object-fit:contain">
+        </div>
+        <div style="position:relative;z-index:1">
         <div class="page-header">
           <div><div class="page-title">נתוני החברה</div></div>
           <button class="btn btn-primary" onclick="saveCompany()">💾 שמור שינויים</button>
@@ -724,6 +728,7 @@
             <button type="button" class="btn btn-ghost" id="remove-logo-btn" style="width:100%;margin-top:10px;display:none" onclick="removeLogo()">🗑 הסר לוגו</button>
           </div>
         </div>
+        </div><!-- /z-index wrapper -->
       </section>
 
       <!-- ════ DASHBOARD ════ -->
@@ -2050,6 +2055,9 @@ function showLogoPreview(src) {
   img.src = src; img.style.display = 'block';
   document.getElementById('logo-placeholder').style.display = 'none';
   document.getElementById('remove-logo-btn').style.display  = 'block';
+  const bg = document.getElementById('company-bg');
+  document.getElementById('company-bg-img').src = src;
+  bg.style.display = 'flex';
 }
 
 function removeLogo() {
@@ -2059,6 +2067,7 @@ function removeLogo() {
   document.getElementById('logo-placeholder').style.display = 'block';
   document.getElementById('remove-logo-btn').style.display  = 'none';
   document.getElementById('logo-input').value = '';
+  document.getElementById('company-bg').style.display = 'none';
 }
 
 async function saveCompany() {
