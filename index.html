@@ -101,17 +101,18 @@
       }
     });
 
-    // Handle password recovery from email link
-    const hash = new URLSearchParams(window.location.hash.replace('#', ''));
-    if (hash.get('type') === 'recovery' && hash.get('access_token')) {
-      showResetForm(hash.get('access_token'));
-    } else {
-      db.auth.getSession().then(({ data: { session } }) => {
-        if (session) window.location.href = '/dashboard';
-      });
-    }
+    let recoveryMode = false;
 
-    function showResetForm(token) {
+    db.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        recoveryMode = true;
+        showResetForm();
+      } else if (event === 'SIGNED_IN' && session && !recoveryMode) {
+        window.location.href = '/dashboard';
+      }
+    });
+
+    function showResetForm() {
       document.getElementById('loginForm').innerHTML = `
         <div class="form-group">
           <label>סיסמה חדשה</label>
@@ -121,16 +122,16 @@
           <label>אימות סיסמה</label>
           <input type="password" id="confirm-password" required placeholder="••••••••" minlength="6">
         </div>
-        <button type="button" id="submitBtn" class="btn-login" onclick="saveNewPassword('${token}')">שמור סיסמה חדשה</button>
+        <button type="button" id="resetBtn" class="btn-login" onclick="saveNewPassword()">שמור סיסמה חדשה</button>
       `;
       document.querySelector('.logo-area h1').textContent = 'איפוס סיסמה';
       document.querySelector('.logo-area p').textContent = 'הכנס סיסמה חדשה';
     }
 
-    async function saveNewPassword(token) {
+    async function saveNewPassword() {
       const newPass = document.getElementById('new-password').value;
       const confirmPass = document.getElementById('confirm-password').value;
-      const btn = document.getElementById('submitBtn');
+      const btn = document.getElementById('resetBtn');
       const errorBox = document.getElementById('error-box');
 
       if (newPass !== confirmPass) {
