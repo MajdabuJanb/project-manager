@@ -10,7 +10,7 @@
 // ============================================================
 
 const SUPABASE_URL = 'https://gefiphuxmttikdhkqjql.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_kxNFbHDxawqKRQ4B4ZWa4g_4EIPB1ca';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdlZmlwaHV4bXR0aWtkaGtxanFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyNzgzODYsImV4cCI6MjA5MTg1NDM4Nn0.nEVRPrElcxl5c9nmPXOAwnmz_Ok4N4fvUM5i71w_xkU';
 
 const APP_CONFIG = {
   name: 'Project Manager',
