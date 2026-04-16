@@ -491,6 +491,22 @@
     }
     .sidebar-overlay.open { display: block; }
 
+    /* ─── Company settings ─── */
+    .company-layout { display:grid; grid-template-columns:1fr 260px; gap:20px; align-items:start; }
+    .logo-upload-area {
+      border:2px dashed var(--border); border-radius:12px;
+      padding:24px 16px; text-align:center; cursor:pointer;
+      transition:border-color 0.15s, background 0.15s;
+    }
+    .logo-upload-area:hover { border-color:var(--primary); background:var(--primary-light); }
+    #logo-preview { max-width:100%; max-height:150px; border-radius:8px; display:none; margin-bottom:10px; }
+    .section-divider {
+      font-size:11px; font-weight:700; color:var(--text-muted);
+      text-transform:uppercase; letter-spacing:0.6px;
+      margin:16px 0 12px; padding-top:14px; border-top:1px solid var(--border);
+    }
+    @media (max-width:768px) { .company-layout { grid-template-columns:1fr; } }
+
     /* ─── Calendar ─── */
     .cal-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:10px; }
     .cal-title { font-size:17px; font-weight:700; min-width:160px; text-align:center; }
@@ -595,6 +611,9 @@
 
     <nav class="nav">
       <div class="nav-section-label">ניהול</div>
+      <button class="nav-item" data-section="company">
+        <span class="icon">🏢</span> נתוני החברה
+      </button>
       <button class="nav-item active" data-section="dashboard">
         <span class="icon">📊</span> דף הבית
       </button>
@@ -628,6 +647,84 @@
   <!-- ─── MAIN ─── -->
   <main class="main">
     <div class="content">
+
+      <!-- ════ COMPANY ════ -->
+      <section id="section-company" class="section">
+        <div class="page-header">
+          <div><div class="page-title">נתוני החברה</div></div>
+          <button class="btn btn-primary" onclick="saveCompany()">💾 שמור שינויים</button>
+        </div>
+
+        <div class="company-layout">
+          <!-- פרטי העסק -->
+          <div class="card">
+            <div class="card-title">פרטי העסק</div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>שם העסק</label>
+                <input type="text" id="co-name" placeholder="שם העסק">
+              </div>
+              <div class="form-group">
+                <label>שם בעל העסק</label>
+                <input type="text" id="co-owner" placeholder="שם מלא">
+              </div>
+              <div class="form-group">
+                <label>מס' עוסק מורשה</label>
+                <input type="text" id="co-tax" placeholder="123456789">
+              </div>
+              <div class="form-group">
+                <label>טלפון</label>
+                <input type="tel" id="co-phone" placeholder="050-0000000">
+              </div>
+              <div class="form-group">
+                <label>אימייל</label>
+                <input type="email" id="co-email" placeholder="email@example.com">
+              </div>
+              <div class="form-group">
+                <label>אתר אינטרנט</label>
+                <input type="text" id="co-website" placeholder="https://...">
+              </div>
+              <div class="form-group full">
+                <label>כתובת שורה 1</label>
+                <input type="text" id="co-address" placeholder="רחוב ומספר">
+              </div>
+              <div class="form-group full">
+                <label>כתובת שורה 2</label>
+                <input type="text" id="co-address2" placeholder="">
+              </div>
+              <div class="form-group">
+                <label>עיר</label>
+                <input type="text" id="co-city" placeholder="תל אביב">
+              </div>
+              <div class="form-group">
+                <label>מיקוד</label>
+                <input type="text" id="co-zip" placeholder="12345">
+              </div>
+            </div>
+
+            <div class="section-divider">פרטי בנק</div>
+            <div class="form-group">
+              <label>פרטי בנק (יופיעו בדרישת תשלום)</label>
+              <textarea id="co-bank" placeholder="בנק הפועלים&#10;סניף: 123&#10;חשבון: 456789&#10;על שם: שם העסק" style="min-height:90px"></textarea>
+            </div>
+          </div>
+
+          <!-- לוגו -->
+          <div class="card">
+            <div class="card-title">לוגו</div>
+            <div class="logo-upload-area" onclick="document.getElementById('logo-input').click()">
+              <img id="logo-preview">
+              <div id="logo-placeholder">
+                <div style="font-size:36px;margin-bottom:8px">🖼</div>
+                <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">לחץ להעלאת לוגו</div>
+                <div style="font-size:11px;color:var(--text-muted)">PNG, JPG עד 2MB</div>
+              </div>
+              <input type="file" id="logo-input" accept="image/*" style="display:none" onchange="handleLogoUpload(this)">
+            </div>
+            <button type="button" class="btn btn-ghost" id="remove-logo-btn" style="width:100%;margin-top:10px;display:none" onclick="removeLogo()">🗑 הסר לוגו</button>
+          </div>
+        </div>
+      </section>
 
       <!-- ════ DASHBOARD ════ -->
       <section id="section-dashboard" class="section active">
@@ -1365,7 +1462,8 @@ function showSection(name) {
   document.getElementById('section-' + name).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.querySelector(`.nav-item[data-section="${name}"]`).classList.add('active');
-  if (name === 'dashboard') loadDashboard();
+  if (name === 'company') loadCompany();
+  else if (name === 'dashboard') loadDashboard();
   else if (name === 'clients') loadClients();
   else if (name === 'projects') loadProjects();
   else if (name === 'tasks') loadTasks();
@@ -1914,6 +2012,81 @@ async function exportPDF() {
 
   report.style.display = 'none';
   showToast('PDF הורד בהצלחה!', 'success');
+}
+
+// ─── COMPANY ───
+let companyId  = null;
+let companyLogo = null;
+
+async function loadCompany() {
+  const { data } = await db.from('company').select('*').maybeSingle();
+  if (!data) return;
+  companyId = data.id;
+  document.getElementById('co-name').value    = data.name || '';
+  document.getElementById('co-owner').value   = data.owner_name || '';
+  document.getElementById('co-tax').value     = data.tax_number || '';
+  document.getElementById('co-phone').value   = data.phone || '';
+  document.getElementById('co-email').value   = data.email || '';
+  document.getElementById('co-website').value = data.website || '';
+  document.getElementById('co-address').value = data.address || '';
+  document.getElementById('co-address2').value= data.address2 || '';
+  document.getElementById('co-city').value    = data.city || '';
+  document.getElementById('co-zip').value     = data.zip || '';
+  document.getElementById('co-bank').value    = data.bank_details || '';
+  if (data.logo) { companyLogo = data.logo; showLogoPreview(data.logo); }
+}
+
+function handleLogoUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) { showToast('הקובץ גדול מ-2MB', 'error'); return; }
+  const reader = new FileReader();
+  reader.onload = e => { companyLogo = e.target.result; showLogoPreview(e.target.result); };
+  reader.readAsDataURL(file);
+}
+
+function showLogoPreview(src) {
+  const img = document.getElementById('logo-preview');
+  img.src = src; img.style.display = 'block';
+  document.getElementById('logo-placeholder').style.display = 'none';
+  document.getElementById('remove-logo-btn').style.display  = 'block';
+}
+
+function removeLogo() {
+  companyLogo = null;
+  const img = document.getElementById('logo-preview');
+  img.src = ''; img.style.display = 'none';
+  document.getElementById('logo-placeholder').style.display = 'block';
+  document.getElementById('remove-logo-btn').style.display  = 'none';
+  document.getElementById('logo-input').value = '';
+}
+
+async function saveCompany() {
+  const payload = {
+    name:         document.getElementById('co-name').value.trim(),
+    owner_name:   document.getElementById('co-owner').value.trim(),
+    tax_number:   document.getElementById('co-tax').value.trim(),
+    phone:        document.getElementById('co-phone').value.trim(),
+    email:        document.getElementById('co-email').value.trim(),
+    website:      document.getElementById('co-website').value.trim(),
+    address:      document.getElementById('co-address').value.trim(),
+    address2:     document.getElementById('co-address2').value.trim(),
+    city:         document.getElementById('co-city').value.trim(),
+    zip:          document.getElementById('co-zip').value.trim(),
+    bank_details: document.getElementById('co-bank').value.trim(),
+    logo:         companyLogo,
+    updated_at:   new Date().toISOString()
+  };
+  let error;
+  if (companyId) {
+    ({ error } = await db.from('company').update(payload).eq('id', companyId));
+  } else {
+    const r = await db.from('company').insert(payload).select().single();
+    error = r.error;
+    if (!error) companyId = r.data.id;
+  }
+  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+  showToast('הפרטים נשמרו בהצלחה!', 'success');
 }
 
 // ─── CALENDAR ───
