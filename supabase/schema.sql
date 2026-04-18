@@ -341,3 +341,25 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 GRANT EXECUTE ON FUNCTION go_live() TO authenticated;
+
+-- ============================================================
+-- ADMIN QUERY — SELECT-only SQL editor for admins
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION admin_query(sql TEXT)
+RETURNS JSONB AS $$
+DECLARE
+  result JSONB;
+BEGIN
+  IF NOT is_admin() THEN
+    RAISE EXCEPTION 'Unauthorized';
+  END IF;
+  IF NOT (UPPER(TRIM(sql)) LIKE 'SELECT%') THEN
+    RAISE EXCEPTION 'מותרות שאילתות SELECT בלבד';
+  END IF;
+  EXECUTE 'SELECT jsonb_agg(row_to_json(t)) FROM (' || sql || ') t' INTO result;
+  RETURN COALESCE(result, '[]'::jsonb);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION admin_query(TEXT) TO authenticated;

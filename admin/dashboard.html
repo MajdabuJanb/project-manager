@@ -688,6 +688,9 @@
       <button class="nav-item" data-section="reports">
         <span class="icon">📄</span> דוחות & PDF
       </button>
+      <button class="nav-item" data-section="admin-tools">
+        <span class="icon">🛠</span> כלי מנהל
+      </button>
     </nav>
 
     <div class="sidebar-footer">
@@ -1030,6 +1033,43 @@
               <tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:32px">טוען...</td></tr>
             </tbody>
           </table>
+        </div>
+      </section>
+
+      <!-- ════ ADMIN TOOLS ════ -->
+      <section id="section-admin-tools" class="section">
+        <div class="page-header">
+          <div><div class="page-title">כלי מנהל</div><div class="page-sub">הרצת שאילתות SELECT על מסד הנתונים</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">עורך SQL</div>
+          <div style="position:relative">
+            <textarea id="sql-editor" placeholder="SELECT * FROM clients LIMIT 10;" style="width:100%;min-height:130px;font-family:monospace;font-size:13px;background:#0f172a;color:#e2e8f0;border:1px solid var(--border);border-radius:8px;padding:14px;resize:vertical;direction:ltr;text-align:left;box-sizing:border-box"></textarea>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:10px;align-items:center">
+            <button class="btn btn-primary" onclick="runAdminQuery()">▶ הרץ שאילתה</button>
+            <button class="btn btn-ghost" onclick="document.getElementById('sql-editor').value='';document.getElementById('sql-results-wrap').style.display='none'">🗑 נקה</button>
+            <span id="sql-status" style="font-size:12px;color:var(--text-muted)"></span>
+          </div>
+
+          <div style="margin-top:10px;font-size:11px;color:var(--text-muted)">
+            דוגמאות מהירות:
+            <button class="btn btn-ghost" style="font-size:11px;padding:2px 8px" onclick="setSqlQuery('SELECT * FROM clients ORDER BY created_at DESC LIMIT 20')">לקוחות</button>
+            <button class="btn btn-ghost" style="font-size:11px;padding:2px 8px" onclick="setSqlQuery('SELECT * FROM projects ORDER BY created_at DESC LIMIT 20')">פרויקטים</button>
+            <button class="btn btn-ghost" style="font-size:11px;padding:2px 8px" onclick="setSqlQuery('SELECT * FROM tasks ORDER BY created_at DESC LIMIT 20')">משימות</button>
+            <button class="btn btn-ghost" style="font-size:11px;padding:2px 8px" onclick="setSqlQuery('SELECT * FROM parts ORDER BY part')">מוצרים</button>
+            <button class="btn btn-ghost" style="font-size:11px;padding:2px 8px" onclick="setSqlQuery('SELECT * FROM activity_log ORDER BY created_at DESC LIMIT 30')">לוג פעילות</button>
+          </div>
+        </div>
+
+        <div id="sql-results-wrap" style="display:none;margin-top:16px">
+          <div class="card" style="padding:0;overflow:auto">
+            <table class="data-table" id="sql-results-table">
+              <thead id="sql-results-head"></thead>
+              <tbody id="sql-results-body"></tbody>
+            </table>
+          </div>
         </div>
       </section>
 
@@ -1643,6 +1683,7 @@ function showSection(name) {
   else if (name === 'calendar') loadCalendar();
   else if (name === 'parts') { loadPartsState().then(loadParts); }
   else if (name === 'reports') loadReports();
+  else if (name === 'admin-tools') { /* ready on demand */ }
   else if (name === 'security') loadMFAStatus();
 }
 
@@ -2185,6 +2226,43 @@ async function saveTask(e) {
   closeModal('modal-task');
   loadTasks();
   loadDashboard();
+}
+
+// ─── ADMIN TOOLS ───
+function setSqlQuery(q) {
+  document.getElementById('sql-editor').value = q;
+  document.getElementById('sql-editor').focus();
+}
+
+async function runAdminQuery() {
+  const sql = document.getElementById('sql-editor').value.trim();
+  if (!sql) return;
+  const status = document.getElementById('sql-status');
+  status.textContent = 'מריץ...';
+  const t0 = Date.now();
+  const { data, error } = await db.rpc('admin_query', { sql });
+  const ms = Date.now() - t0;
+  if (error) {
+    status.textContent = '❌ ' + error.message;
+    status.style.color = 'var(--danger)';
+    document.getElementById('sql-results-wrap').style.display = 'none';
+    return;
+  }
+  const rows = data || [];
+  status.textContent = `✅ ${rows.length} שורות — ${ms}ms`;
+  status.style.color = 'var(--success)';
+  if (rows.length === 0) {
+    document.getElementById('sql-results-wrap').style.display = 'none';
+    return;
+  }
+  const cols = Object.keys(rows[0]);
+  document.getElementById('sql-results-head').innerHTML =
+    '<tr>' + cols.map(c => `<th>${c}</th>`).join('') + '</tr>';
+  document.getElementById('sql-results-body').innerHTML =
+    rows.map(row =>
+      '<tr>' + cols.map(c => `<td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(String(row[c]??''))}">${esc(String(row[c]??'—'))}</td>`).join('') + '</tr>'
+    ).join('');
+  document.getElementById('sql-results-wrap').style.display = 'block';
 }
 
 // ─── PARTS ───
