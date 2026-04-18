@@ -682,6 +682,9 @@
       <button class="nav-item" data-section="calendar">
         <span class="icon">📅</span> יומן
       </button>
+      <button class="nav-item" data-section="parts">
+        <span class="icon">📦</span> מוצרים
+      </button>
       <button class="nav-item" data-section="reports">
         <span class="icon">📄</span> דוחות & PDF
       </button>
@@ -1008,6 +1011,27 @@
         </div>
       </section>
 
+      <!-- ════ PARTS ════ -->
+      <section id="section-parts" class="section">
+        <div class="page-header">
+          <div><div class="page-title">מוצרים</div><div class="page-sub">ניהול קטלוג מוצרים ושירותים</div></div>
+          <button class="btn btn-primary" onclick="openModal('part')">+ הוסף מוצר</button>
+        </div>
+        <div class="card" style="padding:0">
+          <table class="data-table">
+            <thead><tr>
+              <th>מק"ט</th>
+              <th>שם מוצר</th>
+              <th>תיאור</th>
+              <th>פעולות</th>
+            </tr></thead>
+            <tbody id="parts-tbody">
+              <tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:32px">טוען...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       <!-- ════ REPORTS ════ -->
       <section id="section-reports" class="section">
         <div class="page-header">
@@ -1071,6 +1095,14 @@
     <div class="modal-body">
       <form id="client-form" onsubmit="saveClient(event)">
         <div class="form-grid">
+          <div class="form-group">
+            <label>תאריך פתיחה *</label>
+            <input type="date" id="c-opening-date" required>
+          </div>
+          <div class="form-group">
+            <label>מספר לקוח</label>
+            <input type="text" id="c-number" readonly placeholder="יווצר אוטומטית" style="background:var(--bg);color:var(--text-muted);cursor:default">
+          </div>
           <div class="form-group">
             <label>שם מלא *</label>
             <input type="text" id="c-name" required placeholder="ישראל ישראלי">
@@ -1168,6 +1200,14 @@
     <div class="modal-body">
       <form id="project-form" onsubmit="saveProject(event)">
         <div class="form-grid">
+          <div class="form-group">
+            <label>תאריך פתיחה *</label>
+            <input type="date" id="p-opening-date" required>
+          </div>
+          <div class="form-group">
+            <label>מספר פרויקט</label>
+            <input type="text" id="p-number" readonly placeholder="יווצר אוטומטית" style="background:var(--bg);color:var(--text-muted);cursor:default">
+          </div>
           <div class="form-group full">
             <label>שם פרויקט *</label>
             <input type="text" id="p-name" required placeholder="שם הפרויקט">
@@ -1240,6 +1280,14 @@
     <div class="modal-body">
       <form id="task-form" onsubmit="saveTask(event)">
         <div class="form-grid">
+          <div class="form-group">
+            <label>תאריך פתיחה *</label>
+            <input type="date" id="t-opening-date" required>
+          </div>
+          <div class="form-group">
+            <label>מספר משימה</label>
+            <input type="text" id="t-number" readonly placeholder="יווצר אוטומטית" style="background:var(--bg);color:var(--text-muted);cursor:default">
+          </div>
           <div class="form-group full">
             <label>כותרת *</label>
             <input type="text" id="t-title" required placeholder="כותרת המשימה">
@@ -1399,6 +1447,38 @@
   <span id="toast-msg"></span>
 </div>
 
+<!-- Part Modal -->
+<div id="modal-part" class="modal-overlay" onclick="overlayClose(event,'modal-part')">
+  <div class="modal" style="max-width:480px" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title" id="part-modal-title">הוסף מוצר</span>
+      <button class="modal-close" onclick="closeModal('modal-part')">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="part-form" onsubmit="savePart(event)">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>מק"ט</label>
+            <input type="text" id="pt-part" placeholder="יווצר אוטומטית" style="background:var(--bg);color:var(--text-muted)" readonly>
+          </div>
+          <div class="form-group">
+            <label>שם מוצר *</label>
+            <input type="text" id="pt-name" required placeholder="שם המוצר / שירות">
+          </div>
+          <div class="form-group full">
+            <label>תיאור</label>
+            <textarea id="pt-desc" placeholder="תיאור המוצר..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer" style="padding:0;border:none;margin-top:4px">
+          <button type="button" class="btn btn-ghost" onclick="closeModal('modal-part')">ביטול</button>
+          <button type="submit" class="btn btn-primary" id="part-submit-btn">שמור מוצר</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <!-- PDF Report Template (hidden) -->
 <div id="pdf-report">
   <!-- LOGO PLACEHOLDER in PDF -->
@@ -1439,6 +1519,7 @@ const state = {
   clients: [],
   projects: [],
   tasks: [],
+  parts: [],
   activity: [],
   editingId: null,
   confirmCb: null
@@ -1488,25 +1569,38 @@ function showToast(msg, type = 'default') {
 
 // ─── Modals ───
 async function openModal(type) {
+  const today = new Date().toISOString().split('T')[0];
   if (type === 'client') {
     state.editingId = null;
     document.getElementById('client-modal-title').textContent = 'הוסף לקוח';
     document.getElementById('client-form').reset();
     ['c-vpn-type','c-server','c-vpn-user','c-vpn-pass','c-pri-user','c-pri-pass','c-conn-url','c-port','c-conn-notes']
       .forEach(f => { const el = document.getElementById(f); if(el) el.value=''; });
+    document.getElementById('c-opening-date').value = today;
+    document.getElementById('c-number').value = '';
     document.getElementById('modal-client').classList.add('open');
   } else if (type === 'project') {
     state.editingId = null;
     document.getElementById('project-modal-title').textContent = 'הוסף פרויקט';
     document.getElementById('project-form').reset();
     populateClientSelect('p-client');
+    document.getElementById('p-opening-date').value = today;
+    document.getElementById('p-number').value = '';
     document.getElementById('modal-project').classList.add('open');
   } else if (type === 'task') {
     state.editingId = null;
     document.getElementById('task-modal-title').textContent = 'הוסף משימה';
     document.getElementById('task-form').reset();
     populateProjectSelect('t-project');
+    document.getElementById('t-opening-date').value = today;
+    document.getElementById('t-number').value = '';
     document.getElementById('modal-task').classList.add('open');
+  } else if (type === 'part') {
+    state.editingId = null;
+    document.getElementById('part-modal-title').textContent = 'הוסף מוצר';
+    document.getElementById('part-form').reset();
+    document.getElementById('pt-part').value = '';
+    document.getElementById('modal-part').classList.add('open');
   } else if (type === 'event') {
     state.editingId = null;
     document.getElementById('event-modal-title').textContent = 'הוסף אירוע';
@@ -1539,6 +1633,7 @@ function showSection(name) {
   else if (name === 'projects') loadProjects();
   else if (name === 'tasks') loadTasks();
   else if (name === 'calendar') loadCalendar();
+  else if (name === 'parts') { loadPartsState().then(loadParts); }
   else if (name === 'reports') loadReports();
   else if (name === 'security') loadMFAStatus();
 }
@@ -1721,6 +1816,8 @@ async function editClient(id) {
   if (!c) return;
   state.editingId = id;
   document.getElementById('client-modal-title').textContent = 'עריכת לקוח';
+  document.getElementById('c-opening-date').value = c.opening_date||'';
+  document.getElementById('c-number').value        = c.client_number||'';
   document.getElementById('c-name').value    = c.name;
   document.getElementById('c-company').value = c.company||'';
   document.getElementById('c-email').value   = c.email;
@@ -1754,7 +1851,8 @@ async function saveClient(e) {
     company: document.getElementById('c-company').value.trim()||null,
     email: document.getElementById('c-email').value.trim(),
     phone: document.getElementById('c-phone').value.trim()||null,
-    notes: document.getElementById('c-notes').value.trim()||null
+    notes: document.getElementById('c-notes').value.trim()||null,
+    opening_date: document.getElementById('c-opening-date').value||null
   };
   let error, id, name;
   if (state.editingId) {
@@ -1907,6 +2005,8 @@ function editProject(id) {
   if (!p) return;
   state.editingId = id;
   document.getElementById('project-modal-title').textContent = 'עריכת פרויקט';
+  document.getElementById('p-opening-date').value = p.opening_date||'';
+  document.getElementById('p-number').value        = p.project_number||'';
   populateClientSelect('p-client', p.client_id);
   document.getElementById('p-name').value = p.name;
   document.getElementById('p-client').value = p.client_id;
@@ -1935,7 +2035,8 @@ async function saveProject(e) {
     budget: parseFloat(document.getElementById('p-budget').value)||null,
     hours: parseFloat(document.getElementById('p-hours').value)||null,
     progress: parseInt(document.getElementById('p-progress').value)||0,
-    description: document.getElementById('p-desc').value.trim()||null
+    description: document.getElementById('p-desc').value.trim()||null,
+    opening_date: document.getElementById('p-opening-date').value||null
   };
   let error, id;
   if (state.editingId) {
@@ -2020,6 +2121,8 @@ function editTask(id) {
   if (!t) return;
   state.editingId = id;
   document.getElementById('task-modal-title').textContent = 'עריכת משימה';
+  document.getElementById('t-opening-date').value = t.opening_date||'';
+  document.getElementById('t-number').value        = t.task_number||'';
   populateProjectSelect('t-project', t.project_id);
   document.getElementById('t-title').value = t.title;
   document.getElementById('t-project').value = t.project_id;
@@ -2042,7 +2145,8 @@ async function saveTask(e) {
     priority: document.getElementById('t-priority').value,
     due_date: document.getElementById('t-due').value||null,
     assigned_to: document.getElementById('t-assigned').value.trim()||null,
-    description: document.getElementById('t-desc').value.trim()||null
+    description: document.getElementById('t-desc').value.trim()||null,
+    opening_date: document.getElementById('t-opening-date').value||null
   };
   let error, id;
   if (state.editingId) {
@@ -2060,6 +2164,81 @@ async function saveTask(e) {
   closeModal('modal-task');
   loadTasks();
   loadDashboard();
+}
+
+// ─── PARTS ───
+async function loadParts() {
+  const { data, error } = await db.from('parts').select('*').order('part');
+  const tbody = document.getElementById('parts-tbody');
+  if (error || !data?.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:32px">אין מוצרים עדיין</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(p => `
+    <tr>
+      <td><span class="badge" style="background:var(--primary-light);color:var(--primary);font-family:monospace">${esc(p.part)}</span></td>
+      <td><strong>${esc(p.partname)}</strong></td>
+      <td style="color:var(--text-muted)">${esc(p.partdes||'—')}</td>
+      <td>
+        <button class="btn-icon" onclick="editPart('${p.part}')" title="עריכה">✏️</button>
+        <button class="btn-icon danger" onclick="confirmDeletePart('${p.part}','${esc(p.partname)}')" title="מחק">🗑️</button>
+      </td>
+    </tr>`).join('');
+}
+
+function editPart(partKey) {
+  const p = state.parts?.find(x => x.part === partKey);
+  if (!p) return;
+  state.editingId = partKey;
+  document.getElementById('part-modal-title').textContent = 'עריכת מוצר';
+  document.getElementById('pt-part').value = p.part;
+  document.getElementById('pt-name').value = p.partname;
+  document.getElementById('pt-desc').value = p.partdes||'';
+  document.getElementById('modal-part').classList.add('open');
+}
+
+async function savePart(e) {
+  e.preventDefault();
+  const btn = document.getElementById('part-submit-btn');
+  btn.disabled = true; btn.textContent = 'שומר...';
+  const payload = {
+    partname: document.getElementById('pt-name').value.trim(),
+    partdes:  document.getElementById('pt-desc').value.trim()||null
+  };
+  let error;
+  if (state.editingId) {
+    ({ error } = await db.from('parts').update(payload).eq('part', state.editingId));
+  } else {
+    ({ error } = await db.from('parts').insert(payload));
+  }
+  btn.disabled = false; btn.textContent = 'שמור מוצר';
+  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+  showToast(state.editingId ? 'המוצר עודכן!' : 'המוצר נוסף!', 'success');
+  closeModal('modal-part');
+  await loadPartsState();
+  loadParts();
+}
+
+async function loadPartsState() {
+  const { data } = await db.from('parts').select('*').order('part');
+  state.parts = data || [];
+}
+
+function confirmDeletePart(partKey, name) {
+  document.getElementById('confirm-text').textContent = `האם למחוק את המוצר "${name}"? פעולה זו אינה הפיכה.`;
+  document.getElementById('confirm-ok-btn').textContent = 'מחק';
+  document.getElementById('confirm-ok-btn').className = 'btn btn-danger';
+  document.querySelector('#modal-confirm .modal-title').textContent = 'אישור מחיקה';
+  document.getElementById('confirm-ok-btn').onclick = () => { closeModal('modal-confirm'); deletePart(partKey, name); };
+  document.getElementById('modal-confirm').classList.add('open');
+}
+
+async function deletePart(partKey, name) {
+  const { error } = await db.from('parts').delete().eq('part', partKey);
+  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+  showToast('המוצר נמחק', 'success');
+  await loadPartsState();
+  loadParts();
 }
 
 // ─── REPORTS ───

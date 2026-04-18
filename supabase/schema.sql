@@ -221,10 +221,107 @@ CREATE TRIGGER tasks_updated_at BEFORE UPDATE ON tasks
 -- DEMO MODE — run in Supabase SQL Editor after initial setup
 -- ============================================================
 
--- Add is_demo flag to company table (true = demo, false = live)
 ALTER TABLE company ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT true;
 
--- go_live(): atomically wipes all demo data and activates the company
+-- ============================================================
+-- SEQUENTIAL NUMBERS + OPENING DATE
+-- ============================================================
+
+-- Sequences
+CREATE SEQUENCE IF NOT EXISTS client_num_seq  START 1;
+CREATE SEQUENCE IF NOT EXISTS project_num_seq START 1;
+CREATE SEQUENCE IF NOT EXISTS task_num_seq    START 1;
+CREATE SEQUENCE IF NOT EXISTS part_num_seq    START 1;
+
+-- Add columns to existing tables
+ALTER TABLE clients  ADD COLUMN IF NOT EXISTS client_number  TEXT UNIQUE;
+ALTER TABLE clients  ADD COLUMN IF NOT EXISTS opening_date   DATE NOT NULL DEFAULT CURRENT_DATE;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS project_number TEXT UNIQUE;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS opening_date   DATE NOT NULL DEFAULT CURRENT_DATE;
+ALTER TABLE tasks    ADD COLUMN IF NOT EXISTS task_number    TEXT UNIQUE;
+ALTER TABLE tasks    ADD COLUMN IF NOT EXISTS opening_date   DATE NOT NULL DEFAULT CURRENT_DATE;
+
+-- Trigger functions
+CREATE OR REPLACE FUNCTION gen_client_number()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.client_number IS NULL THEN
+    NEW.client_number := 'C' || LPAD(nextval('client_num_seq')::TEXT, 5, '0');
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION gen_project_number()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.project_number IS NULL THEN
+    NEW.project_number := 'P' || LPAD(nextval('project_num_seq')::TEXT, 6, '0');
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION gen_task_number()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.task_number IS NULL THEN
+    NEW.task_number := 'M' || LPAD(nextval('task_num_seq')::TEXT, 6, '0');
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION gen_part_number()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.part IS NULL OR NEW.part = '' THEN
+    NEW.part := 'PR' || LPAD(nextval('part_num_seq')::TEXT, 5, '0');
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Triggers
+DROP TRIGGER IF EXISTS trg_client_number  ON clients;
+CREATE TRIGGER trg_client_number  BEFORE INSERT ON clients
+  FOR EACH ROW EXECUTE FUNCTION gen_client_number();
+
+DROP TRIGGER IF EXISTS trg_project_number ON projects;
+CREATE TRIGGER trg_project_number BEFORE INSERT ON projects
+  FOR EACH ROW EXECUTE FUNCTION gen_project_number();
+
+DROP TRIGGER IF EXISTS trg_task_number    ON tasks;
+CREATE TRIGGER trg_task_number    BEFORE INSERT ON tasks
+  FOR EACH ROW EXECUTE FUNCTION gen_task_number();
+
+DROP TRIGGER IF EXISTS trg_part_number    ON parts;
+CREATE TRIGGER trg_part_number    BEFORE INSERT ON parts
+  FOR EACH ROW EXECUTE FUNCTION gen_part_number();
+
+-- ============================================================
+-- PARTS TABLE
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS parts (
+  part        TEXT PRIMARY KEY,
+  partname    TEXT UNIQUE NOT NULL,
+  partdes     TEXT,
+  created_at  TIMESTAMPTZ DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE parts ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "parts_admin" ON parts;
+CREATE POLICY "parts_admin" ON parts FOR ALL USING (is_admin());
+
+CREATE TRIGGER parts_updated_at BEFORE UPDATE ON parts
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ============================================================
+-- go_live(): wipes demo data, resets sequences, activates company
+-- ============================================================
+
 CREATE OR REPLACE FUNCTION go_live()
 RETURNS void AS $$
 BEGIN
@@ -233,8 +330,13 @@ BEGIN
   END IF;
   DELETE FROM activity_log;
   DELETE FROM calendar_events;
-  DELETE FROM clients; -- cascades to projects + tasks
+  DELETE FROM clients;
+  DELETE FROM parts;
   UPDATE company SET is_demo = false;
+  EXECUTE 'ALTER SEQUENCE client_num_seq  RESTART WITH 1';
+  EXECUTE 'ALTER SEQUENCE project_num_seq RESTART WITH 1';
+  EXECUTE 'ALTER SEQUENCE task_num_seq    RESTART WITH 1';
+  EXECUTE 'ALTER SEQUENCE part_num_seq    RESTART WITH 1';
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
