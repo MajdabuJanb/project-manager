@@ -95,6 +95,17 @@ CREATE TABLE IF NOT EXISTS company (
   udate    TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS statuses (
+  statusid  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  entity    TEXT NOT NULL CHECK (entity IN ('project', 'task', 'customer')),
+  statuskey TEXT NOT NULL,
+  label     TEXT NOT NULL,
+  color     TEXT DEFAULT '#94a3b8',
+  isdefault BOOLEAN DEFAULT false,
+  sortorder INTEGER DEFAULT 0,
+  UNIQUE (entity, statuskey)
+);
+
 CREATE TABLE IF NOT EXISTS activity_log (
   logid  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   etype  TEXT NOT NULL CHECK (etype IN ('client', 'project', 'task', 'part')),
@@ -151,6 +162,12 @@ CREATE POLICY "tasks_admin" ON tasks FOR ALL USING (is_admin());
 
 DROP POLICY IF EXISTS "parts_admin"        ON parts;
 CREATE POLICY "parts_admin" ON parts FOR ALL USING (is_admin());
+
+ALTER TABLE statuses ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "statuses_admin" ON statuses;
+CREATE POLICY "statuses_admin" ON statuses FOR ALL USING (is_admin());
+DROP POLICY IF EXISTS "statuses_read"  ON statuses;
+CREATE POLICY "statuses_read"  ON statuses FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "activity_admin"     ON activity_log;
 CREATE POLICY "activity_admin" ON activity_log FOR ALL USING (is_admin());

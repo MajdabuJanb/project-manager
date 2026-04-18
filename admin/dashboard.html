@@ -1044,6 +1044,48 @@
         </div>
       </section>
 
+      <!-- ════ STATUSES ════ -->
+      <section id="section-statuses" class="section">
+        <div class="page-header">
+          <div>
+            <div class="page-title">סטטוסים</div>
+            <div class="page-sub" id="statuses-count-sub">ניהול סטטוסים גלובלי לכל הישויות</div>
+          </div>
+          <button class="btn btn-primary" onclick="openAddStatus()">+ הוסף סטטוס</button>
+        </div>
+
+        <!-- Tabs per entity -->
+        <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+          <button class="btn" id="stab-all"      onclick="filterStatusTab('all')"     >הכל</button>
+          <button class="btn" id="stab-project"  onclick="filterStatusTab('project')" >פרויקטים</button>
+          <button class="btn" id="stab-task"     onclick="filterStatusTab('task')"    >משימות</button>
+          <button class="btn" id="stab-customer" onclick="filterStatusTab('customer')">לקוחות</button>
+        </div>
+
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>שם סטטוס</th>
+                <th>ישות</th>
+                <th>צבע</th>
+                <th>תווית (עברית)</th>
+                <th>ברירת מחדל</th>
+                <th>פעולות</th>
+              </tr>
+            </thead>
+            <tbody id="statuses-tbody">
+              <tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:32px">טוען...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="statuses-empty" class="empty-state" style="display:none">
+          <div style="font-size:40px;margin-bottom:12px">🏷</div>
+          <div style="font-weight:600;margin-bottom:6px">אין סטטוסים</div>
+          <div style="color:var(--text-muted);font-size:13px">הוסף סטטוס ראשון</div>
+        </div>
+      </section>
+
       <!-- ════ ADMIN TOOLS ════ -->
       <section id="section-admin-tools" class="section">
         <div class="page-header">
@@ -1504,6 +1546,53 @@
 </div>
 
 <!-- Part Modal -->
+<div id="modal-status" class="modal-overlay" onclick="overlayClose(event,'modal-status')">
+  <div class="modal" style="max-width:480px" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title" id="status-modal-title">הוסף סטטוס</span>
+      <button class="modal-close" onclick="closeModal('modal-status')">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="status-form" onsubmit="saveStatus(event)">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>ישות *</label>
+            <select id="st-entity" required>
+              <option value="">בחר ישות...</option>
+              <option value="project">פרויקט</option>
+              <option value="task">משימה</option>
+              <option value="customer">לקוח</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>מזהה סטטוס * <small style="color:var(--text-muted)">(ללא רווחים)</small></label>
+            <input type="text" id="st-key" required placeholder="לדוגמה: in_review" pattern="[a-z0-9_]+" title="אותיות קטנות, מספרים וקו תחתון בלבד">
+          </div>
+          <div class="form-group">
+            <label>תווית עברית *</label>
+            <input type="text" id="st-label" required placeholder="לדוגמה: בבדיקה">
+          </div>
+          <div class="form-group">
+            <label>צבע</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="color" id="st-color" value="#3b82f6" style="width:44px;height:36px;border:none;padding:2px;border-radius:6px;cursor:pointer">
+              <input type="text" id="st-color-hex" value="#3b82f6" placeholder="#3b82f6" style="flex:1" oninput="syncColorFromHex()">
+            </div>
+          </div>
+          <div class="form-group full" style="display:flex;align-items:center;gap:10px">
+            <input type="checkbox" id="st-default" style="width:16px;height:16px;cursor:pointer">
+            <label for="st-default" style="margin:0;cursor:pointer">ברירת מחדל לישות זו</label>
+          </div>
+        </div>
+        <div class="modal-footer" style="padding:0;border:none;margin-top:4px">
+          <button type="button" class="btn btn-ghost" onclick="closeModal('modal-status')">ביטול</button>
+          <button type="submit" class="btn btn-primary" id="status-submit-btn">שמור סטטוס</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <div id="modal-part" class="modal-overlay" onclick="overlayClose(event,'modal-part')">
   <div class="modal" style="max-width:480px" onclick="event.stopPropagation()">
     <div class="modal-header">
@@ -1576,6 +1665,7 @@ const state = {
   projects: [],
   tasks: [],
   parts: [],
+  statuses: [],
   activity: [],
   editingId: null,
   confirmCb: null
@@ -1690,6 +1780,7 @@ function showSection(name) {
   else if (name === 'tasks') loadTasks();
   else if (name === 'calendar') loadCalendar();
   else if (name === 'parts') { loadPartsState().then(loadParts); }
+  else if (name === 'statuses') loadStatuses();
   else if (name === 'reports') loadReports();
   else if (name === 'admin-tools') { /* ready on demand */ }
   else if (name === 'security') loadMFAStatus();
@@ -2347,6 +2438,125 @@ async function deletePart(partKey, name) {
   showToast('המוצר נמחק', 'success');
   await loadPartsState();
   loadParts();
+}
+
+// ─── STATUSES ───
+let statusTabFilter = 'all';
+
+async function loadStatuses() {
+  const { data } = await db.from('statuses').select('*').order('entity').order('sortorder');
+  state.statuses = data || [];
+  renderStatusesTable();
+}
+
+function filterStatusTab(tab) {
+  statusTabFilter = tab;
+  ['all','project','task','customer'].forEach(t => {
+    const btn = document.getElementById('stab-' + t);
+    if (btn) btn.className = 'btn' + (t === tab ? ' btn-primary' : '');
+  });
+  renderStatusesTable();
+}
+
+function renderStatusesTable() {
+  const list = statusTabFilter === 'all'
+    ? state.statuses
+    : state.statuses.filter(s => s.entity === statusTabFilter);
+
+  document.getElementById('statuses-count-sub').textContent = `${list.length} סטטוסים`;
+  const tbody = document.getElementById('statuses-tbody');
+  const empty = document.getElementById('statuses-empty');
+  if (list.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  const entityLabel = { project: 'פרויקט', task: 'משימה', customer: 'לקוח' };
+  tbody.innerHTML = list.map(s => `
+    <tr>
+      <td><strong>${esc(s.statuskey)}</strong></td>
+      <td>${entityLabel[s.entity] || s.entity}</td>
+      <td><span style="display:inline-flex;align-items:center;gap:6px">
+        <span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:${esc(s.color||'#94a3b8')}"></span>
+        ${esc(s.color||'')}
+      </span></td>
+      <td>${esc(s.label)}</td>
+      <td>${s.isdefault ? '✅' : '—'}</td>
+      <td class="actions-cell">
+        <button class="btn-icon" onclick="editStatus('${s.statusid}')" title="ערוך">✏️</button>
+        <button class="btn-icon danger" onclick="confirmDeleteStatus('${s.statusid}','${esc(s.label)}')" title="מחק">🗑️</button>
+      </td>
+    </tr>`).join('');
+}
+
+function openAddStatus() {
+  state.editingId = null;
+  document.getElementById('status-modal-title').textContent = 'הוסף סטטוס';
+  document.getElementById('status-form').reset();
+  document.getElementById('st-color').value = '#3b82f6';
+  document.getElementById('st-color-hex').value = '#3b82f6';
+  document.getElementById('modal-status').classList.add('open');
+}
+
+function editStatus(id) {
+  const s = state.statuses.find(x => x.statusid === id);
+  if (!s) return;
+  state.editingId = id;
+  document.getElementById('status-modal-title').textContent = 'ערוך סטטוס';
+  document.getElementById('st-entity').value  = s.entity;
+  document.getElementById('st-key').value     = s.statuskey;
+  document.getElementById('st-label').value   = s.label;
+  document.getElementById('st-color').value   = s.color || '#3b82f6';
+  document.getElementById('st-color-hex').value = s.color || '#3b82f6';
+  document.getElementById('st-default').checked = !!s.isdefault;
+  document.getElementById('modal-status').classList.add('open');
+}
+
+function syncColorFromHex() {
+  const hex = document.getElementById('st-color-hex').value;
+  if (/^#[0-9a-fA-F]{6}$/.test(hex)) document.getElementById('st-color').value = hex;
+}
+
+document.addEventListener('change', e => {
+  if (e.target.id === 'st-color') document.getElementById('st-color-hex').value = e.target.value;
+});
+
+async function saveStatus(e) {
+  e.preventDefault();
+  const btn = document.getElementById('status-submit-btn');
+  btn.disabled = true; btn.textContent = 'שומר...';
+  const payload = {
+    entity:    document.getElementById('st-entity').value,
+    statuskey: document.getElementById('st-key').value.trim().toLowerCase(),
+    label:     document.getElementById('st-label').value.trim(),
+    color:     document.getElementById('st-color').value,
+    isdefault: document.getElementById('st-default').checked
+  };
+  let error;
+  if (state.editingId) {
+    ({ error } = await db.from('statuses').update(payload).eq('statusid', state.editingId));
+  } else {
+    ({ error } = await db.from('statuses').insert(payload));
+  }
+  btn.disabled = false; btn.textContent = 'שמור סטטוס';
+  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+  showToast(state.editingId ? 'הסטטוס עודכן!' : 'הסטטוס נוסף!', 'success');
+  closeModal('modal-status');
+  await loadStatuses();
+}
+
+function confirmDeleteStatus(id, name) {
+  document.getElementById('confirm-text').textContent = `האם למחוק את הסטטוס "${name}"?`;
+  document.getElementById('confirm-ok-btn').textContent = 'מחק';
+  document.getElementById('confirm-ok-btn').className = 'btn btn-danger';
+  document.querySelector('#modal-confirm .modal-title').textContent = 'אישור מחיקה';
+  document.getElementById('confirm-ok-btn').onclick = () => { closeModal('modal-confirm'); deleteStatus(id, name); };
+  document.getElementById('modal-confirm').classList.add('open');
+}
+
+async function deleteStatus(id, name) {
+  const { error } = await db.from('statuses').delete().eq('statusid', id);
+  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+  showToast('הסטטוס נמחק', 'success');
+  await loadStatuses();
 }
 
 // ─── REPORTS ───
