@@ -871,12 +871,13 @@
             <table>
               <thead>
                 <tr>
+                  <th>מס' לקוח</th>
                   <th>שם</th>
                   <th>חברה</th>
                   <th>אימייל</th>
                   <th>טלפון</th>
                   <th>פרויקטים</th>
-                  <th>פורטל לקוח</th>
+                  <th>סטטוס</th>
                   <th>פעולות</th>
                 </tr>
               </thead>
@@ -1106,6 +1107,13 @@
           <div class="form-group">
             <label>שם מלא *</label>
             <input type="text" id="c-name" required placeholder="ישראל ישראלי">
+          </div>
+          <div class="form-group">
+            <label>סטטוס</label>
+            <select id="c-status">
+              <option value="active">✅ פעיל</option>
+              <option value="inactive">⏸ לא פעיל</option>
+            </select>
           </div>
           <div class="form-group">
             <label>חברה</label>
@@ -1795,20 +1803,31 @@ function renderClientsTable() {
   }
   empty.style.display = 'none';
   tbody.innerHTML = filtered.map(c => `
-    <tr onclick="editClient('${c.id}')" style="cursor:pointer">
+    <tr onclick="editClient('${c.id}')" style="cursor:pointer;opacity:${c.status==='inactive'?'0.55':'1'}">
+      <td><span style="font-family:monospace;font-size:11px;color:var(--text-muted)">${esc(c.client_number||'—')}</span></td>
       <td><strong>${esc(c.name)}</strong></td>
       <td>${esc(c.company||'—')}</td>
       <td>${esc(c.email)}</td>
       <td>${esc(c.phone||'—')}</td>
       <td onclick="event.stopPropagation()"><span class="badge b-active" style="cursor:pointer" onclick="goToClientProjects('${c.id}')" title="הצג פרויקטים">${c._projectCount} פרויקטים</span></td>
       <td onclick="event.stopPropagation()">
-        <button class="btn-icon" onclick="showPortalLink('${c.access_token}')" title="לינק פורטל">🔗</button>
+        <span class="badge ${c.status==='inactive'?'b-paused':'b-active'}" style="cursor:pointer" onclick="toggleClientStatus('${c.id}','${c.status||'active'}')" title="לחץ לשינוי סטטוס">
+          ${c.status==='inactive'?'⏸ לא פעיל':'✅ פעיל'}
+        </span>
       </td>
       <td class="actions-cell" onclick="event.stopPropagation()">
+        <button class="btn-icon" onclick="showPortalLink('${c.access_token}')" title="לינק פורטל">🔗</button>
         <button class="btn-icon" onclick="editClient('${c.id}')" title="ערוך">✏️</button>
-        <button class="btn-icon danger" onclick="confirmDelete('client','${c.id}','${esc(c.name)}')" title="מחק">🗑️</button>
       </td>
     </tr>`).join('');
+}
+
+async function toggleClientStatus(id, currentStatus) {
+  const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+  const { error } = await db.from('clients').update({ status: newStatus }).eq('id', id);
+  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+  showToast(newStatus === 'active' ? 'הלקוח הופעל' : 'הלקוח הושבת', 'success');
+  loadClients();
 }
 
 async function editClient(id) {
@@ -1819,6 +1838,7 @@ async function editClient(id) {
   document.getElementById('c-opening-date').value = c.opening_date||'';
   document.getElementById('c-number').value        = c.client_number||'';
   document.getElementById('c-name').value    = c.name;
+  document.getElementById('c-status').value  = c.status||'active';
   document.getElementById('c-company').value = c.company||'';
   document.getElementById('c-email').value   = c.email;
   document.getElementById('c-phone').value   = c.phone||'';
@@ -1852,7 +1872,8 @@ async function saveClient(e) {
     email: document.getElementById('c-email').value.trim(),
     phone: document.getElementById('c-phone').value.trim()||null,
     notes: document.getElementById('c-notes').value.trim()||null,
-    opening_date: document.getElementById('c-opening-date').value||null
+    opening_date: document.getElementById('c-opening-date').value||null,
+    status: document.getElementById('c-status').value||'active'
   };
   let error, id, name;
   if (state.editingId) {
