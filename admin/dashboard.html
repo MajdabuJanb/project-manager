@@ -2145,8 +2145,9 @@ async function exportPDF() {
 }
 
 // ─── COMPANY ───
-let companyId  = null;
+let companyId   = null;
 let companyLogo = null;
+let companyIsDemo = true;
 
 async function loadCompany() {
   const { data } = await db.from('company').select('*').maybeSingle();
