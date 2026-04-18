@@ -3381,7 +3381,10 @@ function enterQuoteSearchMode() {
   _qSearchMode = true;
   const btn    = document.getElementById('q-search-btn');
   const master = document.querySelector('#section-quotes .pri-master');
-  const fields = master.querySelectorAll('input:not([readonly]), select');
+  // כולל qf-num — נפתח זמנית לכתיבה לחיפוש לפי מספר הצעה
+  const numFld = document.getElementById('qf-num');
+  numFld.removeAttribute('readonly');
+  const fields = master.querySelectorAll('input, select');
   fields.forEach(f => { _qSearchSnap[f.id] = f.value; f.value = ''; });
   master.style.background  = '#f0fdf4';
   master.style.borderColor = '#86efac';
@@ -3390,14 +3393,16 @@ function enterQuoteSearchMode() {
   btn.style.color      = 'white';
   btn.textContent      = '✓ בצע (Enter)  |  ESC לביטול';
   master.addEventListener('keydown', _quoteSearchKey);
-  fields[0]?.focus();
+  numFld.focus();
 }
 
 function exitQuoteSearchMode(restore) {
   _qSearchMode = false;
+  const numFld = document.getElementById('qf-num');
+  numFld.setAttribute('readonly', '');
   const btn    = document.getElementById('q-search-btn');
   const master = document.querySelector('#section-quotes .pri-master');
-  const fields = master.querySelectorAll('input:not([readonly]), select');
+  const fields = master.querySelectorAll('input, select');
   master.style.background  = '';
   master.style.borderColor = '';
   fields.forEach(f => { f.style.borderColor = ''; f.style.background = ''; });
@@ -3417,30 +3422,34 @@ async function _quoteSearchKey(e) {
   if (e.key === 'Escape') { exitQuoteSearchMode(true); return; }
   if (e.key !== 'Enter')  return;
   e.preventDefault();
-  const custid = document.getElementById('qf-cust').value;
-  const status = document.getElementById('qf-status').value;
-  const date   = document.getElementById('qf-date').value;
-  const valid  = document.getElementById('qf-valid').value;
-  const ponum  = document.getElementById('qf-po').value.trim();
-  const notes  = document.getElementById('qf-notes').value.trim();
+  const quotenum = document.getElementById('qf-num').value.trim();
+  const custid   = document.getElementById('qf-cust').value;
+  const status   = document.getElementById('qf-status').value;
+  const date     = document.getElementById('qf-date').value;
+  const valid    = document.getElementById('qf-valid').value;
+  const ponum    = document.getElementById('qf-po').value.trim();
+  const notes    = document.getElementById('qf-notes').value.trim();
   exitQuoteSearchMode(false);
-  const allEmpty = !custid && !status && !date && !valid && !ponum && !notes;
+  const allEmpty = !quotenum && !custid && !status && !date && !valid && !ponum && !notes;
   if (allEmpty) { quoteNew(); return; }
   let q = db.from('quotes')
     .select('quoteid, quotenum, qdate, status, total, customers(custname,custcomp)')
     .order('cdate', { ascending: false });
-  if (custid) q = q.eq('custid', custid);
-  if (status) q = q.eq('status', status);
-  if (date)   q = q.gte('qdate', date);
-  if (valid)  q = q.lte('validdate', valid);
-  if (ponum)  q = q.ilike('ponum', `%${ponum}%`);
-  if (notes)  q = q.ilike('notes', `%${notes}%`);
-  const { data } = await q;
+  if (quotenum) q = q.ilike('quotenum', `%${quotenum}%`);
+  if (custid)   q = q.eq('custid', custid);
+  if (status)   q = q.eq('status', status);
+  if (date)     q = q.gte('qdate', date);
+  if (valid)    q = q.lte('validdate', valid);
+  if (ponum)    q = q.ilike('ponum', `%${ponum}%`);
+  if (notes)    q = q.ilike('notes', `%${notes}%`);
+  const { data, error } = await q;
+  if (error) { showToast('שגיאה בחיפוש: ' + error.message, 'error'); return; }
   quoteState.list = data || [];
-  updateNavButtons();
-  if (!data?.length) { showToast('לא נמצאו הצעות', 'info'); return; }
-  if (data.length === 1) await loadQuoteById(data[0].quoteid, 0);
-  else showToast(`נמצאו ${data.length} הצעות — בחר מהרשימה`, 'info');
+  if (!quoteState.list.length) { showToast('לא נמצאו הצעות', 'info'); return; }
+  // טוען את הראשונה, ניווט בחיצים לשאר
+  await loadQuoteById(quoteState.list[0].quoteid, 0);
+  if (quoteState.list.length > 1)
+    showToast(`נמצאו ${quoteState.list.length} הצעות — נווט עם החיצים`, 'info');
 }
 
 
