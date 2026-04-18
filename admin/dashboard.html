@@ -1191,6 +1191,14 @@
               </div>
             </div>
 
+            <div class="section-divider">הגדרות חשבונאות</div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>שיעור מע"מ (%)</label>
+                <input type="number" id="co-vatrate" placeholder="17" min="0" max="100" step="0.1">
+              </div>
+            </div>
+
             <div class="section-divider">פרטי בנק</div>
             <div class="form-group">
               <label>פרטי בנק (יופיעו בדרישת תשלום)</label>
@@ -1513,6 +1521,7 @@
             <!-- Search dropdown -->
             <div id="q-search-drop" style="display:none;position:absolute;top:calc(100% + 4px);right:0;width:360px;background:var(--card);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:200;max-height:320px;overflow-y:auto"></div>
           </div>
+          <button class="btn btn-sm" id="q-searchmode-btn" onclick="toggleQuoteSearchMode()" title="מצב חיפוש (כמו Priority)" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7">🔍 מצב חיפוש</button>
           <button class="btn btn-ghost btn-sm" id="q-cancel-btn" onclick="quoteCancel()" style="display:none">✕ בטל</button>
           <button class="btn btn-ghost btn-sm" onclick="quotePrint()" id="q-print-btn" style="display:none">🖨️ הדפס</button>
           <button class="btn btn-primary btn-sm" onclick="quoteNew()">🗋 חדש</button>
@@ -1564,10 +1573,24 @@
                 <input type="text" id="qf-notes" placeholder="הערות להצעה..." onchange="markQuoteDirty()">
               </div>
             </div>
-            <div style="display:flex;gap:12px;margin-top:10px;align-items:center">
+            <div style="display:flex;gap:12px;margin-top:10px;align-items:center;flex-wrap:wrap">
               <button class="btn btn-primary btn-sm" id="q-save-btn" onclick="saveQuoteHeader()" style="display:none">💾 שמור כותרת</button>
               <span id="q-dirty-indicator" style="font-size:12px;color:#f59e0b;display:none">● שינויים לא שמורים</span>
               <span id="q-saved-indicator" style="font-size:12px;color:#10b981;display:none">✓ נשמר</span>
+              <div style="margin-right:auto;display:flex;gap:0">
+                <div class="pri-total-box" style="border:1px solid var(--border);border-radius:8px 0 0 8px;padding:6px 16px">
+                  <div class="pri-total-lbl">לפני מע"מ</div>
+                  <div class="pri-total-val" id="qt-sub" style="font-size:14px">₪0.00</div>
+                </div>
+                <div class="pri-total-box" style="border:1px solid var(--border);border-right:none;padding:6px 16px">
+                  <div class="pri-total-lbl">מע"מ</div>
+                  <div class="pri-total-val" id="qt-vat" style="font-size:14px">₪0.00</div>
+                </div>
+                <div class="pri-total-box" style="border:1px solid var(--primary);border-radius:0 8px 8px 0;background:var(--primary-light);padding:6px 16px">
+                  <div class="pri-total-lbl" style="color:var(--primary)">סה"כ לתשלום</div>
+                  <div class="pri-total-val grand" id="qt-total" style="font-size:15px">₪0.00</div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1584,6 +1607,7 @@
                   <th style="width:110px">מחיר יחידה</th>
                   <th style="width:80px">הנחה %</th>
                   <th style="width:110px">סה"כ שורה</th>
+                  <th style="width:120px">כולל מע"מ</th>
                   <th style="width:36px"></th>
                 </tr>
               </thead>
@@ -1591,21 +1615,6 @@
             </table>
           </div>
 
-          <!-- Totals -->
-          <div class="pri-totals" id="q-totals">
-            <div class="pri-total-box">
-              <div class="pri-total-lbl">לפני מע"מ</div>
-              <div class="pri-total-val" id="qt-sub">₪0.00</div>
-            </div>
-            <div class="pri-total-box">
-              <div class="pri-total-lbl">מע"מ</div>
-              <div class="pri-total-val" id="qt-vat">₪0.00</div>
-            </div>
-            <div class="pri-total-box">
-              <div class="pri-total-lbl">סה"כ לתשלום</div>
-              <div class="pri-total-val grand" id="qt-total">₪0.00</div>
-            </div>
-          </div>
 
         </div>
       </section>
@@ -3133,30 +3142,30 @@ async function runAdminQuery() {
 
 // ─── PARTS ───
 async function loadParts() {
-  const { data, error } = await db.from('parts').select('*').order('part');
+  await loadPartsState();
   const tbody = document.getElementById('parts-tbody');
-  if (error || !data?.length) {
+  if (!state.parts.length) {
     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:32px">אין מוצרים עדיין</td></tr>';
     return;
   }
-  tbody.innerHTML = data.map(p => `
+  tbody.innerHTML = state.parts.map(p => `
     <tr>
-      <td><span class="badge" style="background:var(--primary-light);color:var(--primary);font-family:monospace">${esc(p.part)}</span></td>
+      <td><span class="badge" style="background:var(--primary-light);color:var(--primary);font-family:monospace">${esc(p.partid)}</span></td>
       <td><strong>${esc(p.partname)}</strong></td>
       <td style="color:var(--text-muted)">${esc(p.partdes||'—')}</td>
       <td>
-        <button class="btn-icon" onclick="editPart('${p.part}')" title="עריכה">✏️</button>
-        <button class="btn-icon danger" onclick="confirmDeletePart('${p.part}','${esc(p.partname)}')" title="מחק">🗑️</button>
+        <button class="btn-icon" onclick="editPart('${p.partid}')" title="עריכה">✏️</button>
+        <button class="btn-icon danger" onclick="confirmDeletePart('${p.partid}','${esc(p.partname)}')" title="מחק">🗑️</button>
       </td>
     </tr>`).join('');
 }
 
 function editPart(partKey) {
-  const p = state.parts?.find(x => x.part === partKey);
+  const p = state.parts?.find(x => x.partid === partKey);
   if (!p) return;
   state.editingId = partKey;
   document.getElementById('part-modal-title').textContent = 'עריכת מוצר';
-  document.getElementById('pt-part').value = p.part;
+  document.getElementById('pt-part').value = p.partid;
   document.getElementById('pt-name').value = p.partname;
   document.getElementById('pt-desc').value = p.partdes||'';
   document.getElementById('modal-part').classList.add('open');
@@ -3442,15 +3451,19 @@ function quoteNew() {
 }
 
 async function quoteCancel() {
-  if (quoteState.current) {
-    const hasLines = quoteState.lines.length > 0;
-    if (hasLines) {
-      if (!confirm('האם לבטל ולמחוק הצעה זו לגמרי?')) return;
-      await db.from('quotes').delete().eq('quoteid', quoteState.current.quoteid);
-      await logActivity('quote', quoteState.current.quoteid, quoteState.current.quotenum, 'deleted');
-    } else {
-      await db.from('quotes').delete().eq('quoteid', quoteState.current.quoteid);
-    }
+  if (!quoteState.current) {
+    // לא נשמר כלל — פשוט מנקה
+    quoteNew();
+    return;
+  }
+  const hasLines = quoteState.lines.length > 0;
+  if (hasLines) {
+    if (!confirm('האם למחוק את ההצעה כולל כל שורותיה?')) return;
+    await db.from('quotes').delete().eq('quoteid', quoteState.current.quoteid);
+    await logActivity('quote', quoteState.current.quoteid, quoteState.current.quotenum, 'deleted');
+  } else {
+    // נוצרה כותרת בלי שורות — מוחק שקט
+    await db.from('quotes').delete().eq('quoteid', quoteState.current.quoteid);
   }
   quoteNew();
   quoteSearch(false);
@@ -3569,7 +3582,9 @@ function buildLineRow(line, idx, isNew) {
   const qty = line?.qty      ?? '';
   const pri = line?.unitprice ?? '';
   const dis = line?.discount ?? '';
-  const tot = line ? fmtMoney(calcLineTotal(line)) : '';
+  const tot    = line ? fmtMoney(calcLineTotal(line)) : '';
+  const vatPct = parseFloat(document.getElementById('qf-vat').value) || 0;
+  const totVat = line ? fmtMoney(calcLineTotal(line) * (1 + vatPct / 100)) : '';
   const lid = line?.lineid   ?? '';
   const cls = isNew ? 'new-row' : 'saved-row';
 
@@ -3596,6 +3611,7 @@ function buildLineRow(line, idx, isNew) {
       onchange="lineFieldChange(this,${idx},'discount');recalcLine(${idx})"
       onkeydown="lineKeyDown(event,this,${idx},'discount')"></td>
     <td><input class="pri-cell pri-cell-num" value="${tot}" readonly tabindex="-1"></td>
+    <td><input class="pri-cell pri-cell-num" value="${totVat}" readonly tabindex="-1" style="color:var(--primary);font-weight:600"></td>
     <td>${isNew ? '' : `<button class="pri-del-btn" onclick="deleteLine('${lid}',${idx})" tabindex="-1">✕</button>`}</td>
   </tr>`;
 }
@@ -3731,6 +3747,116 @@ function fmtMoney(n) {
 
 function updateQuoteCustomerInfo() { /* placeholder for future customer details */ }
 
+// ── Priority-style search mode ──
+let quoteSearchMode = false;
+let quoteSearchSnapshot = {};
+
+function toggleQuoteSearchMode() {
+  quoteSearchMode = !quoteSearchMode;
+  const btn    = document.getElementById('q-searchmode-btn');
+  const master = document.querySelector('.pri-master');
+  const fields = master.querySelectorAll('input:not([readonly]), select');
+
+  if (quoteSearchMode) {
+    // שמירת ערכים נוכחיים
+    fields.forEach(f => { quoteSearchSnapshot[f.id] = f.value; });
+    // ניקוי שדות לחיפוש
+    fields.forEach(f => { f.value = ''; });
+    // עיצוב ירוק
+    master.style.background = '#f0fdf4';
+    master.style.borderColor = '#86efac';
+    fields.forEach(f => { f.style.borderColor = '#4ade80'; f.style.background = '#f0fdf4'; });
+    btn.style.background  = '#16a34a';
+    btn.style.color       = 'white';
+    btn.textContent       = '✓ בצע חיפוש (Enter)';
+    // Enter מפעיל חיפוש
+    master.addEventListener('keydown', quoteSearchModeEnter);
+  } else {
+    exitQuoteSearchMode(true);
+  }
+}
+
+function exitQuoteSearchMode(restore = false) {
+  quoteSearchMode = false;
+  const btn    = document.getElementById('q-searchmode-btn');
+  const master = document.querySelector('.pri-master');
+  const fields = master.querySelectorAll('input:not([readonly]), select');
+
+  master.style.background   = '';
+  master.style.borderColor  = '';
+  fields.forEach(f => { f.style.borderColor = ''; f.style.background = ''; });
+  btn.style.background = '#d1fae5';
+  btn.style.color      = '#065f46';
+  btn.textContent      = '🔍 מצב חיפוש';
+  master.removeEventListener('keydown', quoteSearchModeEnter);
+
+  if (restore) {
+    Object.entries(quoteSearchSnapshot).forEach(([id, val]) => {
+      const el = document.getElementById(id);
+      if (el) el.value = val;
+    });
+  }
+}
+
+async function quoteSearchModeEnter(e) {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+
+  const custid    = document.getElementById('qf-cust').value;
+  const status    = document.getElementById('qf-status').value;
+  const ponum     = document.getElementById('qf-po').value.trim();
+  const dateFrom  = document.getElementById('qf-date').value;
+  const dateValid = document.getElementById('qf-valid').value;
+
+  let query = db.from('quotes')
+    .select('quoteid, quotenum, qdate, status, total, customers(custname,custcomp)')
+    .order('cdate', { ascending: false });
+
+  if (custid)    query = query.eq('custid', custid);
+  if (status)    query = query.eq('status', status);
+  if (ponum)     query = query.ilike('ponum', `%${ponum}%`);
+  if (dateFrom)  query = query.gte('qdate', dateFrom);
+  if (dateValid) query = query.lte('validdate', dateValid);
+
+  const { data } = await query;
+  exitQuoteSearchMode(false);
+
+  if (!data?.length) { showToast('לא נמצאו הצעות התואמות לתנאי החיפוש', 'info'); return; }
+
+  if (data.length === 1) {
+    quoteState.list = data;
+    await loadQuoteById(data[0].quoteid, 0);
+  } else {
+    // מרובות — מציג רשימת בחירה
+    quoteState.list = data;
+    updateNavButtons();
+    showQuoteSearchResults(data);
+  }
+}
+
+function showQuoteSearchResults(results) {
+  const statusColors = { draft:'#94a3b8', sent:'#3b82f6', approved:'#10b981', rejected:'#ef4444', cancelled:'#94a3b8' };
+  const drop = document.getElementById('q-search-drop');
+  drop.innerHTML = `
+    <div style="padding:8px 14px;font-size:11px;font-weight:700;color:var(--text-muted);border-bottom:1px solid var(--border)">
+      נמצאו ${results.length} הצעות — בחר:
+    </div>` +
+    results.map((q, i) => `
+      <div onclick="quoteSelectFromDrop(${i});closeSearchDrop()" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px"
+           onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:13px">${esc(q.quotenum||'—')}</div>
+          <div style="font-size:12px;color:var(--text-muted)">${esc(q.customers?.custname||'')}${q.customers?.custcomp?' — '+esc(q.customers.custcomp):''}</div>
+        </div>
+        <div style="text-align:left;flex-shrink:0">
+          <div style="font-size:12px;font-weight:600">₪${(q.total||0).toLocaleString('he-IL',{minimumFractionDigits:2})}</div>
+          <div style="font-size:11px;color:${statusColors[q.status]||'#94a3b8'}">${QUOTE_STATUS[q.status]||q.status}</div>
+        </div>
+      </div>`).join('');
+  drop.style.display = 'block';
+  document.addEventListener('click', closeSearchDrop, { once: true });
+}
+
 function quotePrint() {
   if (!quoteState.current) return;
   showToast('הדפסה תתווסף בשלב הבא', 'info');
@@ -3838,6 +3964,7 @@ async function loadCompany() {
   document.getElementById('co-city').value    = data.city || '';
   document.getElementById('co-zip').value     = data.zip || '';
   document.getElementById('co-bank').value    = data.bankdet || '';
+  document.getElementById('co-vatrate').value = data.vatrate ?? '';
   if (data.logo) { companyLogo = data.logo; showLogoPreview(data.logo); }
   updateDemoBanner(data.isdemo !== false);
 }
@@ -3926,6 +4053,7 @@ async function saveCompany() {
     city:     document.getElementById('co-city').value.trim(),
     zip:      document.getElementById('co-zip').value.trim(),
     bankdet:  document.getElementById('co-bank').value.trim(),
+    vatrate:  parseFloat(document.getElementById('co-vatrate').value) || null,
     logo:     companyLogo,
     udate:    new Date().toISOString()
   };
