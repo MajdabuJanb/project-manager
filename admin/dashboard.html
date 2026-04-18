@@ -527,8 +527,218 @@
     .cal-more { font-size:9px; color:var(--text-muted); padding:1px 4px; }
     .event-type-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600; }
 
-    /* ─── Responsive ─── */
+    /* ─── Master-Detail Layout ─── */
+    .md-section {
+      display: flex;
+      gap: 0;
+      height: calc(100vh - 64px);
+      overflow: hidden;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+    .md-master {
+      width: 300px;
+      min-width: 260px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      border-left: 1px solid var(--border);
+      background: var(--card);
+      overflow: hidden;
+    }
+    .md-master-header {
+      padding: 16px 14px 12px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .md-search {
+      width: 100%;
+      padding: 7px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 13px;
+    }
+    .md-filter-btn {
+      padding: 4px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .md-filter-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+    .md-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px 0;
+    }
+    .md-list-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.12s;
+    }
+    .md-list-item:hover { background: var(--bg); }
+    .md-list-item.selected { background: var(--primary-light); border-right: 3px solid var(--primary); }
+    .md-list-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), #6366f1);
+      color: white;
+      font-weight: 700;
+      font-size: 13px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .md-list-info { flex: 1; min-width: 0; }
+    .md-list-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .md-list-sub  { font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+    .md-list-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+
+    .md-detail {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .md-empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text-muted);
+    }
+    .md-detail-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--card);
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+    .md-avatar {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), #6366f1);
+      color: white; font-weight: 700; font-size: 18px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .md-chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 12px 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--card);
+    }
+    .md-chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--text);
+    }
+    .md-tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 2px solid var(--border);
+      background: var(--card);
+      padding: 0 24px;
+      flex-shrink: 0;
+    }
+    .md-tab {
+      padding: 10px 18px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .md-tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+    .md-tab-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 18px; height: 18px;
+      background: var(--primary); color: white;
+      border-radius: 999px; font-size: 10px; font-weight: 700;
+      padding: 0 4px; margin-right: 4px;
+    }
+    .md-tab-body { padding: 20px 24px; overflow-y: auto; flex: 1; }
+    #client-detail-content { display: flex; flex-direction: column; }
+    .md-info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+    }
+    .md-info-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .md-info-label { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; font-weight: 500; }
+    .md-info-value { font-size: 14px; font-weight: 600; color: var(--text); word-break: break-word; }
+
+    /* Project cards inside detail */
+    .cd-project-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      background: var(--card);
+    }
+    .cd-project-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .cd-project-header:hover { background: var(--bg); }
+    .cd-project-chevron { font-size: 10px; color: var(--text-muted); transition: transform 0.2s; margin-right: auto; }
+    .cd-project-card.open .cd-project-chevron { transform: rotate(180deg); }
+    .cd-project-body { display: none; border-top: 1px solid var(--border); padding: 0; }
+    .cd-project-card.open .cd-project-body { display: block; }
+    .cd-task-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .cd-task-row:last-child { border-bottom: none; }
+    .cd-task-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .cd-project-actions { display: flex; gap: 6px; }
+
+    /* Responsive */
     @media (max-width: 768px) {
+      .md-section { flex-direction: column; height: auto; }
+      .md-master  { width: 100%; min-width: 0; border-left: none; border-bottom: 1px solid var(--border); }
+      .md-list    { max-height: 260px; }
+      .md-detail  { min-height: 400px; }
       .mobile-header { display: flex; }
       .layout { height: auto; min-height: 100vh; overflow: visible; }
       .sidebar {
@@ -864,42 +1074,93 @@
       </section>
 
       <!-- ════ CLIENTS ════ -->
-      <section id="section-clients" class="section">
-        <div class="page-header">
-          <div>
-            <div class="page-title">לקוחות</div>
-            <div class="page-sub" id="clients-count-sub"></div>
+      <section id="section-clients" class="section md-section">
+
+        <!-- ══ MASTER PANEL ══ -->
+        <div class="md-master">
+          <div class="md-master-header">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <span class="page-title" style="font-size:18px">לקוחות</span>
+              <button class="btn btn-primary btn-sm" onclick="openModal('client')">+ חדש</button>
+            </div>
+            <input type="text" id="client-search" class="md-search" placeholder="🔍  חיפוש..." oninput="renderClientsList()">
+            <div style="display:flex;gap:6px;margin-top:8px">
+              <button class="md-filter-btn active" id="cf-all"      onclick="setClientFilter('all')">הכל</button>
+              <button class="md-filter-btn"        id="cf-active"   onclick="setClientFilter('active')">פעיל</button>
+              <button class="md-filter-btn"        id="cf-inactive" onclick="setClientFilter('inactive')">לא פעיל</button>
+            </div>
           </div>
-          <button class="btn btn-primary" onclick="openModal('client')">+ הוסף לקוח</button>
+          <div id="clients-list" class="md-list"></div>
+          <div id="clients-empty" class="empty" style="display:none;padding:32px 16px;text-align:center">
+            <div style="font-size:32px;margin-bottom:8px">👥</div>
+            <p style="font-size:13px;color:var(--text-muted)">לא נמצאו לקוחות</p>
+          </div>
         </div>
 
-        <div class="toolbar">
-          <input type="text" id="client-search" placeholder="🔍  חפש לקוח..." oninput="renderClientsTable()">
+        <!-- ══ DETAIL PANEL ══ -->
+        <div class="md-detail" id="client-detail">
+          <div class="md-empty-state" id="client-detail-empty">
+            <div style="font-size:56px;margin-bottom:16px">👤</div>
+            <div style="font-weight:600;font-size:16px;margin-bottom:8px">בחר לקוח</div>
+            <div style="color:var(--text-muted);font-size:13px">בחר לקוח מהרשימה כדי לצפות בפרטיו</div>
+          </div>
+          <div id="client-detail-content" style="display:none;height:100%;overflow-y:auto">
+
+            <!-- Detail Header -->
+            <div class="md-detail-header">
+              <div style="display:flex;align-items:center;gap:14px;flex:1;min-width:0">
+                <div class="md-avatar" id="cd-avatar"></div>
+                <div style="min-width:0">
+                  <div style="font-size:20px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="cd-name"></div>
+                  <div style="font-size:13px;color:var(--text-muted);margin-top:2px" id="cd-company"></div>
+                </div>
+                <div id="cd-status-badge" style="margin-right:auto"></div>
+              </div>
+              <div style="display:flex;gap:8px;flex-shrink:0">
+                <button class="btn btn-ghost btn-sm" onclick="showPortalLink(state.selectedCustomer?.token)" title="קישור פורטל">🔗 פורטל</button>
+                <button class="btn btn-ghost btn-sm" onclick="toggleClientStatus(state.selectedCustomer?.custid, state.selectedCustomer?.status)" id="cd-toggle-btn"></button>
+                <button class="btn btn-primary btn-sm" onclick="editClient(state.selectedCustomer?.custid)">✏️ ערוך</button>
+              </div>
+            </div>
+
+            <!-- Info Chips -->
+            <div class="md-chips" id="cd-chips"></div>
+
+            <!-- Tabs -->
+            <div class="md-tabs">
+              <button class="md-tab active" onclick="switchDetailTab('projects', this)">פרויקטים <span id="cd-proj-count" class="md-tab-badge"></span></button>
+              <button class="md-tab" onclick="switchDetailTab('info', this)">פרטים</button>
+              <button class="md-tab" onclick="switchDetailTab('history', this)">היסטוריה</button>
+            </div>
+
+            <!-- Tab: Projects -->
+            <div id="cd-tab-projects" class="md-tab-body">
+              <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+                <button class="btn btn-primary btn-sm" onclick="openModalForCustomer()">+ פרויקט חדש</button>
+              </div>
+              <div id="cd-projects-list"></div>
+              <div id="cd-projects-empty" class="empty" style="display:none;padding:40px 0;text-align:center">
+                <div style="font-size:36px;margin-bottom:8px">📁</div>
+                <p style="font-size:13px;color:var(--text-muted)">אין פרויקטים ללקוח זה</p>
+              </div>
+            </div>
+
+            <!-- Tab: Info -->
+            <div id="cd-tab-info" class="md-tab-body" style="display:none">
+              <div class="md-info-grid" id="cd-info-grid"></div>
+            </div>
+
+            <!-- Tab: History -->
+            <div id="cd-tab-history" class="md-tab-body" style="display:none">
+              <div id="cd-history-list"></div>
+              <div id="cd-history-empty" class="empty" style="display:none;padding:40px 0;text-align:center">
+                <p style="font-size:13px;color:var(--text-muted)">אין פעילות רשומה</p>
+              </div>
+            </div>
+
+          </div>
         </div>
 
-        <div class="card">
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>מס' לקוח</th>
-                  <th>שם</th>
-                  <th>חברה</th>
-                  <th>אימייל</th>
-                  <th>טלפון</th>
-                  <th>פרויקטים</th>
-                  <th>סטטוס</th>
-                  <th>פעולות</th>
-                </tr>
-              </thead>
-              <tbody id="clients-tbody"></tbody>
-            </table>
-          </div>
-          <div id="clients-empty" class="empty" style="display:none">
-            <div class="empty-icon">👥</div>
-            <p>לא נמצאו לקוחות. הוסף לקוח חדש כדי להתחיל!</p>
-          </div>
-        </div>
       </section>
 
       <!-- ════ PROJECTS ════ -->
@@ -1667,6 +1928,7 @@ const state = {
   parts: [],
   statuses: [],
   activity: [],
+  selectedCustomer: null,
   editingId: null,
   confirmCb: null
 };
@@ -1913,53 +2175,217 @@ async function loadDashboard() {
 }
 
 // ─── CLIENTS ───
+let clientFilter = 'all';
+
 async function loadClients() {
   const [clientsRes, projectCountRes] = await Promise.all([
     db.from('customers').select('*').order('cdate', { ascending: false }),
-    db.from('projects').select('client_id')
+    db.from('projects').select('custid')
   ]);
   state.clients = clientsRes.data || [];
-  // count projects per client
   const counts = {};
   (projectCountRes.data || []).forEach(p => { counts[p.custid] = (counts[p.custid]||0)+1; });
   state.clients = state.clients.map(c => ({ ...c, _projectCount: counts[c.custid]||0 }));
-  renderClientsTable();
+  renderClientsList();
+  if (state.selectedCustomer) {
+    const updated = state.clients.find(c => c.custid === state.selectedCustomer.custid);
+    if (updated) renderCustomerDetail(updated);
+  }
 }
 
-function renderClientsTable() {
+function setClientFilter(f) {
+  clientFilter = f;
+  ['all','active','inactive'].forEach(k => {
+    const btn = document.getElementById('cf-' + k);
+    if (btn) btn.className = 'md-filter-btn' + (k === f ? ' active' : '');
+  });
+  renderClientsList();
+}
+
+function renderClientsList() {
   const search = document.getElementById('client-search').value.toLowerCase();
-  const filtered = state.clients.filter(c =>
-    c.custname.toLowerCase().includes(search) ||
-    (c.custcomp||'').toLowerCase().includes(search) ||
-    c.email.toLowerCase().includes(search)
-  );
-  document.getElementById('clients-count-sub').textContent = `${filtered.length} לקוחות`;
-  const tbody = document.getElementById('clients-tbody');
+  const filtered = state.clients.filter(c => {
+    const matchFilter = clientFilter === 'all' || c.status === clientFilter;
+    const matchSearch = !search ||
+      c.custname.toLowerCase().includes(search) ||
+      (c.custcomp||'').toLowerCase().includes(search) ||
+      (c.email||'').toLowerCase().includes(search);
+    return matchFilter && matchSearch;
+  });
+  const list  = document.getElementById('clients-list');
   const empty = document.getElementById('clients-empty');
-  if (filtered.length === 0) {
-    tbody.innerHTML = '';
-    empty.style.display = 'block';
-    return;
-  }
+  if (filtered.length === 0) { list.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
-  tbody.innerHTML = filtered.map(c => `
-    <tr onclick="editClient('${c.custid}')" style="cursor:pointer;opacity:${c.status==='inactive'?'0.55':'1'}">
-      <td><span style="font-family:monospace;font-size:11px;color:var(--text-muted)">${esc(c.custnum||'—')}</span></td>
-      <td><strong>${esc(c.custname)}</strong></td>
-      <td>${esc(c.custcomp||'—')}</td>
-      <td>${esc(c.email)}</td>
-      <td>${esc(c.phone||'—')}</td>
-      <td onclick="event.stopPropagation()"><span class="badge b-active" style="cursor:pointer" onclick="goToClientProjects('${c.custid}')" title="הצג פרויקטים">${c._projectCount} פרויקטים</span></td>
-      <td onclick="event.stopPropagation()">
-        <span class="badge ${c.status==='inactive'?'b-paused':'b-active'}" style="cursor:pointer" onclick="toggleClientStatus('${c.custid}','${c.status||'active'}')" title="לחץ לשינוי סטטוס">
-          ${c.status==='inactive'?'⏸ לא פעיל':'✅ פעיל'}
-        </span>
-      </td>
-      <td class="actions-cell" onclick="event.stopPropagation()">
-        <button class="btn-icon" onclick="showPortalLink('${c.token}')" title="לינק פורטל">🔗</button>
-        <button class="btn-icon" onclick="editClient('${c.custid}')" title="ערוך">✏️</button>
-      </td>
-    </tr>`).join('');
+  list.innerHTML = filtered.map(c => {
+    const initials = c.custname.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+    const isSelected = state.selectedCustomer?.custid === c.custid;
+    return `<div class="md-list-item${isSelected?' selected':''}" onclick="selectCustomer('${c.custid}')">
+      <div class="md-list-avatar" style="opacity:${c.status==='inactive'?'0.5':'1'}">${esc(initials)}</div>
+      <div class="md-list-info">
+        <div class="md-list-name">${esc(c.custname)}</div>
+        <div class="md-list-sub">${esc(c.custcomp||c.email||'')}</div>
+      </div>
+      <div class="md-list-meta">
+        <span style="font-family:monospace;font-size:10px;color:var(--text-muted)">${esc(c.custnum||'')}</span>
+        <span style="font-size:10px;color:${c.status==='active'?'#10b981':'#94a3b8'}">${c.status==='active'?'●':'○'}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function selectCustomer(custid) {
+  const c = state.clients.find(x => x.custid === custid);
+  if (!c) return;
+  state.selectedCustomer = c;
+  renderClientsList();
+  renderCustomerDetail(c);
+  switchDetailTab('projects', document.querySelector('.md-tab'));
+  await loadCustomerProjects(custid);
+}
+
+function renderCustomerDetail(c) {
+  document.getElementById('client-detail-empty').style.display   = 'none';
+  document.getElementById('client-detail-content').style.display = 'flex';
+
+  const initials = c.custname.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+  document.getElementById('cd-avatar').textContent  = initials;
+  document.getElementById('cd-name').textContent    = c.custname;
+  document.getElementById('cd-company').textContent = c.custcomp || c.email || '';
+  document.getElementById('cd-status-badge').innerHTML =
+    `<span class="badge ${c.status==='active'?'b-active':'b-paused'}">${c.status==='active'?'פעיל':'לא פעיל'}</span>`;
+
+  const toggleBtn = document.getElementById('cd-toggle-btn');
+  toggleBtn.textContent = c.status === 'active' ? '⏸ השבת' : '▶ הפעל';
+
+  // Chips
+  const chips = [];
+  if (c.email) chips.push(`<span class="md-chip">✉️ ${esc(c.email)}</span>`);
+  if (c.phone) chips.push(`<span class="md-chip">📞 ${esc(c.phone)}</span>`);
+  if (c.custnum) chips.push(`<span class="md-chip">🔖 ${esc(c.custnum)}</span>`);
+  if (c.odate) chips.push(`<span class="md-chip">📅 פתיחה: ${fmtDate(c.odate)}</span>`);
+  document.getElementById('cd-chips').innerHTML = chips.join('');
+
+  // Info tab
+  const infoFields = [
+    { label: 'שם מלא',    value: c.custname },
+    { label: 'חברה',      value: c.custcomp },
+    { label: 'אימייל',    value: c.email },
+    { label: 'טלפון',     value: c.phone },
+    { label: 'מס\' לקוח', value: c.custnum },
+    { label: 'תאריך פתיחה', value: fmtDate(c.odate) },
+    { label: 'נוצר',      value: fmtDate(c.cdate) },
+    { label: 'הערות',     value: c.notes },
+  ].filter(f => f.value);
+  document.getElementById('cd-info-grid').innerHTML = infoFields.map(f => `
+    <div class="md-info-card">
+      <div class="md-info-label">${f.label}</div>
+      <div class="md-info-value">${esc(f.value)}</div>
+    </div>`).join('');
+}
+
+async function loadCustomerProjects(custid) {
+  const { data: projects } = await db
+    .from('projects')
+    .select('*, tasks(*)')
+    .eq('custid', custid)
+    .order('cdate', { ascending: false });
+
+  const list  = document.getElementById('cd-projects-list');
+  const empty = document.getElementById('cd-projects-empty');
+  const badge = document.getElementById('cd-proj-count');
+  const proj  = projects || [];
+  badge.textContent = proj.length || '';
+
+  // Load history
+  const { data: history } = await db
+    .from('activity_log')
+    .select('*')
+    .eq('eid', custid)
+    .order('cdate', { ascending: false })
+    .limit(30);
+  renderCustomerHistory(history || []);
+
+  if (proj.length === 0) { list.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  const taskDotColor = { pending:'#94a3b8', in_progress:'#3b82f6', completed:'#10b981', blocked:'#ef4444' };
+
+  list.innerHTML = proj.map(p => {
+    const tasks = p.tasks || [];
+    const done  = tasks.filter(t => t.status === 'completed').length;
+    const tasksHtml = tasks.length > 0
+      ? tasks.map(t => `
+          <div class="cd-task-row">
+            <div class="cd-task-dot" style="background:${taskDotColor[t.status]||'#94a3b8'}"></div>
+            <span style="flex:1">${esc(t.taskname)}</span>
+            <span style="font-size:11px;color:var(--text-muted)">${esc(t.tasknum||'')}</span>
+            ${badge2(t.status, LABELS.status[t.status]||t.status)}
+            ${t.duedate ? `<span style="font-size:11px;color:var(--text-muted)">${fmtDate(t.duedate)}</span>` : ''}
+          </div>`).join('')
+      : `<div style="padding:12px 16px;font-size:13px;color:var(--text-muted)">אין משימות לפרויקט זה</div>`;
+
+    return `<div class="cd-project-card" id="cdp-${p.projid}">
+      <div class="cd-project-header" onclick="toggleCdProject('${p.projid}')">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:600;margin-bottom:4px">${esc(p.projname)}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+            ${badge2(p.status, LABELS.status[p.status]||p.status)}
+            ${badge2(p.priority, LABELS.priority[p.priority]||p.priority)}
+            <span style="font-size:11px;color:var(--text-muted)">${tasks.length} משימות · ${done} הושלמו</span>
+          </div>
+        </div>
+        <div class="cd-project-actions" onclick="event.stopPropagation()">
+          <button class="btn-icon" onclick="editProject('${p.projid}')" title="ערוך">✏️</button>
+        </div>
+        <span class="cd-project-chevron">▼</span>
+      </div>
+      <div class="cd-project-body">${tasksHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleCdProject(projid) {
+  document.getElementById('cdp-' + projid)?.classList.toggle('open');
+}
+
+function badge2(key, label) {
+  const map = { planning:'purple', active:'green', paused:'yellow', completed:'blue', cancelled:'gray',
+                pending:'gray', in_progress:'blue', blocked:'red', low:'gray', medium:'yellow', high:'red', urgent:'red' };
+  const c = map[key] || 'gray';
+  const colors = { purple:'#eef2ff;color:#4f46e5', green:'#ecfdf5;color:#059669', yellow:'#fffbeb;color:#d97706',
+                   blue:'#eff6ff;color:#2563eb', gray:'#f1f5f9;color:#64748b', red:'#fef2f2;color:#dc2626' };
+  return `<span style="display:inline-flex;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;background:${colors[c]}">${esc(label)}</span>`;
+}
+
+function renderCustomerHistory(history) {
+  const list  = document.getElementById('cd-history-list');
+  const empty = document.getElementById('cd-history-empty');
+  if (!history.length) { list.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  list.innerHTML = history.map(a => `
+    <div class="activity-item">
+      <div class="activity-dot"></div>
+      <div class="activity-text">
+        <strong>${esc(a.ename||'?')}</strong>
+        <span style="color:var(--text-muted)"> — ${LABELS.entity?.[a.etype]||a.etype} ${LABELS.action?.[a.action]||a.action}</span>
+      </div>
+      <span class="activity-time">${fmtDateTime(a.cdate)}</span>
+    </div>`).join('');
+}
+
+function switchDetailTab(tab, btn) {
+  ['projects','info','history'].forEach(t => {
+    document.getElementById('cd-tab-' + t).style.display = t === tab ? '' : 'none';
+  });
+  document.querySelectorAll('.md-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+}
+
+function openModalForCustomer() {
+  openModal('project');
+  if (state.selectedCustomer) {
+    setTimeout(() => populateClientSelect('p-client', state.selectedCustomer.custid), 50);
+  }
 }
 
 async function toggleClientStatus(id, currentStatus) {
@@ -1967,7 +2393,11 @@ async function toggleClientStatus(id, currentStatus) {
   const { error } = await db.from('customers').update({ status: newStatus }).eq('custid', id);
   if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
   showToast(newStatus === 'active' ? 'הלקוח הופעל' : 'הלקוח הושבת', 'success');
-  loadClients();
+  await loadClients();
+  if (state.selectedCustomer?.custid === id) {
+    state.selectedCustomer = state.clients.find(c => c.custid === id);
+    renderCustomerDetail(state.selectedCustomer);
+  }
 }
 
 async function editClient(id) {
@@ -2043,9 +2473,14 @@ async function saveClient(e) {
   };
   await db.from('client_connections').upsert(connPayload, { onConflict: 'custid' });
   showToast(state.editingId ? 'הלקוח עודכן!' : 'הלקוח נוסף!', 'success');
+  const justAddedId = state.editingId;
   closeModal('modal-client');
-  loadClients();
+  await loadClients();
   loadDashboard();
+  if (!justAddedId) {
+    const newest = state.clients[0];
+    if (newest) selectCustomer(newest.custid);
+  }
 }
 
 function confirmDelete(type, id, name) {
@@ -2216,6 +2651,7 @@ async function saveProject(e) {
   closeModal('modal-project');
   loadProjects();
   loadDashboard();
+  if (state.selectedCustomer) loadCustomerProjects(state.selectedCustomer.custid);
 }
 
 // ─── TASKS ───
