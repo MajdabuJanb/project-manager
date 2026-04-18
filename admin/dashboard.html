@@ -2240,7 +2240,7 @@ async function runAdminQuery() {
   const status = document.getElementById('sql-status');
   status.textContent = 'מריץ...';
   const t0 = Date.now();
-  const { data, error } = await db.rpc('admin_query', { sql });
+  const { data, error } = await db.rpc('admin_query', { p_sql: sql });
   const ms = Date.now() - t0;
   if (error) {
     status.textContent = '❌ ' + error.message;
