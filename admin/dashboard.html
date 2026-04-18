@@ -1505,12 +1505,15 @@
           <button class="pri-nav-btn" id="q-btn-last"  onclick="quoteNav('last')"  title="אחרון">⏭</button>
           <div style="width:1px;height:24px;background:var(--border);margin:0 4px"></div>
           <div class="pri-docnum" id="q-docnum">הצעה חדשה</div>
-          <div style="margin-right:auto;display:flex;gap:6px;align-items:center">
+          <div style="margin-right:auto;display:flex;gap:6px;align-items:center;position:relative">
             <input type="text" id="q-search-input" placeholder="🔍 חיפוש לפי לקוח / מספר..."
-              style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:13px;width:220px"
-              oninput="quoteSearch()" onkeydown="if(event.key==='Escape')clearQuoteSearch()">
-            <span id="q-search-count" style="font-size:12px;color:var(--text-muted)"></span>
+              style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:13px;width:240px"
+              oninput="quoteSearch(true)" onfocus="quoteSearch(true)" onkeydown="quoteSearchKey(event)"
+              autocomplete="off">
+            <!-- Search dropdown -->
+            <div id="q-search-drop" style="display:none;position:absolute;top:calc(100% + 4px);right:0;width:360px;background:var(--card);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:200;max-height:320px;overflow-y:auto"></div>
           </div>
+          <button class="btn btn-ghost btn-sm" id="q-cancel-btn" onclick="quoteCancel()" style="display:none">✕ בטל</button>
           <button class="btn btn-ghost btn-sm" onclick="quotePrint()" id="q-print-btn" style="display:none">🖨️ הדפס</button>
           <button class="btn btn-primary btn-sm" onclick="quoteNew()">🗋 חדש</button>
         </div>
@@ -3324,27 +3327,26 @@ async function deleteStatus(id, name) {
 
 // ─── QUOTES ───
 const quoteState = {
-  list:       [],    // all quotes for current search
-  idx:        -1,    // current position in list (-1 = new)
-  current:    null,  // current quote object
-  lines:      [],    // current quote lines
-  dirty:      false, // unsaved header changes
-  saving:     false
+  list:    [],
+  idx:     -1,
+  current: null,
+  lines:   [],
+  dirty:   false,
+  saving:  false
 };
 const QUOTE_STATUS = { draft:'טיוטה', sent:'נשלח', approved:'אושר', rejected:'נדחה', cancelled:'בוטל' };
 
 async function loadQuotes() {
+  if (state.parts.length === 0) await loadPartsState();
+  if (state.clients.length === 0) await loadClients();
   populateQuoteCustomerSelect();
-  document.getElementById('qf-date').value = new Date().toISOString().slice(0,10);
-  const vatrate = await getCompanyVat();
-  document.getElementById('qf-vat').value = vatrate;
   quoteNew();
-  quoteSearch();
+  await quoteSearch(false);
 }
 
 async function getCompanyVat() {
   const { data } = await db.from('company').select('vatrate').maybeSingle();
-  return data?.vatrate ?? 17;
+  return data?.vatrate ?? null;
 }
 
 function populateQuoteCustomerSelect() {
@@ -3356,10 +3358,11 @@ function populateQuoteCustomerSelect() {
     ).join('');
 }
 
-async function quoteSearch() {
+async function quoteSearch(showDrop = true) {
   const term = document.getElementById('q-search-input').value.trim().toLowerCase();
-  let query = db.from('quotes').select('*, customers(custname,custcomp)').order('cdate', { ascending: false });
-  const { data } = await query;
+  const { data } = await db.from('quotes')
+    .select('quoteid, quotenum, qdate, status, total, customers(custname,custcomp)')
+    .order('cdate', { ascending: false });
   const all = data || [];
   quoteState.list = term
     ? all.filter(q =>
@@ -3368,14 +3371,49 @@ async function quoteSearch() {
         (q.customers?.custcomp||'').toLowerCase().includes(term)
       )
     : all;
-  document.getElementById('q-search-count').textContent =
-    quoteState.list.length ? `${quoteState.list.length} תוצאות` : '';
   updateNavButtons();
+  if (showDrop) renderSearchDrop();
 }
 
-function clearQuoteSearch() {
+function renderSearchDrop() {
+  const drop = document.getElementById('q-search-drop');
+  const list = quoteState.list;
+  if (!list.length) {
+    drop.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:13px">לא נמצאו הצעות</div>';
+  } else {
+    const statusColors = { draft:'#94a3b8', sent:'#3b82f6', approved:'#10b981', rejected:'#ef4444', cancelled:'#94a3b8' };
+    drop.innerHTML = list.map((q, i) => `
+      <div onclick="quoteSelectFromDrop(${i})" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px"
+           onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:13px">${esc(q.quotenum||'—')}</div>
+          <div style="font-size:12px;color:var(--text-muted)">${esc(q.customers?.custname||'')}${q.customers?.custcomp?' — '+esc(q.customers.custcomp):''}</div>
+        </div>
+        <div style="text-align:left;flex-shrink:0">
+          <div style="font-size:12px;font-weight:600">₪${(q.total||0).toLocaleString('he-IL',{minimumFractionDigits:2})}</div>
+          <div style="font-size:11px;color:${statusColors[q.status]||'#94a3b8'}">${QUOTE_STATUS[q.status]||q.status}</div>
+        </div>
+      </div>`).join('');
+  }
+  drop.style.display = 'block';
+  document.addEventListener('click', closeSearchDrop, { once: true });
+}
+
+function closeSearchDrop() {
+  document.getElementById('q-search-drop').style.display = 'none';
+}
+
+async function quoteSelectFromDrop(idx) {
+  closeSearchDrop();
   document.getElementById('q-search-input').value = '';
-  quoteSearch();
+  await loadQuoteById(quoteState.list[idx].quoteid, idx);
+}
+
+function quoteSearchKey(e) {
+  if (e.key === 'Escape') {
+    closeSearchDrop();
+    document.getElementById('q-search-input').value = '';
+  }
 }
 
 function quoteNew() {
@@ -3384,21 +3422,38 @@ function quoteNew() {
   quoteState.lines   = [];
   quoteState.dirty   = false;
   quoteState.saving  = false;
-  document.getElementById('q-docnum').textContent = 'הצעה חדשה';
-  document.getElementById('qf-num').value    = '';
-  document.getElementById('qf-date').value   = new Date().toISOString().slice(0,10);
-  document.getElementById('qf-cust').value   = '';
-  document.getElementById('qf-valid').value  = '';
-  document.getElementById('qf-po').value     = '';
-  document.getElementById('qf-status').value = 'draft';
-  document.getElementById('qf-notes').value  = '';
-  getCompanyVat().then(v => document.getElementById('qf-vat').value = v);
+  document.getElementById('q-docnum').textContent  = 'הצעה חדשה';
+  document.getElementById('qf-num').value          = '';
+  document.getElementById('qf-date').value         = new Date().toISOString().slice(0,10);
+  document.getElementById('qf-cust').value         = '';
+  document.getElementById('qf-valid').value        = '';
+  document.getElementById('qf-po').value           = '';
+  document.getElementById('qf-status').value       = 'draft';
+  document.getElementById('qf-notes').value        = '';
+  document.getElementById('qf-vat').value          = '';
+  getCompanyVat().then(v => { if (v !== null) document.getElementById('qf-vat').value = v; });
   renderQuoteLines();
   recalcTotals();
   setDirtyUI(false);
-  document.getElementById('q-print-btn').style.display = 'none';
+  document.getElementById('q-print-btn').style.display  = 'none';
+  document.getElementById('q-cancel-btn').style.display = 'none';
   updateNavButtons();
   document.getElementById('qf-cust').focus();
+}
+
+async function quoteCancel() {
+  if (quoteState.current) {
+    const hasLines = quoteState.lines.length > 0;
+    if (hasLines) {
+      if (!confirm('האם לבטל ולמחוק הצעה זו לגמרי?')) return;
+      await db.from('quotes').delete().eq('quoteid', quoteState.current.quoteid);
+      await logActivity('quote', quoteState.current.quoteid, quoteState.current.quotenum, 'deleted');
+    } else {
+      await db.from('quotes').delete().eq('quoteid', quoteState.current.quoteid);
+    }
+  }
+  quoteNew();
+  quoteSearch(false);
 }
 
 async function quoteNav(dir) {
@@ -3433,7 +3488,8 @@ async function loadQuoteById(quoteid, idx) {
   renderQuoteLines();
   recalcTotals();
   setDirtyUI(false);
-  document.getElementById('q-print-btn').style.display = '';
+  document.getElementById('q-print-btn').style.display  = '';
+  document.getElementById('q-cancel-btn').style.display = '';
   updateNavButtons();
 }
 
@@ -3491,11 +3547,12 @@ async function saveQuoteHeader(silent = false) {
   quoteState.dirty   = false;
   document.getElementById('qf-num').value = q.quotenum || '';
   document.getElementById('q-docnum').textContent = q.quotenum || '';
-  document.getElementById('q-print-btn').style.display = '';
+  document.getElementById('q-print-btn').style.display  = '';
+  document.getElementById('q-cancel-btn').style.display = '';
   setDirtyUI(false);
   document.getElementById('q-saved-indicator').style.display = '';
   setTimeout(() => { document.getElementById('q-saved-indicator').style.display = 'none'; }, 2000);
-  quoteSearch();
+  quoteSearch(false);
 }
 
 // ── Lines ──
