@@ -95,6 +95,22 @@ CREATE TABLE IF NOT EXISTS company (
   udate    TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS client_connections (
+  connid          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  custid          UUID REFERENCES customers(custid) ON DELETE CASCADE UNIQUE,
+  vpn_type        TEXT,
+  server_address  TEXT,
+  vpn_username    TEXT,
+  vpn_password    TEXT,
+  erp_username    TEXT,
+  erp_password    TEXT,
+  connection_url  TEXT,
+  port            TEXT,
+  notes           TEXT,
+  cdate           TIMESTAMPTZ DEFAULT NOW(),
+  udate           TIMESTAMPTZ DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS statuses (
   statusid  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   entity    TEXT NOT NULL CHECK (entity IN ('project', 'task', 'customer')),

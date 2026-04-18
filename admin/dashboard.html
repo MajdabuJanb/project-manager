@@ -529,7 +529,7 @@
     .cal-more { font-size:9px; color:var(--text-muted); padding:1px 4px; }
     .event-type-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600; }
 
-    /* ─── Priority-Style Document Screen ─── */
+    /* ─── ERP Document Screen ─── */
     .pri-section {
       display: flex;
       flex-direction: column;
@@ -711,6 +711,56 @@
       transition: opacity 0.15s;
     }
     .pri-lines tr:hover .pri-del-btn { opacity: 1; }
+
+    /* Browse (list) table */
+    .q-browse-wrap {
+      flex-shrink: 0;
+      max-height: 190px;
+      overflow-y: auto;
+      border-bottom: 2px solid var(--border);
+      background: var(--bg);
+    }
+    .q-browse-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .q-browse-table thead {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+    .q-filter-input {
+      width: 100%;
+      padding: 5px 8px;
+      border: none;
+      border-bottom: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      font-size: 12px;
+      font-family: inherit;
+      box-sizing: border-box;
+    }
+    .q-filter-input:focus { outline: none; background: var(--primary-light); border-color: var(--primary); }
+    .q-browse-table th { background: var(--card); border-bottom: 1px solid var(--border); border-left: 1px solid var(--border); padding: 0; }
+    .q-browse-table th:last-child { border-left: none; }
+    .q-browse-table td {
+      padding: 5px 8px;
+      border-bottom: 1px solid var(--border);
+      border-left: 1px solid var(--border);
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .q-browse-table td:last-child { border-left: none; }
+    .q-browse-table tr.q-row:hover td { background: var(--bg); }
+    .q-browse-table tr.q-row.active td { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+    /* Hide number spinners */
+    .pri-cell-num::-webkit-inner-spin-button,
+    .pri-cell-num::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    .pri-cell-num[type=number] { -moz-appearance: textfield; }
+    .pri-field input[type=number]::-webkit-inner-spin-button,
+    .pri-field input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    .pri-field input[type=number] { -moz-appearance: textfield; }
 
     /* Totals footer */
     .pri-totals {
@@ -1513,18 +1563,29 @@
           <button class="pri-nav-btn" id="q-btn-last"  onclick="quoteNav('last')"  title="אחרון">⏭</button>
           <div style="width:1px;height:24px;background:var(--border);margin:0 4px"></div>
           <div class="pri-docnum" id="q-docnum">הצעה חדשה</div>
-          <div style="margin-right:auto;display:flex;gap:6px;align-items:center;position:relative">
-            <input type="text" id="q-search-input" placeholder="🔍 חיפוש לפי לקוח / מספר..."
-              style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:13px;width:240px"
-              oninput="quoteSearch(true)" onfocus="quoteSearch(true)" onkeydown="quoteSearchKey(event)"
-              autocomplete="off">
-            <!-- Search dropdown -->
-            <div id="q-search-drop" style="display:none;position:absolute;top:calc(100% + 4px);right:0;width:360px;background:var(--card);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:200;max-height:320px;overflow-y:auto"></div>
+          <div style="margin-right:auto;display:flex;gap:6px;align-items:center">
+            <button class="btn btn-ghost btn-sm" id="q-cancel-btn" onclick="quoteCancel()">✕ בטל</button>
+            <button class="btn btn-ghost btn-sm" onclick="quotePrint()" id="q-print-btn" style="display:none">🖨️ הדפס</button>
+            <button class="btn btn-primary btn-sm" onclick="quoteNew()">🗋 חדש</button>
           </div>
-          <button class="btn btn-sm" id="q-searchmode-btn" onclick="toggleQuoteSearchMode()" title="מצב חיפוש (כמו Priority)" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7">🔍 מצב חיפוש</button>
-          <button class="btn btn-ghost btn-sm" id="q-cancel-btn" onclick="quoteCancel()" style="display:none">✕ בטל</button>
-          <button class="btn btn-ghost btn-sm" onclick="quotePrint()" id="q-print-btn" style="display:none">🖨️ הדפס</button>
-          <button class="btn btn-primary btn-sm" onclick="quoteNew()">🗋 חדש</button>
+        </div>
+
+        <!-- Browse: Quote List -->
+        <div class="q-browse-wrap" id="q-browse-wrap">
+          <table class="q-browse-table">
+            <thead>
+              <tr>
+                <th style="width:120px"><input class="q-filter-input" type="text" id="qbf-num"    placeholder="🔍 מספר"   oninput="filterBrowse()"></th>
+                <th>              <input class="q-filter-input" type="text" id="qbf-cust"   placeholder="🔍 לקוח"   oninput="filterBrowse()"></th>
+                <th style="width:105px"><input class="q-filter-input" type="text" id="qbf-date"   placeholder="🔍 תאריך"  oninput="filterBrowse()"></th>
+                <th style="width:90px"><input  class="q-filter-input" type="text" id="qbf-status" placeholder="🔍 סטטוס"  oninput="filterBrowse()"></th>
+                <th style="width:120px"><input class="q-filter-input" type="text" id="qbf-total"  placeholder="🔍 סה״כ"   oninput="filterBrowse()"></th>
+              </tr>
+            </thead>
+            <tbody id="q-browse-tbody">
+              <tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:12px">טוען...</td></tr>
+            </tbody>
+          </table>
         </div>
 
         <div class="pri-body">
@@ -1566,7 +1627,7 @@
               </div>
               <div class="pri-field">
                 <label>מע"מ %</label>
-                <input type="number" id="qf-vat" value="17" min="0" max="100" step="0.1" onchange="markQuoteDirty();recalcTotals()">
+                <input type="number" id="qf-vat" value="17" min="0" max="100" step="0.1" onfocus="this.select()" onchange="markQuoteDirty();recalcTotals()">
               </div>
               <div class="pri-field wide">
                 <label>הערות</label>
@@ -1850,14 +1911,14 @@
               </div>
             </div>
             <div class="form-group">
-              <label>שם משתמש פריוריטי</label>
-              <input type="text" id="c-pri-user" placeholder="username" autocomplete="off">
+              <label>שם משתמש ERP</label>
+              <input type="text" id="c-erp-user" placeholder="username" autocomplete="off">
             </div>
             <div class="form-group">
-              <label>סיסמה פריוריטי</label>
+              <label>סיסמה ERP</label>
               <div style="position:relative">
-                <input type="password" id="c-pri-pass" placeholder="••••••••" autocomplete="new-password" style="padding-left:36px">
-                <button type="button" onclick="togglePass('c-pri-pass',this)" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;font-size:14px;padding:0">👁</button>
+                <input type="password" id="c-erp-pass" placeholder="••••••••" autocomplete="new-password" style="padding-left:36px">
+                <button type="button" onclick="togglePass('c-erp-pass',this)" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;font-size:14px;padding:0">👁</button>
               </div>
             </div>
             <div class="form-group full">
@@ -2317,7 +2378,7 @@ async function openModal(type) {
     state.editingId = null;
     document.getElementById('client-modal-title').textContent = 'הוסף לקוח';
     document.getElementById('client-form').reset();
-    ['c-vpn-type','c-server','c-vpn-user','c-vpn-pass','c-pri-user','c-pri-pass','c-conn-url','c-port','c-conn-notes']
+    ['c-vpn-type','c-server','c-vpn-user','c-vpn-pass','c-erp-user','c-erp-pass','c-conn-url','c-port','c-conn-notes']
       .forEach(f => { const el = document.getElementById(f); if(el) el.value=''; });
     document.getElementById('c-opening-date').value = today;
     document.getElementById('c-number').value = '';
@@ -2753,7 +2814,7 @@ async function editClient(id) {
   document.getElementById('c-phone').value   = c.phone||'';
   document.getElementById('c-notes').value   = c.notes||'';
   // Load connection details
-  const connFields = ['c-vpn-type','c-server','c-vpn-user','c-vpn-pass','c-pri-user','c-pri-pass','c-conn-url','c-port','c-conn-notes'];
+  const connFields = ['c-vpn-type','c-server','c-vpn-user','c-vpn-pass','c-erp-user','c-erp-pass','c-conn-url','c-port','c-conn-notes'];
   connFields.forEach(f => { const el = document.getElementById(f); if (el) el.value = ''; });
   const { data: conn } = await db.from('client_connections').select('*').eq('custid', id).maybeSingle();
   if (conn) {
@@ -2761,8 +2822,8 @@ async function editClient(id) {
     document.getElementById('c-server').value     = conn.server_address||'';
     document.getElementById('c-vpn-user').value   = conn.vpn_username||'';
     document.getElementById('c-vpn-pass').value   = conn.vpn_password||'';
-    document.getElementById('c-pri-user').value   = conn.priority_username||'';
-    document.getElementById('c-pri-pass').value   = conn.priority_password||'';
+    document.getElementById('c-erp-user').value   = conn.erp_username||'';
+    document.getElementById('c-erp-pass').value   = conn.erp_password||'';
     document.getElementById('c-conn-url').value   = conn.connection_url||'';
     document.getElementById('c-port').value       = conn.port||'';
     document.getElementById('c-conn-notes').value = conn.notes||'';
@@ -2804,8 +2865,8 @@ async function saveClient(e) {
     server_address:    document.getElementById('c-server').value.trim() || null,
     vpn_username:      document.getElementById('c-vpn-user').value.trim() || null,
     vpn_password:      document.getElementById('c-vpn-pass').value || null,
-    priority_username: document.getElementById('c-pri-user').value.trim() || null,
-    priority_password: document.getElementById('c-pri-pass').value || null,
+    erp_username: document.getElementById('c-erp-user').value.trim() || null,
+    erp_password: document.getElementById('c-erp-pass').value || null,
     connection_url:    document.getElementById('c-conn-url').value.trim() || null,
     port:              document.getElementById('c-port').value.trim() || null,
     notes:             document.getElementById('c-conn-notes').value.trim() || null
@@ -3336,12 +3397,13 @@ async function deleteStatus(id, name) {
 
 // ─── QUOTES ───
 const quoteState = {
-  list:    [],
-  idx:     -1,
-  current: null,
-  lines:   [],
-  dirty:   false,
-  saving:  false
+  list:     [],
+  filtered: [],
+  idx:      -1,
+  current:  null,
+  lines:    [],
+  dirty:    false,
+  saving:   false
 };
 const QUOTE_STATUS = { draft:'טיוטה', sent:'נשלח', approved:'אושר', rejected:'נדחה', cancelled:'בוטל' };
 
@@ -3349,8 +3411,8 @@ async function loadQuotes() {
   if (state.parts.length === 0) await loadPartsState();
   if (state.clients.length === 0) await loadClients();
   populateQuoteCustomerSelect();
+  await refreshQuoteList();
   quoteNew();
-  await quoteSearch(false);
 }
 
 async function getCompanyVat() {
@@ -3367,62 +3429,59 @@ function populateQuoteCustomerSelect() {
     ).join('');
 }
 
-async function quoteSearch(showDrop = true) {
-  const term = document.getElementById('q-search-input').value.trim().toLowerCase();
+async function refreshQuoteList() {
   const { data } = await db.from('quotes')
     .select('quoteid, quotenum, qdate, status, total, customers(custname,custcomp)')
     .order('cdate', { ascending: false });
-  const all = data || [];
-  quoteState.list = term
-    ? all.filter(q =>
-        (q.quotenum||'').toLowerCase().includes(term) ||
-        (q.customers?.custname||'').toLowerCase().includes(term) ||
-        (q.customers?.custcomp||'').toLowerCase().includes(term)
-      )
-    : all;
+  quoteState.list = data || [];
+  filterBrowse();
   updateNavButtons();
-  if (showDrop) renderSearchDrop();
 }
 
-function renderSearchDrop() {
-  const drop = document.getElementById('q-search-drop');
-  const list = quoteState.list;
-  if (!list.length) {
-    drop.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:13px">לא נמצאו הצעות</div>';
-  } else {
-    const statusColors = { draft:'#94a3b8', sent:'#3b82f6', approved:'#10b981', rejected:'#ef4444', cancelled:'#94a3b8' };
-    drop.innerHTML = list.map((q, i) => `
-      <div onclick="quoteSelectFromDrop(${i})" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px"
-           onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:600;font-size:13px">${esc(q.quotenum||'—')}</div>
-          <div style="font-size:12px;color:var(--text-muted)">${esc(q.customers?.custname||'')}${q.customers?.custcomp?' — '+esc(q.customers.custcomp):''}</div>
-        </div>
-        <div style="text-align:left;flex-shrink:0">
-          <div style="font-size:12px;font-weight:600">₪${(q.total||0).toLocaleString('he-IL',{minimumFractionDigits:2})}</div>
-          <div style="font-size:11px;color:${statusColors[q.status]||'#94a3b8'}">${QUOTE_STATUS[q.status]||q.status}</div>
-        </div>
-      </div>`).join('');
+function filterBrowse() {
+  const fNum    = (document.getElementById('qbf-num')?.value    || '').toLowerCase();
+  const fCust   = (document.getElementById('qbf-cust')?.value   || '').toLowerCase();
+  const fDate   = (document.getElementById('qbf-date')?.value   || '').toLowerCase();
+  const fStatus = (document.getElementById('qbf-status')?.value || '').toLowerCase();
+  const fTotal  = (document.getElementById('qbf-total')?.value  || '').toLowerCase();
+  quoteState.filtered = quoteState.list.filter(q => {
+    if (fNum    && !(q.quotenum||'').toLowerCase().includes(fNum))   return false;
+    if (fCust   && !(q.customers?.custname||'').toLowerCase().includes(fCust) &&
+                   !(q.customers?.custcomp||'').toLowerCase().includes(fCust)) return false;
+    if (fDate   && !(q.qdate||'').includes(fDate))                   return false;
+    if (fStatus && !(QUOTE_STATUS[q.status]||q.status||'').toLowerCase().includes(fStatus)) return false;
+    if (fTotal  && !((q.total||0).toFixed(2)).includes(fTotal))      return false;
+    return true;
+  });
+  renderBrowseTable();
+}
+
+function renderBrowseTable() {
+  const tbody = document.getElementById('q-browse-tbody');
+  const statusColors = { draft:'#94a3b8', sent:'#3b82f6', approved:'#10b981', rejected:'#ef4444', cancelled:'#94a3b8' };
+  const curId = quoteState.current?.quoteid;
+  if (!quoteState.filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:12px">אין הצעות</td></tr>';
+    return;
   }
-  drop.style.display = 'block';
-  document.addEventListener('click', closeSearchDrop, { once: true });
+  tbody.innerHTML = quoteState.filtered.map(q => {
+    const active   = q.quoteid === curId ? 'active' : '';
+    const custName = esc(q.customers?.custname || '');
+    const comp     = q.customers?.custcomp ? ` — ${esc(q.customers.custcomp)}` : '';
+    return `<tr class="q-row ${active}" data-qid="${q.quoteid}" onclick="browseSelect('${q.quoteid}')">
+      <td style="font-family:monospace">${esc(q.quotenum||'—')}</td>
+      <td>${custName}${comp}</td>
+      <td style="color:var(--text-muted)">${q.qdate||''}</td>
+      <td style="color:${statusColors[q.status]||'#94a3b8'};font-weight:600">${QUOTE_STATUS[q.status]||q.status||''}</td>
+      <td style="text-align:left">₪${(q.total||0).toLocaleString('he-IL',{minimumFractionDigits:2})}</td>
+    </tr>`;
+  }).join('');
 }
 
-function closeSearchDrop() {
-  document.getElementById('q-search-drop').style.display = 'none';
-}
-
-async function quoteSelectFromDrop(idx) {
-  closeSearchDrop();
-  document.getElementById('q-search-input').value = '';
-  await loadQuoteById(quoteState.list[idx].quoteid, idx);
-}
-
-function quoteSearchKey(e) {
-  if (e.key === 'Escape') {
-    closeSearchDrop();
-    document.getElementById('q-search-input').value = '';
-  }
+async function browseSelect(quoteid) {
+  if (quoteState.dirty && quoteState.current) await saveQuoteHeader(true);
+  const listIdx = quoteState.list.findIndex(q => q.quoteid === quoteid);
+  await loadQuoteById(quoteid, listIdx);
 }
 
 function quoteNew() {
@@ -3444,29 +3503,20 @@ function quoteNew() {
   renderQuoteLines();
   recalcTotals();
   setDirtyUI(false);
-  document.getElementById('q-print-btn').style.display  = 'none';
-  document.getElementById('q-cancel-btn').style.display = 'none';
+  document.getElementById('q-print-btn').style.display = 'none';
   updateNavButtons();
+  document.querySelectorAll('#q-browse-tbody tr.q-row.active').forEach(tr => tr.classList.remove('active'));
   document.getElementById('qf-cust').focus();
 }
 
 async function quoteCancel() {
   if (!quoteState.current) {
-    // לא נשמר כלל — פשוט מנקה
     quoteNew();
     return;
   }
-  const hasLines = quoteState.lines.length > 0;
-  if (hasLines) {
-    if (!confirm('האם למחוק את ההצעה כולל כל שורותיה?')) return;
-    await db.from('quotes').delete().eq('quoteid', quoteState.current.quoteid);
-    await logActivity('quote', quoteState.current.quoteid, quoteState.current.quotenum, 'deleted');
-  } else {
-    // נוצרה כותרת בלי שורות — מוחק שקט
-    await db.from('quotes').delete().eq('quoteid', quoteState.current.quoteid);
-  }
-  quoteNew();
-  quoteSearch(false);
+  // CTRL+Z style — reload saved state, no deletion
+  await loadQuoteById(quoteState.current.quoteid, quoteState.idx);
+  setDirtyUI(false);
 }
 
 async function quoteNav(dir) {
@@ -3501,9 +3551,11 @@ async function loadQuoteById(quoteid, idx) {
   renderQuoteLines();
   recalcTotals();
   setDirtyUI(false);
-  document.getElementById('q-print-btn').style.display  = '';
-  document.getElementById('q-cancel-btn').style.display = '';
+  document.getElementById('q-print-btn').style.display = '';
   updateNavButtons();
+  document.querySelectorAll('#q-browse-tbody tr.q-row').forEach(tr => {
+    tr.classList.toggle('active', tr.dataset.qid === quoteid);
+  });
 }
 
 function updateNavButtons() {
@@ -3560,12 +3612,11 @@ async function saveQuoteHeader(silent = false) {
   quoteState.dirty   = false;
   document.getElementById('qf-num').value = q.quotenum || '';
   document.getElementById('q-docnum').textContent = q.quotenum || '';
-  document.getElementById('q-print-btn').style.display  = '';
-  document.getElementById('q-cancel-btn').style.display = '';
+  document.getElementById('q-print-btn').style.display = '';
   setDirtyUI(false);
   document.getElementById('q-saved-indicator').style.display = '';
   setTimeout(() => { document.getElementById('q-saved-indicator').style.display = 'none'; }, 2000);
-  quoteSearch(false);
+  await refreshQuoteList();
 }
 
 // ── Lines ──
@@ -3601,17 +3652,20 @@ function buildLineRow(line, idx, isNew) {
       ${isNew?'onfocus="ensureQuoteSaved()"':''}
       onkeydown="lineKeyDown(event,this,${idx},'linedes')"></td>
     <td><input class="pri-cell pri-cell-num" type="number" value="${qty}" placeholder="0"
+      onfocus="this.select()"
       onchange="lineFieldChange(this,${idx},'qty');recalcLine(${idx})"
       onkeydown="lineKeyDown(event,this,${idx},'qty')"></td>
     <td><input class="pri-cell pri-cell-num" type="number" value="${pri}" placeholder="0.00"
+      onfocus="this.select()"
       onchange="lineFieldChange(this,${idx},'unitprice');recalcLine(${idx})"
       onkeydown="lineKeyDown(event,this,${idx},'unitprice')"></td>
     <td><input class="pri-cell pri-cell-num" type="number" value="${dis}" placeholder="0"
       min="0" max="100"
+      onfocus="this.select()"
       onchange="lineFieldChange(this,${idx},'discount');recalcLine(${idx})"
       onkeydown="lineKeyDown(event,this,${idx},'discount')"></td>
-    <td><input class="pri-cell pri-cell-num" value="${tot}" readonly tabindex="-1"></td>
-    <td><input class="pri-cell pri-cell-num" value="${totVat}" readonly tabindex="-1" style="color:var(--primary);font-weight:600"></td>
+    <td><input class="pri-cell pri-cell-num" id="q-lt-${idx}" value="${tot}" readonly tabindex="-1"></td>
+    <td><input class="pri-cell pri-cell-num" id="q-lv-${idx}" value="${totVat}" readonly tabindex="-1" style="color:var(--primary);font-weight:600"></td>
     <td>${isNew ? '' : `<button class="pri-del-btn" onclick="deleteLine('${lid}',${idx})" tabindex="-1">✕</button>`}</td>
   </tr>`;
 }
@@ -3677,14 +3731,14 @@ async function saveLine(idx) {
 }
 
 function recalcLine(idx) {
-  const l   = quoteState.lines[idx];
+  const l = quoteState.lines[idx];
   if (!l) return;
-  const tot = calcLineTotal(l);
-  const row = document.querySelector(`#q-lines-tbody tr[data-idx="${idx}"]`);
-  if (row) {
-    const inputs = row.querySelectorAll('input');
-    inputs[inputs.length - 1].value = fmtMoney(tot);
-  }
+  const tot    = calcLineTotal(l);
+  const vatPct = parseFloat(document.getElementById('qf-vat').value) || 0;
+  const ltEl   = document.getElementById(`q-lt-${idx}`);
+  const lvEl   = document.getElementById(`q-lv-${idx}`);
+  if (ltEl) ltEl.value = fmtMoney(tot);
+  if (lvEl) lvEl.value = fmtMoney(tot * (1 + vatPct / 100));
   recalcTotals();
 }
 
@@ -3746,116 +3800,6 @@ function fmtMoney(n) {
 }
 
 function updateQuoteCustomerInfo() { /* placeholder for future customer details */ }
-
-// ── Priority-style search mode ──
-let quoteSearchMode = false;
-let quoteSearchSnapshot = {};
-
-function toggleQuoteSearchMode() {
-  quoteSearchMode = !quoteSearchMode;
-  const btn    = document.getElementById('q-searchmode-btn');
-  const master = document.querySelector('.pri-master');
-  const fields = master.querySelectorAll('input:not([readonly]), select');
-
-  if (quoteSearchMode) {
-    // שמירת ערכים נוכחיים
-    fields.forEach(f => { quoteSearchSnapshot[f.id] = f.value; });
-    // ניקוי שדות לחיפוש
-    fields.forEach(f => { f.value = ''; });
-    // עיצוב ירוק
-    master.style.background = '#f0fdf4';
-    master.style.borderColor = '#86efac';
-    fields.forEach(f => { f.style.borderColor = '#4ade80'; f.style.background = '#f0fdf4'; });
-    btn.style.background  = '#16a34a';
-    btn.style.color       = 'white';
-    btn.textContent       = '✓ בצע חיפוש (Enter)';
-    // Enter מפעיל חיפוש
-    master.addEventListener('keydown', quoteSearchModeEnter);
-  } else {
-    exitQuoteSearchMode(true);
-  }
-}
-
-function exitQuoteSearchMode(restore = false) {
-  quoteSearchMode = false;
-  const btn    = document.getElementById('q-searchmode-btn');
-  const master = document.querySelector('.pri-master');
-  const fields = master.querySelectorAll('input:not([readonly]), select');
-
-  master.style.background   = '';
-  master.style.borderColor  = '';
-  fields.forEach(f => { f.style.borderColor = ''; f.style.background = ''; });
-  btn.style.background = '#d1fae5';
-  btn.style.color      = '#065f46';
-  btn.textContent      = '🔍 מצב חיפוש';
-  master.removeEventListener('keydown', quoteSearchModeEnter);
-
-  if (restore) {
-    Object.entries(quoteSearchSnapshot).forEach(([id, val]) => {
-      const el = document.getElementById(id);
-      if (el) el.value = val;
-    });
-  }
-}
-
-async function quoteSearchModeEnter(e) {
-  if (e.key !== 'Enter') return;
-  e.preventDefault();
-
-  const custid    = document.getElementById('qf-cust').value;
-  const status    = document.getElementById('qf-status').value;
-  const ponum     = document.getElementById('qf-po').value.trim();
-  const dateFrom  = document.getElementById('qf-date').value;
-  const dateValid = document.getElementById('qf-valid').value;
-
-  let query = db.from('quotes')
-    .select('quoteid, quotenum, qdate, status, total, customers(custname,custcomp)')
-    .order('cdate', { ascending: false });
-
-  if (custid)    query = query.eq('custid', custid);
-  if (status)    query = query.eq('status', status);
-  if (ponum)     query = query.ilike('ponum', `%${ponum}%`);
-  if (dateFrom)  query = query.gte('qdate', dateFrom);
-  if (dateValid) query = query.lte('validdate', dateValid);
-
-  const { data } = await query;
-  exitQuoteSearchMode(false);
-
-  if (!data?.length) { showToast('לא נמצאו הצעות התואמות לתנאי החיפוש', 'info'); return; }
-
-  if (data.length === 1) {
-    quoteState.list = data;
-    await loadQuoteById(data[0].quoteid, 0);
-  } else {
-    // מרובות — מציג רשימת בחירה
-    quoteState.list = data;
-    updateNavButtons();
-    showQuoteSearchResults(data);
-  }
-}
-
-function showQuoteSearchResults(results) {
-  const statusColors = { draft:'#94a3b8', sent:'#3b82f6', approved:'#10b981', rejected:'#ef4444', cancelled:'#94a3b8' };
-  const drop = document.getElementById('q-search-drop');
-  drop.innerHTML = `
-    <div style="padding:8px 14px;font-size:11px;font-weight:700;color:var(--text-muted);border-bottom:1px solid var(--border)">
-      נמצאו ${results.length} הצעות — בחר:
-    </div>` +
-    results.map((q, i) => `
-      <div onclick="quoteSelectFromDrop(${i});closeSearchDrop()" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px"
-           onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:600;font-size:13px">${esc(q.quotenum||'—')}</div>
-          <div style="font-size:12px;color:var(--text-muted)">${esc(q.customers?.custname||'')}${q.customers?.custcomp?' — '+esc(q.customers.custcomp):''}</div>
-        </div>
-        <div style="text-align:left;flex-shrink:0">
-          <div style="font-size:12px;font-weight:600">₪${(q.total||0).toLocaleString('he-IL',{minimumFractionDigits:2})}</div>
-          <div style="font-size:11px;color:${statusColors[q.status]||'#94a3b8'}">${QUOTE_STATUS[q.status]||q.status}</div>
-        </div>
-      </div>`).join('');
-  drop.style.display = 'block';
-  document.addEventListener('click', closeSearchDrop, { once: true });
-}
 
 function quotePrint() {
   if (!quoteState.current) return;
