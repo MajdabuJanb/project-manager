@@ -1564,6 +1564,7 @@
           <div style="width:1px;height:24px;background:var(--border);margin:0 4px"></div>
           <div class="pri-docnum" id="q-docnum">הצעה חדשה</div>
           <div style="margin-right:auto;display:flex;gap:6px;align-items:center">
+            <button class="btn btn-sm" id="q-search-btn" onclick="toggleQuoteSearchMode()" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7">🔍 חיפוש</button>
             <button class="btn btn-ghost btn-sm" id="q-cancel-btn" onclick="quoteCancel()">✕ בטל</button>
             <button class="btn btn-ghost btn-sm" onclick="quotePrint()" id="q-print-btn" style="display:none">🖨️ הדפס</button>
             <button class="btn btn-primary btn-sm" onclick="quoteNew()">🗋 חדש</button>
@@ -1575,11 +1576,11 @@
           <table class="q-browse-table">
             <thead>
               <tr>
-                <th style="width:120px"><input class="q-filter-input" type="text" id="qbf-num"    placeholder="🔍 מספר"   oninput="filterBrowse()"></th>
-                <th>              <input class="q-filter-input" type="text" id="qbf-cust"   placeholder="🔍 לקוח"   oninput="filterBrowse()"></th>
-                <th style="width:105px"><input class="q-filter-input" type="text" id="qbf-date"   placeholder="🔍 תאריך"  oninput="filterBrowse()"></th>
-                <th style="width:90px"><input  class="q-filter-input" type="text" id="qbf-status" placeholder="🔍 סטטוס"  oninput="filterBrowse()"></th>
-                <th style="width:120px"><input class="q-filter-input" type="text" id="qbf-total"  placeholder="🔍 סה״כ"   oninput="filterBrowse()"></th>
+                <th style="width:120px;padding:6px 8px;font-size:11px;color:var(--text-muted);font-weight:700;text-align:right">מספר</th>
+                <th style="padding:6px 8px;font-size:11px;color:var(--text-muted);font-weight:700;text-align:right">לקוח</th>
+                <th style="width:105px;padding:6px 8px;font-size:11px;color:var(--text-muted);font-weight:700;text-align:right">תאריך</th>
+                <th style="width:90px;padding:6px 8px;font-size:11px;color:var(--text-muted);font-weight:700;text-align:right">סטטוס</th>
+                <th style="width:120px;padding:6px 8px;font-size:11px;color:var(--text-muted);font-weight:700;text-align:left">סה"כ</th>
               </tr>
             </thead>
             <tbody id="q-browse-tbody">
@@ -3397,9 +3398,8 @@ async function deleteStatus(id, name) {
 
 // ─── QUOTES ───
 const quoteState = {
-  list:     [],
-  filtered: [],
-  idx:      -1,
+  list:    [],
+  idx:     -1,
   current:  null,
   lines:    [],
   dirty:    false,
@@ -3434,37 +3434,19 @@ async function refreshQuoteList() {
     .select('quoteid, quotenum, qdate, status, total, customers(custname,custcomp)')
     .order('cdate', { ascending: false });
   quoteState.list = data || [];
-  filterBrowse();
-  updateNavButtons();
-}
-
-function filterBrowse() {
-  const fNum    = (document.getElementById('qbf-num')?.value    || '').toLowerCase();
-  const fCust   = (document.getElementById('qbf-cust')?.value   || '').toLowerCase();
-  const fDate   = (document.getElementById('qbf-date')?.value   || '').toLowerCase();
-  const fStatus = (document.getElementById('qbf-status')?.value || '').toLowerCase();
-  const fTotal  = (document.getElementById('qbf-total')?.value  || '').toLowerCase();
-  quoteState.filtered = quoteState.list.filter(q => {
-    if (fNum    && !(q.quotenum||'').toLowerCase().includes(fNum))   return false;
-    if (fCust   && !(q.customers?.custname||'').toLowerCase().includes(fCust) &&
-                   !(q.customers?.custcomp||'').toLowerCase().includes(fCust)) return false;
-    if (fDate   && !(q.qdate||'').includes(fDate))                   return false;
-    if (fStatus && !(QUOTE_STATUS[q.status]||q.status||'').toLowerCase().includes(fStatus)) return false;
-    if (fTotal  && !((q.total||0).toFixed(2)).includes(fTotal))      return false;
-    return true;
-  });
   renderBrowseTable();
+  updateNavButtons();
 }
 
 function renderBrowseTable() {
   const tbody = document.getElementById('q-browse-tbody');
   const statusColors = { draft:'#94a3b8', sent:'#3b82f6', approved:'#10b981', rejected:'#ef4444', cancelled:'#94a3b8' };
   const curId = quoteState.current?.quoteid;
-  if (!quoteState.filtered.length) {
+  if (!quoteState.list.length) {
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:12px">אין הצעות</td></tr>';
     return;
   }
-  tbody.innerHTML = quoteState.filtered.map(q => {
+  tbody.innerHTML = quoteState.list.map(q => {
     const active   = q.quoteid === curId ? 'active' : '';
     const custName = esc(q.customers?.custname || '');
     const comp     = q.customers?.custcomp ? ` — ${esc(q.customers.custcomp)}` : '';
@@ -3478,6 +3460,81 @@ function renderBrowseTable() {
   }).join('');
 }
 
+// ── Search mode (green) ──
+let _qSearchMode = false;
+let _qSearchSnap = {};
+
+function toggleQuoteSearchMode() {
+  _qSearchMode ? exitQuoteSearchMode(true) : enterQuoteSearchMode();
+}
+
+function enterQuoteSearchMode() {
+  _qSearchMode = true;
+  const btn    = document.getElementById('q-search-btn');
+  const master = document.querySelector('#section-quotes .pri-master');
+  const fields = master.querySelectorAll('input:not([readonly]), select');
+  fields.forEach(f => { _qSearchSnap[f.id] = f.value; f.value = ''; });
+  master.style.background  = '#f0fdf4';
+  master.style.borderColor = '#86efac';
+  fields.forEach(f => { f.style.borderColor = '#4ade80'; f.style.background = '#f0fdf4'; });
+  btn.style.background = '#16a34a';
+  btn.style.color      = 'white';
+  btn.textContent      = '✓ בצע (Enter)  |  ESC לביטול';
+  master.addEventListener('keydown', _quoteSearchKey);
+  fields[0]?.focus();
+}
+
+function exitQuoteSearchMode(restore) {
+  _qSearchMode = false;
+  const btn    = document.getElementById('q-search-btn');
+  const master = document.querySelector('#section-quotes .pri-master');
+  const fields = master.querySelectorAll('input:not([readonly]), select');
+  master.style.background  = '';
+  master.style.borderColor = '';
+  fields.forEach(f => { f.style.borderColor = ''; f.style.background = ''; });
+  btn.style.background = '#d1fae5';
+  btn.style.color      = '#065f46';
+  btn.textContent      = '🔍 חיפוש';
+  master.removeEventListener('keydown', _quoteSearchKey);
+  if (restore) {
+    Object.entries(_qSearchSnap).forEach(([id, val]) => {
+      const el = document.getElementById(id);
+      if (el) el.value = val;
+    });
+  }
+}
+
+async function _quoteSearchKey(e) {
+  if (e.key === 'Escape') { exitQuoteSearchMode(true); return; }
+  if (e.key !== 'Enter')  return;
+  e.preventDefault();
+  const custid = document.getElementById('qf-cust').value;
+  const status = document.getElementById('qf-status').value;
+  const date   = document.getElementById('qf-date').value;
+  const valid  = document.getElementById('qf-valid').value;
+  const ponum  = document.getElementById('qf-po').value.trim();
+  const notes  = document.getElementById('qf-notes').value.trim();
+  exitQuoteSearchMode(false);
+  const allEmpty = !custid && !status && !date && !valid && !ponum && !notes;
+  if (allEmpty) { await refreshQuoteList(); return; }
+  let q = db.from('quotes')
+    .select('quoteid, quotenum, qdate, status, total, customers(custname,custcomp)')
+    .order('cdate', { ascending: false });
+  if (custid) q = q.eq('custid', custid);
+  if (status) q = q.eq('status', status);
+  if (date)   q = q.gte('qdate', date);
+  if (valid)  q = q.lte('validdate', valid);
+  if (ponum)  q = q.ilike('ponum', `%${ponum}%`);
+  if (notes)  q = q.ilike('notes', `%${notes}%`);
+  const { data } = await q;
+  quoteState.list = data || [];
+  renderBrowseTable();
+  updateNavButtons();
+  if (!data?.length) { showToast('לא נמצאו הצעות', 'info'); return; }
+  if (data.length === 1) await loadQuoteById(data[0].quoteid, 0);
+  else showToast(`נמצאו ${data.length} הצעות — בחר מהרשימה`, 'info');
+}
+
 async function browseSelect(quoteid) {
   if (quoteState.dirty && quoteState.current) await saveQuoteHeader(true);
   const listIdx = quoteState.list.findIndex(q => q.quoteid === quoteid);
@@ -3485,6 +3542,7 @@ async function browseSelect(quoteid) {
 }
 
 function quoteNew() {
+  if (_qSearchMode) exitQuoteSearchMode(false);
   quoteState.idx     = -1;
   quoteState.current = null;
   quoteState.lines   = [];
@@ -3504,8 +3562,7 @@ function quoteNew() {
   recalcTotals();
   setDirtyUI(false);
   document.getElementById('q-print-btn').style.display = 'none';
-  updateNavButtons();
-  document.querySelectorAll('#q-browse-tbody tr.q-row.active').forEach(tr => tr.classList.remove('active'));
+  refreshQuoteList();
   document.getElementById('qf-cust').focus();
 }
 
