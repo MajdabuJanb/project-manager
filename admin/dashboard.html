@@ -659,16 +659,12 @@
     </div>
 
     <nav class="nav">
-      <div class="nav-section-label">ניהול</div>
-      <button class="nav-item" data-section="company">
-        <span class="icon">🏢</span> נתוני החברה
-      </button>
-      <button class="nav-item" data-section="security">
-        <span class="icon">🔐</span> אבטחה
-      </button>
+      <div class="nav-section-label">ראשי</div>
       <button class="nav-item active" data-section="dashboard">
         <span class="icon">📊</span> דף הבית
       </button>
+
+      <div class="nav-section-label">עסק</div>
       <button class="nav-item" data-section="clients">
         <span class="icon">👥</span> לקוחות
       </button>
@@ -678,18 +674,30 @@
       <button class="nav-item" data-section="tasks">
         <span class="icon">✅</span> משימות
       </button>
-      <div class="nav-section-label">כלים</div>
-      <button class="nav-item" data-section="calendar">
-        <span class="icon">📅</span> יומן
-      </button>
       <button class="nav-item" data-section="parts">
         <span class="icon">📦</span> מוצרים
       </button>
-      <button class="nav-item" data-section="reports">
-        <span class="icon">📄</span> דוחות & PDF
+      <button class="nav-item" data-section="calendar">
+        <span class="icon">📅</span> יומן
+      </button>
+
+      <div class="nav-section-label">כלי עזר</div>
+      <button class="nav-item" data-section="statuses">
+        <span class="icon">🏷</span> סטטוסים
       </button>
       <button class="nav-item" data-section="admin-tools">
         <span class="icon">🛠</span> כלי מנהל
+      </button>
+      <button class="nav-item" data-section="reports">
+        <span class="icon">📄</span> דוחות
+      </button>
+
+      <div class="nav-section-label">הגדרות</div>
+      <button class="nav-item" data-section="company">
+        <span class="icon">🏢</span> נתוני החברה
+      </button>
+      <button class="nav-item" data-section="security">
+        <span class="icon">🔐</span> אבטחה
       </button>
     </nav>
 
@@ -1760,16 +1768,16 @@ function resetIdleTimer() {
 
 // ─── Activity Logger ───
 async function logActivity(entityType, entityId, entityName, action) {
-  await db.from('activity_log').insert({ entity_type: entityType, entity_id: entityId, entity_name: entityName, action });
+  await db.from('activity_log').insert({ etype: entityType, eid: entityId, ename: entityName, action });
 }
 
 // ─── DASHBOARD ───
 async function loadDashboard() {
   const [clientsRes, projectsRes, tasksRes, activityRes] = await Promise.all([
-    db.from('clients').select('id', { count: 'exact', head: true }),
-    db.from('projects').select('id, status'),
-    db.from('tasks').select('id, status'),
-    db.from('activity_log').select('*').order('created_at', { ascending: false }).limit(8)
+    db.from('customers').select('custid', { count: 'exact', head: true }),
+    db.from('projects').select('projid, status'),
+    db.from('tasks').select('taskid, status'),
+    db.from('activity_log').select('*').order('cdate', { ascending: false }).limit(8)
   ]);
 
   const clientCount = clientsRes.count || 0;
@@ -1785,15 +1793,15 @@ async function loadDashboard() {
   // Recent projects
   const { data: recentProjects } = await db
     .from('projects')
-    .select('id, name, status, clients(name)')
-    .order('created_at', { ascending: false })
+    .select('projid, projname, status, customers(custname)')
+    .order('cdate', { ascending: false })
     .limit(6);
 
   document.getElementById('dash-projects').innerHTML = (recentProjects || []).length > 0
     ? (recentProjects || []).map(p => `
         <div class="activity-item">
           <div class="activity-dot" style="background:${p.status==='active'?'#10b981':p.status==='completed'?'#3b82f6':'#94a3b8'}"></div>
-          <div class="activity-text"><strong>${esc(p.name)}</strong> — ${esc(p.clients?.name || '')}</div>
+          <div class="activity-text"><strong>${esc(p.projname)}</strong> — ${esc(p.customers?.custname || '')}</div>
           <span>${badge(p.status, LABELS.status[p.status]||p.status)}</span>
         </div>`).join('')
     : '<div class="empty"><p style="font-size:13px">אין פרויקטים עדיין</p></div>';
@@ -1805,10 +1813,10 @@ async function loadDashboard() {
         <div class="activity-item">
           <div class="activity-dot"></div>
           <div class="activity-text">
-            <strong>${esc(a.entity_name || '?')}</strong>
-            <span style="color:var(--text-muted)"> — ${LABELS.entity[a.entity_type]||a.entity_type} ${LABELS.action[a.action]||a.action}</span>
+            <strong>${esc(a.ename || '?')}</strong>
+            <span style="color:var(--text-muted)"> — ${LABELS.entity[a.etype]||a.etype} ${LABELS.action[a.action]||a.action}</span>
           </div>
-          <span class="activity-time">${fmtDateTime(a.created_at)}</span>
+          <span class="activity-time">${fmtDateTime(a.cdate)}</span>
         </div>`).join('')
     : '<div class="empty"><p style="font-size:13px">אין פעילות עדיין</p></div>';
 }
@@ -1816,22 +1824,22 @@ async function loadDashboard() {
 // ─── CLIENTS ───
 async function loadClients() {
   const [clientsRes, projectCountRes] = await Promise.all([
-    db.from('clients').select('*').order('created_at', { ascending: false }),
+    db.from('customers').select('*').order('cdate', { ascending: false }),
     db.from('projects').select('client_id')
   ]);
   state.clients = clientsRes.data || [];
   // count projects per client
   const counts = {};
-  (projectCountRes.data || []).forEach(p => { counts[p.client_id] = (counts[p.client_id]||0)+1; });
-  state.clients = state.clients.map(c => ({ ...c, _projectCount: counts[c.id]||0 }));
+  (projectCountRes.data || []).forEach(p => { counts[p.custid] = (counts[p.custid]||0)+1; });
+  state.clients = state.clients.map(c => ({ ...c, _projectCount: counts[c.custid]||0 }));
   renderClientsTable();
 }
 
 function renderClientsTable() {
   const search = document.getElementById('client-search').value.toLowerCase();
   const filtered = state.clients.filter(c =>
-    c.name.toLowerCase().includes(search) ||
-    (c.company||'').toLowerCase().includes(search) ||
+    c.custname.toLowerCase().includes(search) ||
+    (c.custcomp||'').toLowerCase().includes(search) ||
     c.email.toLowerCase().includes(search)
   );
   document.getElementById('clients-count-sub').textContent = `${filtered.length} לקוחות`;
@@ -1844,50 +1852,50 @@ function renderClientsTable() {
   }
   empty.style.display = 'none';
   tbody.innerHTML = filtered.map(c => `
-    <tr onclick="editClient('${c.id}')" style="cursor:pointer;opacity:${c.status==='inactive'?'0.55':'1'}">
-      <td><span style="font-family:monospace;font-size:11px;color:var(--text-muted)">${esc(c.client_number||'—')}</span></td>
-      <td><strong>${esc(c.name)}</strong></td>
-      <td>${esc(c.company||'—')}</td>
+    <tr onclick="editClient('${c.custid}')" style="cursor:pointer;opacity:${c.status==='inactive'?'0.55':'1'}">
+      <td><span style="font-family:monospace;font-size:11px;color:var(--text-muted)">${esc(c.custnum||'—')}</span></td>
+      <td><strong>${esc(c.custname)}</strong></td>
+      <td>${esc(c.custcomp||'—')}</td>
       <td>${esc(c.email)}</td>
       <td>${esc(c.phone||'—')}</td>
-      <td onclick="event.stopPropagation()"><span class="badge b-active" style="cursor:pointer" onclick="goToClientProjects('${c.id}')" title="הצג פרויקטים">${c._projectCount} פרויקטים</span></td>
+      <td onclick="event.stopPropagation()"><span class="badge b-active" style="cursor:pointer" onclick="goToClientProjects('${c.custid}')" title="הצג פרויקטים">${c._projectCount} פרויקטים</span></td>
       <td onclick="event.stopPropagation()">
-        <span class="badge ${c.status==='inactive'?'b-paused':'b-active'}" style="cursor:pointer" onclick="toggleClientStatus('${c.id}','${c.status||'active'}')" title="לחץ לשינוי סטטוס">
+        <span class="badge ${c.status==='inactive'?'b-paused':'b-active'}" style="cursor:pointer" onclick="toggleClientStatus('${c.custid}','${c.status||'active'}')" title="לחץ לשינוי סטטוס">
           ${c.status==='inactive'?'⏸ לא פעיל':'✅ פעיל'}
         </span>
       </td>
       <td class="actions-cell" onclick="event.stopPropagation()">
-        <button class="btn-icon" onclick="showPortalLink('${c.access_token}')" title="לינק פורטל">🔗</button>
-        <button class="btn-icon" onclick="editClient('${c.id}')" title="ערוך">✏️</button>
+        <button class="btn-icon" onclick="showPortalLink('${c.token}')" title="לינק פורטל">🔗</button>
+        <button class="btn-icon" onclick="editClient('${c.custid}')" title="ערוך">✏️</button>
       </td>
     </tr>`).join('');
 }
 
 async function toggleClientStatus(id, currentStatus) {
   const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-  const { error } = await db.from('clients').update({ status: newStatus }).eq('id', id);
+  const { error } = await db.from('customers').update({ status: newStatus }).eq('custid', id);
   if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
   showToast(newStatus === 'active' ? 'הלקוח הופעל' : 'הלקוח הושבת', 'success');
   loadClients();
 }
 
 async function editClient(id) {
-  const c = state.clients.find(x => x.id === id);
+  const c = state.clients.find(x => x.custid === id);
   if (!c) return;
   state.editingId = id;
   document.getElementById('client-modal-title').textContent = 'עריכת לקוח';
-  document.getElementById('c-opening-date').value = c.opening_date||'';
-  document.getElementById('c-number').value        = c.client_number||'';
-  document.getElementById('c-name').value    = c.name;
+  document.getElementById('c-opening-date').value = c.odate||'';
+  document.getElementById('c-number').value        = c.custnum||'';
+  document.getElementById('c-name').value    = c.custname;
   document.getElementById('c-status').value  = c.status||'active';
-  document.getElementById('c-company').value = c.company||'';
+  document.getElementById('c-company').value = c.custcomp||'';
   document.getElementById('c-email').value   = c.email;
   document.getElementById('c-phone').value   = c.phone||'';
   document.getElementById('c-notes').value   = c.notes||'';
   // Load connection details
   const connFields = ['c-vpn-type','c-server','c-vpn-user','c-vpn-pass','c-pri-user','c-pri-pass','c-conn-url','c-port','c-conn-notes'];
   connFields.forEach(f => { const el = document.getElementById(f); if (el) el.value = ''; });
-  const { data: conn } = await db.from('client_connections').select('*').eq('client_id', id).maybeSingle();
+  const { data: conn } = await db.from('client_connections').select('*').eq('custid', id).maybeSingle();
   if (conn) {
     document.getElementById('c-vpn-type').value   = conn.vpn_type||'';
     document.getElementById('c-server').value     = conn.server_address||'';
@@ -1908,22 +1916,22 @@ async function saveClient(e) {
   btn.disabled = true;
   btn.textContent = 'שומר...';
   const payload = {
-    name: document.getElementById('c-name').value.trim(),
-    company: document.getElementById('c-company').value.trim()||null,
-    email: document.getElementById('c-email').value.trim(),
-    phone: document.getElementById('c-phone').value.trim()||null,
-    notes: document.getElementById('c-notes').value.trim()||null,
-    opening_date: document.getElementById('c-opening-date').value||null,
-    status: document.getElementById('c-status').value||'active'
+    custname: document.getElementById('c-name').value.trim(),
+    custcomp: document.getElementById('c-company').value.trim()||null,
+    email:    document.getElementById('c-email').value.trim(),
+    phone:    document.getElementById('c-phone').value.trim()||null,
+    notes:    document.getElementById('c-notes').value.trim()||null,
+    odate:    document.getElementById('c-opening-date').value||null,
+    status:   document.getElementById('c-status').value||'active'
   };
   let error, id, name;
   if (state.editingId) {
-    const r = await db.from('clients').update(payload).eq('id', state.editingId).select().single();
-    error = r.error; id = state.editingId; name = payload.name;
+    const r = await db.from('customers').update(payload).eq('custid', state.editingId).select().single();
+    error = r.error; id = state.editingId; name = payload.custname;
     if (!error) await logActivity('client', id, name, 'updated');
   } else {
-    const r = await db.from('clients').insert(payload).select().single();
-    error = r.error; id = r.data?.id; name = payload.name;
+    const r = await db.from('customers').insert(payload).select().single();
+    error = r.error; id = r.data?.custid; name = payload.custname;
     if (!error) await logActivity('client', id, name, 'created');
   }
   btn.disabled = false;
@@ -1931,7 +1939,7 @@ async function saveClient(e) {
   if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
   // Save connection details
   const connPayload = {
-    client_id:         id,
+    custid:            id,
     vpn_type:          document.getElementById('c-vpn-type').value || null,
     server_address:    document.getElementById('c-server').value.trim() || null,
     vpn_username:      document.getElementById('c-vpn-user').value.trim() || null,
@@ -1942,7 +1950,7 @@ async function saveClient(e) {
     port:              document.getElementById('c-port').value.trim() || null,
     notes:             document.getElementById('c-conn-notes').value.trim() || null
   };
-  await db.from('client_connections').upsert(connPayload, { onConflict: 'client_id' });
+  await db.from('client_connections').upsert(connPayload, { onConflict: 'custid' });
   showToast(state.editingId ? 'הלקוח עודכן!' : 'הלקוח נוסף!', 'success');
   closeModal('modal-client');
   loadClients();
@@ -1962,8 +1970,9 @@ function confirmDelete(type, id, name) {
 }
 
 async function performDelete(type, id, name) {
-  const tables = { client:'clients', project:'projects', task:'tasks' };
-  const { error } = await db.from(tables[type]).delete().eq('id', id);
+  const tables = { client:'customers', project:'projects', task:'tasks' };
+  const pks    = { client:'custid',    project:'projid',   task:'taskid' };
+  const { error } = await db.from(tables[type]).delete().eq(pks[type], id);
   if (error) { showToast('שגיאה במחיקה: ' + error.message, 'error'); return; }
   await logActivity(type, id, name, 'deleted');
   showToast('נמחק בהצלחה', 'success');
@@ -1995,12 +2004,12 @@ function populateClientSelect(selectId, selectedId = '') {
   const sel = document.getElementById(selectId);
   const prev = sel.value || selectedId;
   sel.innerHTML = '<option value="">בחר לקוח...</option>' +
-    state.clients.map(c => `<option value="${c.id}" ${c.id===prev?'selected':''}>${esc(c.name)}</option>`).join('');
+    state.clients.map(c => `<option value="${c.custid}" ${c.custid===prev?'selected':''}>${esc(c.custname)}</option>`).join('');
 }
 
 async function loadProjects(filterClientId = '') {
   if (state.clients.length === 0) await loadClients();
-  const { data, error } = await db.from('projects').select('*').order('created_at', { ascending: false });
+  const { data, error } = await db.from('projects').select('*').order('cdate', { ascending: false });
   state.projects = data || [];
   populateClientFilter();
   if (filterClientId) document.getElementById('proj-filter-client').value = filterClientId;
@@ -2019,7 +2028,7 @@ function populateClientFilter() {
   const sel = document.getElementById('proj-filter-client');
   const curr = sel.value;
   sel.innerHTML = '<option value="">כל הלקוחות</option>' +
-    state.clients.map(c => `<option value="${c.id}" ${c.id===curr?'selected':''}>${esc(c.name)}</option>`).join('');
+    state.clients.map(c => `<option value="${c.custid}" ${c.custid===curr?'selected':''}>${esc(c.custname)}</option>`).join('');
 }
 
 function renderProjectsTable() {
@@ -2027,9 +2036,9 @@ function renderProjectsTable() {
   const status   = document.getElementById('proj-filter-status').value;
   const search   = document.getElementById('proj-search').value.toLowerCase();
   const filtered = state.projects.filter(p =>
-    (!clientId || p.client_id === clientId) &&
+    (!clientId || p.custid === clientId) &&
     (!status   || p.status === status) &&
-    (!search   || p.name.toLowerCase().includes(search))
+    (!search   || p.projname.toLowerCase().includes(search))
   );
   document.getElementById('projects-count-sub').textContent = `${filtered.length} פרויקטים`;
   const tbody = document.getElementById('projects-tbody');
@@ -2037,11 +2046,11 @@ function renderProjectsTable() {
   if (filtered.length === 0) { tbody.innerHTML=''; empty.style.display='block'; return; }
   empty.style.display='none';
   tbody.innerHTML = filtered.map(p => {
-    const client = state.clients.find(c => c.id === p.client_id);
+    const client = state.clients.find(c => c.custid === p.custid);
     const total = (p.budget && p.hours) ? p.budget * p.hours : null;
-    return `<tr onclick="editProject('${p.id}')" style="cursor:pointer">
-      <td><strong>${esc(p.name)}</strong></td>
-      <td>${esc(client?.name||'—')}</td>
+    return `<tr onclick="editProject('${p.projid}')" style="cursor:pointer">
+      <td><strong>${esc(p.projname)}</strong></td>
+      <td>${esc(client?.custname||'—')}</td>
       <td>${badge(p.status, LABELS.status[p.status]||p.status)}</td>
       <td>${badge(p.priority, LABELS.priority[p.priority]||p.priority)}</td>
       <td>
@@ -2053,33 +2062,33 @@ function renderProjectsTable() {
       <td>${p.budget ? '₪'+Number(p.budget).toLocaleString('he-IL') : '—'}</td>
       <td>${p.hours != null ? p.hours : '—'}</td>
       <td>${total != null ? '<strong>₪'+Number(total).toLocaleString('he-IL')+'</strong>' : '—'}</td>
-      <td>${fmtDate(p.end_date)}</td>
+      <td>${fmtDate(p.edate)}</td>
       <td class="actions-cell" onclick="event.stopPropagation()">
-        <button class="btn-icon" onclick="editProject('${p.id}')" title="ערוך">✏️</button>
-        <button class="btn-icon danger" onclick="confirmDelete('project','${p.id}','${esc(p.name)}')" title="מחק">🗑️</button>
+        <button class="btn-icon" onclick="editProject('${p.projid}')" title="ערוך">✏️</button>
+        <button class="btn-icon danger" onclick="confirmDelete('project','${p.projid}','${esc(p.projname)}')" title="מחק">🗑️</button>
       </td>
     </tr>`;
   }).join('');
 }
 
 function editProject(id) {
-  const p = state.projects.find(x => x.id === id);
+  const p = state.projects.find(x => x.projid === id);
   if (!p) return;
   state.editingId = id;
   document.getElementById('project-modal-title').textContent = 'עריכת פרויקט';
-  document.getElementById('p-opening-date').value = p.opening_date||'';
-  document.getElementById('p-number').value        = p.project_number||'';
-  populateClientSelect('p-client', p.client_id);
-  document.getElementById('p-name').value = p.name;
-  document.getElementById('p-client').value = p.client_id;
+  document.getElementById('p-opening-date').value = p.odate||'';
+  document.getElementById('p-number').value        = p.projnum||'';
+  populateClientSelect('p-client', p.custid);
+  document.getElementById('p-name').value = p.projname;
+  document.getElementById('p-client').value = p.custid;
   document.getElementById('p-status').value = p.status;
   document.getElementById('p-priority').value = p.priority;
-  document.getElementById('p-start').value = p.start_date||'';
-  document.getElementById('p-end').value = p.end_date||'';
+  document.getElementById('p-start').value = p.sdate||'';
+  document.getElementById('p-end').value = p.edate||'';
   document.getElementById('p-budget').value = p.budget||'';
   document.getElementById('p-hours').value = p.hours||'';
   document.getElementById('p-progress').value = p.progress||0;
-  document.getElementById('p-desc').value = p.description||'';
+  document.getElementById('p-desc').value = p.projdes||'';
   document.getElementById('modal-project').classList.add('open');
 }
 
@@ -2088,27 +2097,27 @@ async function saveProject(e) {
   const btn = document.getElementById('project-submit-btn');
   btn.disabled = true; btn.textContent = 'שומר...';
   const payload = {
-    name: document.getElementById('p-name').value.trim(),
-    client_id: document.getElementById('p-client').value,
-    status: document.getElementById('p-status').value,
-    priority: document.getElementById('p-priority').value,
-    start_date: document.getElementById('p-start').value||null,
-    end_date: document.getElementById('p-end').value||null,
-    budget: parseFloat(document.getElementById('p-budget').value)||null,
-    hours: parseFloat(document.getElementById('p-hours').value)||null,
-    progress: parseInt(document.getElementById('p-progress').value)||0,
-    description: document.getElementById('p-desc').value.trim()||null,
-    opening_date: document.getElementById('p-opening-date').value||null
+    projname:  document.getElementById('p-name').value.trim(),
+    custid:    document.getElementById('p-client').value,
+    status:    document.getElementById('p-status').value,
+    priority:  document.getElementById('p-priority').value,
+    sdate:     document.getElementById('p-start').value||null,
+    edate:     document.getElementById('p-end').value||null,
+    budget:    parseFloat(document.getElementById('p-budget').value)||null,
+    hours:     parseFloat(document.getElementById('p-hours').value)||null,
+    progress:  parseInt(document.getElementById('p-progress').value)||0,
+    projdes:   document.getElementById('p-desc').value.trim()||null,
+    odate:     document.getElementById('p-opening-date').value||null
   };
   let error, id;
   if (state.editingId) {
-    const r = await db.from('projects').update(payload).eq('id', state.editingId).select().single();
+    const r = await db.from('projects').update(payload).eq('projid', state.editingId).select().single();
     error = r.error; id = state.editingId;
-    if (!error) await logActivity('project', id, payload.name, 'updated');
+    if (!error) await logActivity('project', id, payload.projname, 'updated');
   } else {
     const r = await db.from('projects').insert(payload).select().single();
-    error = r.error; id = r.data?.id;
-    if (!error) await logActivity('project', id, payload.name, 'created');
+    error = r.error; id = r.data?.projid;
+    if (!error) await logActivity('project', id, payload.projname, 'created');
   }
   btn.disabled = false; btn.textContent = 'שמור פרויקט';
   if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
@@ -2124,15 +2133,15 @@ function populateProjectSelect(selectId, selectedId = '') {
   const prev = sel.value || selectedId;
   sel.innerHTML = '<option value="">בחר פרויקט...</option>' +
     state.projects.map(p => {
-      const client = state.clients.find(c => c.id === p.client_id);
-      return `<option value="${p.id}" ${p.id===prev?'selected':''}>${esc(p.name)}${client?' — '+esc(client.name):''}</option>`;
+      const client = state.clients.find(c => c.custid === p.custid);
+      return `<option value="${p.projid}" ${p.projid===prev?'selected':''}>${esc(p.projname)}${client?' — '+esc(client.custname):''}</option>`;
     }).join('');
 }
 
 async function loadTasks() {
   if (state.clients.length === 0) await loadClients();
   if (state.projects.length === 0) await loadProjects();
-  const { data } = await db.from('tasks').select('*').order('created_at', { ascending: false });
+  const { data } = await db.from('tasks').select('*').order('cdate', { ascending: false });
   state.tasks = data || [];
   populateTaskProjectFilter();
   renderTasksTable();
@@ -2142,7 +2151,7 @@ function populateTaskProjectFilter() {
   const sel = document.getElementById('task-filter-project');
   const curr = sel.value;
   sel.innerHTML = '<option value="">כל הפרויקטים</option>' +
-    state.projects.map(p => `<option value="${p.id}" ${p.id===curr?'selected':''}>${esc(p.name)}</option>`).join('');
+    state.projects.map(p => `<option value="${p.projid}" ${p.projid===curr?'selected':''}>${esc(p.projname)}</option>`).join('');
 }
 
 function renderTasksTable() {
@@ -2150,9 +2159,9 @@ function renderTasksTable() {
   const status    = document.getElementById('task-filter-status').value;
   const search    = document.getElementById('task-search').value.toLowerCase();
   const filtered  = state.tasks.filter(t =>
-    (!projectId || t.project_id === projectId) &&
+    (!projectId || t.projid === projectId) &&
     (!status    || t.status === status) &&
-    (!search    || t.title.toLowerCase().includes(search))
+    (!search    || t.taskname.toLowerCase().includes(search))
   );
   document.getElementById('tasks-count-sub').textContent = `${filtered.length} משימות`;
   const tbody = document.getElementById('tasks-tbody');
@@ -2160,39 +2169,39 @@ function renderTasksTable() {
   if (filtered.length === 0) { tbody.innerHTML=''; empty.style.display='block'; return; }
   empty.style.display='none';
   tbody.innerHTML = filtered.map(t => {
-    const proj = state.projects.find(p => p.id === t.project_id);
-    const client = proj ? state.clients.find(c => c.id === proj.client_id) : null;
-    return `<tr onclick="editTask('${t.id}')" style="cursor:pointer">
-      <td><strong>${esc(t.title)}</strong></td>
-      <td>${esc(proj?.name||'—')}</td>
-      <td>${esc(client?.name||'—')}</td>
+    const proj = state.projects.find(p => p.projid === t.projid);
+    const client = proj ? state.clients.find(c => c.custid === proj.custid) : null;
+    return `<tr onclick="editTask('${t.taskid}')" style="cursor:pointer">
+      <td><strong>${esc(t.taskname)}</strong></td>
+      <td>${esc(proj?.projname||'—')}</td>
+      <td>${esc(client?.custname||'—')}</td>
       <td>${badge(t.status, LABELS.status[t.status]||t.status)}</td>
       <td>${badge(t.priority, LABELS.priority[t.priority]||t.priority)}</td>
-      <td>${fmtDate(t.due_date)}</td>
-      <td>${esc(t.assigned_to||'—')}</td>
+      <td>${fmtDate(t.duedate)}</td>
+      <td>${esc(t.assignto||'—')}</td>
       <td class="actions-cell" onclick="event.stopPropagation()">
-        <button class="btn-icon" onclick="editTask('${t.id}')" title="ערוך">✏️</button>
-        <button class="btn-icon danger" onclick="confirmDelete('task','${t.id}','${esc(t.title)}')" title="מחק">🗑️</button>
+        <button class="btn-icon" onclick="editTask('${t.taskid}')" title="ערוך">✏️</button>
+        <button class="btn-icon danger" onclick="confirmDelete('task','${t.taskid}','${esc(t.taskname)}')" title="מחק">🗑️</button>
       </td>
     </tr>`;
   }).join('');
 }
 
 function editTask(id) {
-  const t = state.tasks.find(x => x.id === id);
+  const t = state.tasks.find(x => x.taskid === id);
   if (!t) return;
   state.editingId = id;
   document.getElementById('task-modal-title').textContent = 'עריכת משימה';
-  document.getElementById('t-opening-date').value = t.opening_date||'';
-  document.getElementById('t-number').value        = t.task_number||'';
-  populateProjectSelect('t-project', t.project_id);
-  document.getElementById('t-title').value = t.title;
-  document.getElementById('t-project').value = t.project_id;
+  document.getElementById('t-opening-date').value = t.odate||'';
+  document.getElementById('t-number').value        = t.tasknum||'';
+  populateProjectSelect('t-project', t.projid);
+  document.getElementById('t-title').value = t.taskname;
+  document.getElementById('t-project').value = t.projid;
   document.getElementById('t-status').value = t.status;
   document.getElementById('t-priority').value = t.priority;
-  document.getElementById('t-due').value = t.due_date||'';
-  document.getElementById('t-assigned').value = t.assigned_to||'';
-  document.getElementById('t-desc').value = t.description||'';
+  document.getElementById('t-due').value = t.duedate||'';
+  document.getElementById('t-assigned').value = t.assignto||'';
+  document.getElementById('t-desc').value = t.taskdes||'';
   document.getElementById('modal-task').classList.add('open');
 }
 
@@ -2201,24 +2210,24 @@ async function saveTask(e) {
   const btn = document.getElementById('task-submit-btn');
   btn.disabled = true; btn.textContent = 'שומר...';
   const payload = {
-    title: document.getElementById('t-title').value.trim(),
-    project_id: document.getElementById('t-project').value,
-    status: document.getElementById('t-status').value,
+    taskname: document.getElementById('t-title').value.trim(),
+    projid:   document.getElementById('t-project').value,
+    status:   document.getElementById('t-status').value,
     priority: document.getElementById('t-priority').value,
-    due_date: document.getElementById('t-due').value||null,
-    assigned_to: document.getElementById('t-assigned').value.trim()||null,
-    description: document.getElementById('t-desc').value.trim()||null,
-    opening_date: document.getElementById('t-opening-date').value||null
+    duedate:  document.getElementById('t-due').value||null,
+    assignto: document.getElementById('t-assigned').value.trim()||null,
+    taskdes:  document.getElementById('t-desc').value.trim()||null,
+    odate:    document.getElementById('t-opening-date').value||null
   };
   let error, id;
   if (state.editingId) {
-    const r = await db.from('tasks').update(payload).eq('id', state.editingId).select().single();
+    const r = await db.from('tasks').update(payload).eq('taskid', state.editingId).select().single();
     error = r.error; id = state.editingId;
-    if (!error) await logActivity('task', id, payload.title, 'updated');
+    if (!error) await logActivity('task', id, payload.taskname, 'updated');
   } else {
     const r = await db.from('tasks').insert(payload).select().single();
-    error = r.error; id = r.data?.id;
-    if (!error) await logActivity('task', id, payload.title, 'created');
+    error = r.error; id = r.data?.taskid;
+    if (!error) await logActivity('task', id, payload.taskname, 'created');
   }
   btn.disabled = false; btn.textContent = 'שמור משימה';
   if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
@@ -2306,7 +2315,7 @@ async function savePart(e) {
   };
   let error;
   if (state.editingId) {
-    ({ error } = await db.from('parts').update(payload).eq('part', state.editingId));
+    ({ error } = await db.from('parts').update(payload).eq('partid', state.editingId));
   } else {
     ({ error } = await db.from('parts').insert(payload));
   }
@@ -2319,7 +2328,7 @@ async function savePart(e) {
 }
 
 async function loadPartsState() {
-  const { data } = await db.from('parts').select('*').order('part');
+  const { data } = await db.from('parts').select('*').order('partid');
   state.parts = data || [];
 }
 
@@ -2333,7 +2342,7 @@ function confirmDeletePart(partKey, name) {
 }
 
 async function deletePart(partKey, name) {
-  const { error } = await db.from('parts').delete().eq('part', partKey);
+  const { error } = await db.from('parts').delete().eq('partid', partKey);
   if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
   showToast('המוצר נמחק', 'success');
   await loadPartsState();
@@ -2346,7 +2355,7 @@ async function loadReports() {
   const to     = document.getElementById('report-to').value;
   const type   = document.getElementById('report-type').value;
 
-  let query = db.from('activity_log').select('*').order('created_at', { ascending: false });
+  let query = db.from('activity_log').select('*').order('cdate', { ascending: false });
   if (from)  query = query.gte('created_at', from + 'T00:00:00');
   if (to)    query = query.lte('created_at', to   + 'T23:59:59');
   if (type)  query = query.eq('entity_type', type);
@@ -2367,20 +2376,20 @@ function renderReportsTable() {
   empty.style.display='none';
   tbody.innerHTML = state.activity.map(a => `
     <tr>
-      <td>${badge(a.entity_type==='client'?'active':a.entity_type==='project'?'planning':'completed',
-                  LABELS.entity[a.entity_type]||a.entity_type)}</td>
-      <td>${esc(a.entity_name||'—')}</td>
+      <td>${badge(a.etype==='client'?'active':a.etype==='project'?'planning':'completed',
+                  LABELS.entity[a.etype]||a.etype)}</td>
+      <td>${esc(a.ename||'—')}</td>
       <td>${LABELS.action[a.action]||a.action}</td>
-      <td>${fmtDateTime(a.created_at)}</td>
+      <td>${fmtDateTime(a.cdate)}</td>
     </tr>`).join('');
 }
 
 async function exportPDF() {
   if (state.activity.length === 0) await loadReports();
 
-  const totalClients  = state.clients.length || (await db.from('clients').select('id',{count:'exact',head:true})).count || 0;
-  const totalProjects = state.projects.length || (await db.from('projects').select('id',{count:'exact',head:true})).count || 0;
-  const totalTasks    = state.tasks.length    || (await db.from('tasks').select('id',{count:'exact',head:true})).count    || 0;
+  const totalClients  = state.clients.length || (await db.from('customers').select('custid',{count:'exact',head:true})).count || 0;
+  const totalProjects = state.projects.length || (await db.from('projects').select('projid',{count:'exact',head:true})).count || 0;
+  const totalTasks    = state.tasks.length    || (await db.from('tasks').select('taskid',{count:'exact',head:true})).count    || 0;
 
   document.getElementById('pdf-date').textContent = 'הופק ב-' + new Date().toLocaleString('he-IL');
   document.getElementById('pdf-stats').innerHTML = `
@@ -2391,10 +2400,10 @@ async function exportPDF() {
   `;
   document.getElementById('pdf-tbody').innerHTML = state.activity.map(a => `
     <tr>
-      <td>${LABELS.entity[a.entity_type]||a.entity_type}</td>
-      <td>${esc(a.entity_name||'—')}</td>
+      <td>${LABELS.entity[a.etype]||a.etype}</td>
+      <td>${esc(a.ename||'—')}</td>
       <td>${LABELS.action[a.action]||a.action}</td>
-      <td>${fmtDateTime(a.created_at)}</td>
+      <td>${fmtDateTime(a.cdate)}</td>
     </tr>`).join('');
 
   const report = document.getElementById('pdf-report');
@@ -2430,25 +2439,25 @@ let companyIsDemo = true;
 async function loadCompany() {
   const { data } = await db.from('company').select('*').maybeSingle();
   if (!data) return;
-  companyId = data.id;
-  document.getElementById('co-name').value    = data.name || '';
-  document.getElementById('co-owner').value   = data.owner_name || '';
-  document.getElementById('co-tax').value     = data.tax_number || '';
+  companyId = data.compid;
+  document.getElementById('co-name').value    = data.compname || '';
+  document.getElementById('co-owner').value   = data.ownname || '';
+  document.getElementById('co-tax').value     = data.taxnum || '';
   document.getElementById('co-phone').value   = data.phone || '';
   document.getElementById('co-email').value   = data.email || '';
   document.getElementById('co-website').value = data.website || '';
-  document.getElementById('co-address').value = data.address || '';
-  document.getElementById('co-address2').value= data.address2 || '';
+  document.getElementById('co-address').value = data.addr1 || '';
+  document.getElementById('co-address2').value= data.addr2 || '';
   document.getElementById('co-city').value    = data.city || '';
   document.getElementById('co-zip').value     = data.zip || '';
-  document.getElementById('co-bank').value    = data.bank_details || '';
+  document.getElementById('co-bank').value    = data.bankdet || '';
   if (data.logo) { companyLogo = data.logo; showLogoPreview(data.logo); }
-  updateDemoBanner(data.is_demo !== false);
+  updateDemoBanner(data.isdemo !== false);
 }
 
 async function loadDemoBanner() {
-  const { data } = await db.from('company').select('is_demo').maybeSingle();
-  if (data) updateDemoBanner(data.is_demo !== false);
+  const { data } = await db.from('company').select('isdemo').maybeSingle();
+  if (data) updateDemoBanner(data.isdemo !== false);
 }
 
 function updateDemoBanner(isDemo) {
@@ -2519,23 +2528,23 @@ function removeLogo() {
 
 async function saveCompany() {
   const payload = {
-    name:         document.getElementById('co-name').value.trim(),
-    owner_name:   document.getElementById('co-owner').value.trim(),
-    tax_number:   document.getElementById('co-tax').value.trim(),
-    phone:        document.getElementById('co-phone').value.trim(),
-    email:        document.getElementById('co-email').value.trim(),
-    website:      document.getElementById('co-website').value.trim(),
-    address:      document.getElementById('co-address').value.trim(),
-    address2:     document.getElementById('co-address2').value.trim(),
-    city:         document.getElementById('co-city').value.trim(),
-    zip:          document.getElementById('co-zip').value.trim(),
-    bank_details: document.getElementById('co-bank').value.trim(),
-    logo:         companyLogo,
-    updated_at:   new Date().toISOString()
+    compname: document.getElementById('co-name').value.trim(),
+    ownname:  document.getElementById('co-owner').value.trim(),
+    taxnum:   document.getElementById('co-tax').value.trim(),
+    phone:    document.getElementById('co-phone').value.trim(),
+    email:    document.getElementById('co-email').value.trim(),
+    website:  document.getElementById('co-website').value.trim(),
+    addr1:    document.getElementById('co-address').value.trim(),
+    addr2:    document.getElementById('co-address2').value.trim(),
+    city:     document.getElementById('co-city').value.trim(),
+    zip:      document.getElementById('co-zip').value.trim(),
+    bankdet:  document.getElementById('co-bank').value.trim(),
+    logo:     companyLogo,
+    udate:    new Date().toISOString()
   };
   let error;
   if (companyId) {
-    ({ error } = await db.from('company').update(payload).eq('id', companyId));
+    ({ error } = await db.from('company').update(payload).eq('compid', companyId));
   } else {
     const r = await db.from('company').insert(payload).select().single();
     error = r.error;
@@ -2606,9 +2615,9 @@ function populateEventSelects(projId = '', taskId = '') {
   const activeProjects = state.projects.filter(p => !['completed','cancelled'].includes(p.status));
   const activeTasks    = state.tasks.filter(t => !['completed','blocked'].includes(t.status));
   document.getElementById('ev-project').innerHTML = '<option value="">ללא פרויקט</option>' +
-    activeProjects.map(p => `<option value="${p.id}" ${p.id===projId?'selected':''}>${esc(p.name)}</option>`).join('');
+    activeProjects.map(p => `<option value="${p.projid}" ${p.projid===projId?'selected':''}>${esc(p.projname)}</option>`).join('');
   document.getElementById('ev-task').innerHTML = '<option value="">ללא משימה</option>' +
-    activeTasks.map(t => `<option value="${t.id}" ${t.id===taskId?'selected':''}>${esc(t.title)}</option>`).join('');
+    activeTasks.map(t => `<option value="${t.taskid}" ${t.taskid===taskId?'selected':''}>${esc(t.taskname)}</option>`).join('');
 }
 
 function toggleEventFields() {

@@ -379,14 +379,14 @@
       const projects = data.projects || [];
 
       // Header
-      const initials = client.name.split(' ').map(w => w[0]).slice(0, 2).join('');
+      const initials = client.custname.split(' ').map(w => w[0]).slice(0, 2).join('');
       document.getElementById('clientAvatar').textContent = initials;
-      document.getElementById('clientNameHeader').textContent = client.name;
+      document.getElementById('clientNameHeader').textContent = client.custname;
       document.getElementById('headerClientInfo').style.display = 'flex';
 
       // Welcome
-      document.getElementById('welcomeTitle').textContent = `ברוך הבא, ${client.name}! 👋`;
-      const companyPart = client.company ? ` | ${client.company}` : '';
+      document.getElementById('welcomeTitle').textContent = `ברוך הבא, ${client.custname}! 👋`;
+      const companyPart = client.custcomp ? ` | ${client.custcomp}` : '';
       document.getElementById('welcomeSub').textContent = `פורטל הלקוח שלך${companyPart}`;
 
       // Stats
@@ -435,8 +435,8 @@
         ? tasks.map(t => `
             <div class="task-item">
               <div class="task-dot dot-${t.status}"></div>
-              <span class="task-title-text">${esc(t.title)}</span>
-              ${t.due_date ? `<span class="task-due">${formatDate(t.due_date)}</span>` : ''}
+              <span class="task-title-text">${esc(t.taskname)}</span>
+              ${t.duedate ? `<span class="task-due">${formatDate(t.duedate)}</span>` : ''}
               <span class="badge badge-${t.status === 'completed' ? 'completed' : t.status === 'in_progress' ? 'active' : t.status === 'blocked' ? 'high' : 'low'}"
                 style="font-size:10px;padding:2px 7px">
                 ${TASK_STATUS_LABELS[t.status] || t.status}
@@ -446,21 +446,21 @@
         : '<div class="no-tasks">אין משימות לפרויקט זה</div>';
 
       const metaParts = [];
-      if (p.start_date) metaParts.push(`📅 ${formatDate(p.start_date)}`);
-      if (p.end_date) metaParts.push(`🏁 ${formatDate(p.end_date)}`);
+      if (p.sdate) metaParts.push(`📅 ${formatDate(p.sdate)}`);
+      if (p.edate) metaParts.push(`🏁 ${formatDate(p.edate)}`);
       if (p.budget) metaParts.push(`💰 ${Number(p.budget).toLocaleString('he-IL')} ₪`);
 
       return `
         <div class="project-card">
           <div class="project-card-header">
             <div class="project-card-top">
-              <div class="project-name">${esc(p.name)}</div>
+              <div class="project-name">${esc(p.projname)}</div>
               <div class="project-badges">
                 <span class="badge badge-${p.status}">${STATUS_LABELS[p.status] || p.status}</span>
                 <span class="badge badge-${p.priority}">${PRIORITY_LABELS[p.priority] || p.priority}</span>
               </div>
             </div>
-            ${p.description ? `<div class="project-desc">${esc(p.description)}</div>` : ''}
+            ${p.projdes ? `<div class="project-desc">${esc(p.projdes)}</div>` : ''}
             ${metaParts.length ? `<div class="project-meta">${metaParts.map(m => `<span>${m}</span>`).join('')}</div>` : ''}
             <div class="progress-wrap">
               <div class="progress-label">
