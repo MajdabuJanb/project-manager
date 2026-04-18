@@ -578,6 +578,25 @@
     #pdf-report thead th { background: #3b82f6; color: white; padding: 8px 12px; text-align: right; }
     #pdf-report tbody td { padding: 7px 12px; border-bottom: 1px solid #e2e8f0; }
     #pdf-report tbody tr:nth-child(even) td { background: #f8fafc; }
+    #pdf-report { position: relative; }
+    .pdf-watermark {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 999;
+      overflow: hidden;
+    }
+    .pdf-watermark span {
+      font-size: 72px;
+      font-weight: 900;
+      color: rgba(239,68,68,0.13);
+      transform: rotate(-35deg);
+      white-space: nowrap;
+      letter-spacing: 6px;
+    }
 
     /* ─── Demo Banner ─── */
     .demo-banner {
@@ -2103,6 +2122,14 @@ async function exportPDF() {
   const report = document.getElementById('pdf-report');
   report.style.display = 'block';
 
+  let watermarkEl = null;
+  if (companyIsDemo) {
+    watermarkEl = document.createElement('div');
+    watermarkEl.className = 'pdf-watermark';
+    watermarkEl.innerHTML = '<span>מסמך הדגמה</span>';
+    report.appendChild(watermarkEl);
+  }
+
   const filename = `activity-report-${new Date().toISOString().split('T')[0]}.pdf`;
   await html2pdf().set({
     margin: 8,
@@ -2112,6 +2139,7 @@ async function exportPDF() {
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
   }).from(report).save();
 
+  if (watermarkEl) watermarkEl.remove();
   report.style.display = 'none';
   showToast('PDF הורד בהצלחה!', 'success');
 }
