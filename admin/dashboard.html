@@ -148,8 +148,10 @@
 
     /* ─── Content area ─── */
     .content { padding: 28px 28px 40px; flex: 1; }
-    .section { display: none; }
-    .section.active { display: block; }
+    .section { display: none !important; }
+    .section.active { display: block !important; }
+    .section.active.pri-section { display: flex !important; }
+    .section.active.md-section  { display: flex !important; }
 
     /* ─── Cards ─── */
     .card {
