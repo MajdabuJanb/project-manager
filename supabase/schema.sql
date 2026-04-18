@@ -216,3 +216,26 @@ CREATE TRIGGER tasks_updated_at BEFORE UPDATE ON tasks
 -- INSERT INTO profiles (id, role)
 -- SELECT id, 'admin' FROM auth.users WHERE email = 'your@email.com'
 -- ON CONFLICT (id) DO UPDATE SET role = 'admin';
+
+-- ============================================================
+-- DEMO MODE — run in Supabase SQL Editor after initial setup
+-- ============================================================
+
+-- Add is_demo flag to company table (true = demo, false = live)
+ALTER TABLE company ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT true;
+
+-- go_live(): atomically wipes all demo data and activates the company
+CREATE OR REPLACE FUNCTION go_live()
+RETURNS void AS $$
+BEGIN
+  IF NOT is_admin() THEN
+    RAISE EXCEPTION 'Unauthorized';
+  END IF;
+  DELETE FROM activity_log;
+  DELETE FROM calendar_events;
+  DELETE FROM clients; -- cascades to projects + tasks
+  UPDATE company SET is_demo = false;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION go_live() TO authenticated;

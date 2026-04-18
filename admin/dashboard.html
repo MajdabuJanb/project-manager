@@ -578,6 +578,36 @@
     #pdf-report thead th { background: #3b82f6; color: white; padding: 8px 12px; text-align: right; }
     #pdf-report tbody td { padding: 7px 12px; border-bottom: 1px solid #e2e8f0; }
     #pdf-report tbody tr:nth-child(even) td { background: #f8fafc; }
+
+    /* ─── Demo Banner ─── */
+    .demo-banner {
+      display: none;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: white;
+      text-align: center;
+      padding: 10px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      gap: 12px;
+      align-items: center;
+      justify-content: center;
+    }
+    .demo-banner.visible { display: flex; }
+    .btn-go-live-banner {
+      background: white;
+      color: #d97706;
+      border: none;
+      border-radius: 6px;
+      padding: 5px 14px;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-go-live-banner:hover { background: #fef3c7; }
   </style>
 </head>
 <body>
@@ -649,6 +679,10 @@
 
   <!-- ─── MAIN ─── -->
   <main class="main">
+    <div id="demo-banner" class="demo-banner">
+      <span>🧪 מצב הדגמה — הנתונים אינם אמיתיים</span>
+      <button class="btn-go-live-banner" onclick="showSection('company')">⚙️ הגדרות חברה</button>
+    </div>
     <div class="content">
 
       <!-- ════ COMPANY ════ -->
@@ -656,6 +690,7 @@
         <div class="page-header" style="position:relative;overflow:hidden;min-height:80px">
           <div><div class="page-title">נתוני החברה</div></div>
           <button class="btn btn-primary" onclick="saveCompany()">💾 שמור שינויים</button>
+          <button id="go-live-btn" class="btn" style="background:#f59e0b;color:white;display:none" onclick="confirmGoLive()">🚀 העלה לאוויר</button>
           <img id="company-bg-img" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);height:120%;max-width:340px;object-fit:contain;opacity:0.10;pointer-events:none;z-index:0">
         </div>
 
@@ -1505,6 +1540,7 @@ async function checkAuth() {
   document.getElementById('userAvatar').textContent = email[0].toUpperCase();
   resetIdleTimer();
   loadDashboard();
+  loadDemoBanner();
 }
 
 async function logout() {
@@ -2100,6 +2136,48 @@ async function loadCompany() {
   document.getElementById('co-zip').value     = data.zip || '';
   document.getElementById('co-bank').value    = data.bank_details || '';
   if (data.logo) { companyLogo = data.logo; showLogoPreview(data.logo); }
+  updateDemoBanner(data.is_demo !== false);
+}
+
+async function loadDemoBanner() {
+  const { data } = await db.from('company').select('is_demo').maybeSingle();
+  if (data) updateDemoBanner(data.is_demo !== false);
+}
+
+function updateDemoBanner(isDemo) {
+  const banner   = document.getElementById('demo-banner');
+  const liveBtn  = document.getElementById('go-live-btn');
+  if (isDemo) {
+    banner.classList.add('visible');
+    liveBtn.style.display = '';
+  } else {
+    banner.classList.remove('visible');
+    liveBtn.style.display = 'none';
+  }
+}
+
+function confirmGoLive() {
+  document.getElementById('confirm-text').innerHTML =
+    '<strong>⚠️ פעולה בלתי הפיכה!</strong><br><br>' +
+    'פעולה זו תמחק לצמיתות:<br>' +
+    '• כל הלקוחות, הפרויקטים והמשימות<br>' +
+    '• לוג הפעילות ואירועי היומן<br><br>' +
+    '<strong>נתוני החברה וההרשאות יישמרו.</strong><br><br>' +
+    'לאחר הפעולה המערכת תהיה פעילה לשימוש אמיתי.';
+  const okBtn = document.getElementById('confirm-ok-btn');
+  okBtn.textContent = '🚀 כן, העלה לאוויר';
+  okBtn.className = 'btn btn-danger';
+  okBtn.onclick = () => { closeModal('modal-confirm'); goLive(); };
+  document.querySelector('#modal-confirm .modal-title').textContent = 'העלאה לאוויר';
+  document.getElementById('modal-confirm').classList.add('open');
+}
+
+async function goLive() {
+  const { error } = await db.rpc('go_live');
+  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+  updateDemoBanner(false);
+  showToast('🎉 המערכת הועלתה לאוויר בהצלחה!', 'success');
+  loadDashboard();
 }
 
 function handleLogoUpload(input) {
