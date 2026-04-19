@@ -720,6 +720,54 @@
     .pri-field input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     .pri-field input[type=number] { -moz-appearance: textfield; }
 
+    /* Son tabs */
+    .pri-son-tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 2px solid var(--border);
+      background: var(--card);
+      flex-shrink: 0;
+      padding: 0 12px;
+    }
+    .pri-son-tab {
+      padding: 9px 18px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-bottom: -2px;
+      font-family: inherit;
+    }
+    .pri-son-tab:hover { color: var(--text); }
+    .pri-son-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+    /* Free-text son tab textarea */
+    .pri-desc-area {
+      flex: 1;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+    }
+    .pri-desc-area textarea {
+      flex: 1;
+      width: 100%;
+      min-height: 180px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 13px;
+      font-family: inherit;
+      background: var(--bg);
+      color: var(--text);
+      resize: none;
+      line-height: 1.6;
+    }
+    .pri-desc-area textarea:focus { outline: none; border-color: var(--primary); background: var(--card); }
+
     /* Totals footer */
     .pri-totals {
       display: flex;
@@ -1352,6 +1400,7 @@
             <!-- Tabs -->
             <div class="md-tabs">
               <button class="md-tab active" onclick="switchDetailTab('projects', this)">פרויקטים <span id="cd-proj-count" class="md-tab-badge"></span></button>
+              <button class="md-tab" onclick="switchDetailTab('connections', this)">🔐 חיבורים <span id="cd-conn-count" class="md-tab-badge"></span></button>
               <button class="md-tab" onclick="switchDetailTab('info', this)">פרטים</button>
               <button class="md-tab" onclick="switchDetailTab('history', this)">היסטוריה</button>
             </div>
@@ -1365,6 +1414,84 @@
               <div id="cd-projects-empty" class="empty" style="display:none;padding:40px 0;text-align:center">
                 <div style="font-size:36px;margin-bottom:8px">📁</div>
                 <p style="font-size:13px;color:var(--text-muted)">אין פרויקטים ללקוח זה</p>
+              </div>
+            </div>
+
+            <!-- Tab: Connections -->
+            <div id="cd-tab-connections" class="md-tab-body" style="display:none">
+              <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+                <button class="btn btn-primary btn-sm" onclick="addConn()">+ חיבור חדש</button>
+              </div>
+              <div id="cd-connections-list"></div>
+              <div id="cd-connections-empty" class="empty" style="display:none;padding:40px 0;text-align:center">
+                <div style="font-size:36px;margin-bottom:8px">🔐</div>
+                <p style="font-size:13px;color:var(--text-muted)">אין פרטי חיבור ללקוח זה</p>
+              </div>
+            </div>
+
+            <!-- Connection inline form (hidden by default) -->
+            <div id="cd-conn-form" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;margin:0 0 14px">
+              <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px">
+                <span id="cd-conn-form-title">הוספת חיבור</span>
+              </div>
+              <div class="form-grid" style="gap:10px">
+                <div class="form-group">
+                  <label>שם/תיאור חיבור</label>
+                  <input type="text" id="conn-name" placeholder="לדוג׳: Priority ERP, VPN ראשי...">
+                </div>
+                <div class="form-group">
+                  <label>סוג VPN</label>
+                  <select id="conn-vpn-type">
+                    <option value="">בחר...</option>
+                    <option value="Cisco AnyConnect">Cisco AnyConnect</option>
+                    <option value="FortiClient">FortiClient</option>
+                    <option value="GlobalProtect">GlobalProtect</option>
+                    <option value="OpenVPN">OpenVPN</option>
+                    <option value="Other">אחר</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>כתובת שרת VPN / IP</label>
+                  <input type="text" id="conn-server" placeholder="vpn.company.com">
+                </div>
+                <div class="form-group">
+                  <label>שם משתמש VPN</label>
+                  <input type="text" id="conn-vpn-user" autocomplete="off">
+                </div>
+                <div class="form-group">
+                  <label>סיסמה VPN</label>
+                  <div style="position:relative">
+                    <input type="password" id="conn-vpn-pass" autocomplete="new-password" style="padding-left:36px">
+                    <button type="button" onclick="togglePass('conn-vpn-pass',this)" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;font-size:14px;padding:0">👁</button>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>שם משתמש ERP</label>
+                  <input type="text" id="conn-erp-user" autocomplete="off">
+                </div>
+                <div class="form-group">
+                  <label>סיסמה ERP</label>
+                  <div style="position:relative">
+                    <input type="password" id="conn-erp-pass" autocomplete="new-password" style="padding-left:36px">
+                    <button type="button" onclick="togglePass('conn-erp-pass',this)" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;font-size:14px;padding:0">👁</button>
+                  </div>
+                </div>
+                <div class="form-group full">
+                  <label>כתובת URL להתחברות</label>
+                  <input type="text" id="conn-url" placeholder="https://...">
+                </div>
+                <div class="form-group">
+                  <label>פורט</label>
+                  <input type="text" id="conn-port" placeholder="443">
+                </div>
+                <div class="form-group">
+                  <label>הערות</label>
+                  <input type="text" id="conn-notes" placeholder="הערה קצרה...">
+                </div>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+                <button class="btn btn-ghost btn-sm" onclick="cancelConnForm()">ביטול</button>
+                <button class="btn btn-primary btn-sm" onclick="saveConn()">💾 שמור</button>
               </div>
             </div>
 
@@ -1387,103 +1514,209 @@
       </section>
 
       <!-- ════ PROJECTS ════ -->
-      <section id="section-projects" class="section">
-        <div class="page-header">
-          <div>
-            <div class="page-title">פרויקטים</div>
-            <div class="page-sub" id="projects-count-sub"></div>
+      <section id="section-projects" class="section pri-section">
+
+        <!-- Toolbar -->
+        <div class="pri-toolbar">
+          <span class="pri-toolbar-title">📁 פרויקטים</span>
+          <div style="width:1px;height:24px;background:var(--border);margin:0 4px"></div>
+          <button class="pri-nav-btn" id="pr-btn-first" onclick="projNav('first')" title="ראשון">⏮</button>
+          <button class="pri-nav-btn" id="pr-btn-prev"  onclick="projNav('prev')"  title="קודם">◀</button>
+          <span class="pri-pos" id="pr-pos">—</span>
+          <button class="pri-nav-btn" id="pr-btn-next"  onclick="projNav('next')"  title="הבא">▶</button>
+          <button class="pri-nav-btn" id="pr-btn-last"  onclick="projNav('last')"  title="אחרון">⏭</button>
+          <div style="width:1px;height:24px;background:var(--border);margin:0 4px"></div>
+          <div class="pri-docnum" id="pr-docnum">פרויקט חדש</div>
+          <div style="margin-right:auto;display:flex;gap:6px;align-items:center">
+            <button class="btn btn-sm" id="pr-search-btn" onclick="toggleProjSearchMode()" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7">🔍 חיפוש</button>
+            <button class="btn btn-ghost btn-sm" onclick="projCancel()">✕ בטל</button>
+            <button class="btn btn-danger btn-sm" id="pr-delete-btn" onclick="projDelete()" style="display:none">🗑 מחק</button>
+            <button class="btn btn-primary btn-sm" onclick="projNew()">🗋 חדש</button>
           </div>
-          <button class="btn btn-primary" onclick="openModal('project')">+ הוסף פרויקט</button>
         </div>
 
-        <div class="toolbar">
-          <select id="proj-filter-client" onchange="renderProjectsTable()">
-            <option value="">כל הלקוחות</option>
-          </select>
-          <select id="proj-filter-status" onchange="renderProjectsTable()">
-            <option value="">כל הסטטוסים</option>
-            <option value="planning">תכנון</option>
-            <option value="active">פעיל</option>
-            <option value="paused">מושהה</option>
-            <option value="completed">הושלם</option>
-            <option value="cancelled">בוטל</option>
-          </select>
-          <input type="text" id="proj-search" placeholder="🔍  חפש פרויקט..." oninput="renderProjectsTable()">
-        </div>
+        <div class="pri-body">
 
-        <div class="card">
-          <div class="table-wrap">
-            <table>
+          <!-- Master: Project Header -->
+          <div class="pri-master" id="pr-master">
+            <div class="pri-master-grid">
+              <div class="pri-field">
+                <label>מספר פרויקט</label>
+                <input type="text" id="prf-num" readonly placeholder="יווצר אוטומטית">
+              </div>
+              <div class="pri-field">
+                <label>תאריך פתיחה</label>
+                <input type="date" id="prf-odate" onchange="markProjDirty()">
+              </div>
+              <div class="pri-field wide">
+                <label>שם פרויקט *</label>
+                <input type="text" id="prf-name" placeholder="שם הפרויקט" onchange="markProjDirty()">
+              </div>
+              <div class="pri-field">
+                <label>לקוח *</label>
+                <select id="prf-cust" onchange="markProjDirty()">
+                  <option value="">-- בחר לקוח --</option>
+                </select>
+              </div>
+              <div class="pri-field">
+                <label>סטטוס</label>
+                <select id="prf-status" onchange="markProjDirty()">
+                  <option value="planning">📋 תכנון</option>
+                  <option value="active">✅ פעיל</option>
+                  <option value="paused">⏸ מושהה</option>
+                  <option value="completed">🎯 הושלם</option>
+                  <option value="cancelled">❌ בוטל</option>
+                </select>
+              </div>
+              <div class="pri-field">
+                <label>עדיפות</label>
+                <select id="prf-priority" onchange="markProjDirty()">
+                  <option value="low">נמוכה</option>
+                  <option value="medium" selected>בינונית</option>
+                  <option value="high">גבוהה</option>
+                </select>
+              </div>
+              <div class="pri-field">
+                <label>תאריך התחלה</label>
+                <input type="date" id="prf-sdate" onchange="markProjDirty()">
+              </div>
+              <div class="pri-field">
+                <label>תאריך סיום</label>
+                <input type="date" id="prf-edate" onchange="markProjDirty()">
+              </div>
+              <div class="pri-field">
+                <label>מחיר לשעה (₪)</label>
+                <input type="number" id="prf-budget" min="0" step="1" onfocus="this.select()" onchange="markProjDirty()">
+              </div>
+              <div class="pri-field">
+                <label>כמות שעות</label>
+                <input type="number" id="prf-hours" min="0" step="0.5" onfocus="this.select()" onchange="markProjDirty()">
+              </div>
+              <div class="pri-field">
+                <label>התקדמות (%)</label>
+                <input type="number" id="prf-progress" min="0" max="100" onfocus="this.select()" onchange="markProjDirty()">
+              </div>
+            </div>
+            <button class="btn btn-primary btn-sm" id="pr-save-btn" onclick="saveProjHeader()" style="display:none;margin-top:10px">💾 שמור</button>
+          </div>
+
+          <!-- Son tabs -->
+          <div class="pri-son-tabs">
+            <button class="pri-son-tab active" id="pr-tab-tasks-btn" onclick="switchProjTab('tasks', this)">📋 משימות</button>
+            <button class="pri-son-tab" id="pr-tab-desc-btn" onclick="switchProjTab('desc', this)">📝 תיאור</button>
+          </div>
+
+          <!-- Tasks son -->
+          <div id="pr-tab-tasks" class="pri-lines-wrap">
+            <table class="pri-lines">
               <thead>
                 <tr>
-                  <th>שם פרויקט</th>
-                  <th>לקוח</th>
-                  <th>סטטוס</th>
-                  <th>עדיפות</th>
-                  <th>התקדמות</th>
-                  <th>מחיר לשעה</th>
-                  <th>שעות</th>
-                  <th>סך הכל</th>
-                  <th>תאריך סיום</th>
-                  <th>פעולות</th>
+                  <th style="width:36px">#</th>
+                  <th>כותרת משימה</th>
+                  <th style="width:130px">סטטוס</th>
+                  <th style="width:110px">עדיפות</th>
+                  <th style="width:115px">תאריך יעד</th>
+                  <th style="width:120px">אחראי</th>
+                  <th style="width:50px"></th>
                 </tr>
               </thead>
-              <tbody id="projects-tbody"></tbody>
+              <tbody id="pr-tasks-tbody"></tbody>
             </table>
           </div>
-          <div id="projects-empty" class="empty" style="display:none">
-            <div class="empty-icon">📁</div>
-            <p>לא נמצאו פרויקטים.</p>
+
+          <!-- Description son -->
+          <div id="pr-tab-desc" style="display:none" class="pri-desc-area">
+            <textarea id="prf-desc" placeholder="תיאור הפרויקט, הערות, מידע נוסף..." onblur="saveProjDesc()"></textarea>
           </div>
+
         </div>
       </section>
 
       <!-- ════ TASKS ════ -->
-      <section id="section-tasks" class="section">
-        <div class="page-header">
-          <div>
-            <div class="page-title">משימות</div>
-            <div class="page-sub" id="tasks-count-sub"></div>
+      <section id="section-tasks" class="section pri-section">
+
+        <!-- Toolbar -->
+        <div class="pri-toolbar">
+          <span class="pri-toolbar-title">✅ משימות</span>
+          <div style="width:1px;height:24px;background:var(--border);margin:0 4px"></div>
+          <button class="pri-nav-btn" id="tk-btn-first" onclick="taskNav('first')" title="ראשון">⏮</button>
+          <button class="pri-nav-btn" id="tk-btn-prev"  onclick="taskNav('prev')"  title="קודם">◀</button>
+          <span class="pri-pos" id="tk-pos">—</span>
+          <button class="pri-nav-btn" id="tk-btn-next"  onclick="taskNav('next')"  title="הבא">▶</button>
+          <button class="pri-nav-btn" id="tk-btn-last"  onclick="taskNav('last')"  title="אחרון">⏭</button>
+          <div style="width:1px;height:24px;background:var(--border);margin:0 4px"></div>
+          <div class="pri-docnum" id="tk-docnum">משימה חדשה</div>
+          <div style="margin-right:auto;display:flex;gap:6px;align-items:center">
+            <button class="btn btn-sm" id="tk-search-btn" onclick="toggleTaskSearchMode()" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7">🔍 חיפוש</button>
+            <button class="btn btn-ghost btn-sm" onclick="taskCancel()">✕ בטל</button>
+            <button class="btn btn-danger btn-sm" id="tk-delete-btn" onclick="taskDelete()" style="display:none">🗑 מחק</button>
+            <button class="btn btn-primary btn-sm" onclick="taskNew()">🗋 חדש</button>
           </div>
-          <button class="btn btn-primary" onclick="openModal('task')">+ הוסף משימה</button>
         </div>
 
-        <div class="toolbar">
-          <select id="task-filter-project" onchange="renderTasksTable()">
-            <option value="">כל הפרויקטים</option>
-          </select>
-          <select id="task-filter-status" onchange="renderTasksTable()">
-            <option value="">כל הסטטוסים</option>
-            <option value="pending">ממתין</option>
-            <option value="in_progress">בביצוע</option>
-            <option value="completed">הושלם</option>
-            <option value="blocked">חסום</option>
-          </select>
-          <input type="text" id="task-search" placeholder="🔍  חפש משימה..." oninput="renderTasksTable()">
-        </div>
+        <div class="pri-body">
 
-        <div class="card">
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>כותרת</th>
-                  <th>פרויקט</th>
-                  <th>לקוח</th>
-                  <th>סטטוס</th>
-                  <th>עדיפות</th>
-                  <th>תאריך יעד</th>
-                  <th>אחראי</th>
-                  <th>פעולות</th>
-                </tr>
-              </thead>
-              <tbody id="tasks-tbody"></tbody>
-            </table>
+          <!-- Master: Task Header -->
+          <div class="pri-master" id="tk-master">
+            <div class="pri-master-grid">
+              <div class="pri-field">
+                <label>מספר משימה</label>
+                <input type="text" id="tkf-num" readonly placeholder="יווצר אוטומטית">
+              </div>
+              <div class="pri-field">
+                <label>תאריך פתיחה</label>
+                <input type="date" id="tkf-odate" onchange="markTaskDirty()">
+              </div>
+              <div class="pri-field wide">
+                <label>כותרת *</label>
+                <input type="text" id="tkf-name" placeholder="כותרת המשימה" onchange="markTaskDirty()">
+              </div>
+              <div class="pri-field">
+                <label>פרויקט *</label>
+                <select id="tkf-proj" onchange="markTaskDirty()">
+                  <option value="">-- בחר פרויקט --</option>
+                </select>
+              </div>
+              <div class="pri-field">
+                <label>סטטוס</label>
+                <select id="tkf-status" onchange="markTaskDirty()">
+                  <option value="pending">⏳ ממתין</option>
+                  <option value="in_progress">🔄 בביצוע</option>
+                  <option value="completed">✅ הושלם</option>
+                  <option value="blocked">🚫 חסום</option>
+                </select>
+              </div>
+              <div class="pri-field">
+                <label>עדיפות</label>
+                <select id="tkf-priority" onchange="markTaskDirty()">
+                  <option value="low">נמוכה</option>
+                  <option value="medium" selected>בינונית</option>
+                  <option value="high">גבוהה</option>
+                  <option value="urgent">דחוף</option>
+                </select>
+              </div>
+              <div class="pri-field">
+                <label>תאריך יעד</label>
+                <input type="date" id="tkf-due" onchange="markTaskDirty()">
+              </div>
+              <div class="pri-field">
+                <label>אחראי</label>
+                <input type="text" id="tkf-assignto" placeholder="שם האחראי" onchange="markTaskDirty()">
+              </div>
+            </div>
+            <button class="btn btn-primary btn-sm" id="tk-save-btn" onclick="saveTaskHeader()" style="display:none;margin-top:10px">💾 שמור</button>
           </div>
-          <div id="tasks-empty" class="empty" style="display:none">
-            <div class="empty-icon">✅</div>
-            <p>לא נמצאו משימות.</p>
+
+          <!-- Son tabs -->
+          <div class="pri-son-tabs">
+            <button class="pri-son-tab active" onclick="switchTaskTab('desc', this)">📝 תיאור</button>
           </div>
+
+          <!-- Description son -->
+          <div id="tk-tab-desc" class="pri-desc-area">
+            <textarea id="tkf-desc" placeholder="פרטי המשימה, הערות, מידע נוסף..." onblur="saveTaskDesc()"></textarea>
+          </div>
+
         </div>
       </section>
 
@@ -1622,23 +1855,50 @@
       </section>
 
       <!-- ════ PARTS ════ -->
-      <section id="section-parts" class="section">
-        <div class="page-header">
-          <div><div class="page-title">מוצרים</div><div class="page-sub">ניהול קטלוג מוצרים ושירותים</div></div>
-          <button class="btn btn-primary" onclick="openModal('part')">+ הוסף מוצר</button>
+      <section id="section-parts" class="section pri-section">
+
+        <!-- Toolbar -->
+        <div class="pri-toolbar">
+          <span class="pri-toolbar-title">📦 מוצרים</span>
+          <div style="width:1px;height:24px;background:var(--border);margin:0 4px"></div>
+          <button class="pri-nav-btn" id="pt-btn-first" onclick="partNav('first')" title="ראשון">⏮</button>
+          <button class="pri-nav-btn" id="pt-btn-prev"  onclick="partNav('prev')"  title="קודם">◀</button>
+          <span class="pri-pos" id="pt-pos">—</span>
+          <button class="pri-nav-btn" id="pt-btn-next"  onclick="partNav('next')"  title="הבא">▶</button>
+          <button class="pri-nav-btn" id="pt-btn-last"  onclick="partNav('last')"  title="אחרון">⏭</button>
+          <div style="width:1px;height:24px;background:var(--border);margin:0 4px"></div>
+          <div class="pri-docnum" id="pt-docnum">מוצר חדש</div>
+          <div style="margin-right:auto;display:flex;gap:6px;align-items:center">
+            <button class="btn btn-sm" id="pt-search-btn" onclick="togglePartSearchMode()" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7">🔍 חיפוש</button>
+            <button class="btn btn-ghost btn-sm" onclick="partCancel()">✕ בטל</button>
+            <button class="btn btn-danger btn-sm" id="pt-delete-btn" onclick="partDelete()" style="display:none">🗑 מחק</button>
+            <button class="btn btn-primary btn-sm" onclick="partNew()">🗋 חדש</button>
+          </div>
         </div>
-        <div class="card" style="padding:0">
-          <table class="data-table">
-            <thead><tr>
-              <th>מק"ט</th>
-              <th>שם מוצר</th>
-              <th>תיאור</th>
-              <th>פעולות</th>
-            </tr></thead>
-            <tbody id="parts-tbody">
-              <tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:32px">טוען...</td></tr>
-            </tbody>
-          </table>
+
+        <div class="pri-body">
+
+          <!-- Master: Part fields -->
+          <div class="pri-master" id="pt-master">
+            <div class="pri-master-grid">
+              <div class="pri-field">
+                <label>מק"ט</label>
+                <input type="text" id="ptf-id" readonly placeholder="יווצר אוטומטית">
+              </div>
+              <div class="pri-field wide">
+                <label>שם מוצר / שירות *</label>
+                <input type="text" id="ptf-name" placeholder="שם המוצר" onchange="markPartDirty()">
+              </div>
+            </div>
+            <div class="pri-field" style="margin-top:10px">
+              <label>תיאור</label>
+              <textarea id="ptf-desc" rows="4" placeholder="תיאור המוצר / שירות..."
+                style="padding:7px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:13px;font-family:inherit;resize:vertical;width:100%"
+                onchange="markPartDirty()"></textarea>
+            </div>
+            <button class="btn btn-primary btn-sm" id="pt-save-btn" onclick="savePartHeader()" style="display:none;margin-top:10px">💾 שמור</button>
+          </div>
+
         </div>
       </section>
 
@@ -1821,213 +2081,9 @@
           <textarea id="c-notes" placeholder="הערות על הלקוח..."></textarea>
         </div>
 
-        <!-- פרטי התחברות -->
-        <div style="margin:16px 0 12px;border-top:1px solid var(--border);padding-top:14px">
-          <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px">🔐 פרטי התחברות</div>
-          <div class="form-grid">
-            <div class="form-group">
-              <label>סוג VPN</label>
-              <select id="c-vpn-type">
-                <option value="">בחר...</option>
-                <option value="Cisco AnyConnect">Cisco AnyConnect</option>
-                <option value="FortiClient">FortiClient</option>
-                <option value="GlobalProtect">GlobalProtect</option>
-                <option value="OpenVPN">OpenVPN</option>
-                <option value="Other">אחר</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>כתובת שרת VPN / IP</label>
-              <input type="text" id="c-server" placeholder="vpn.company.com">
-            </div>
-            <div class="form-group">
-              <label>שם משתמש VPN</label>
-              <input type="text" id="c-vpn-user" placeholder="username" autocomplete="off">
-            </div>
-            <div class="form-group">
-              <label>סיסמה VPN</label>
-              <div style="position:relative">
-                <input type="password" id="c-vpn-pass" placeholder="••••••••" autocomplete="new-password" style="padding-left:36px">
-                <button type="button" onclick="togglePass('c-vpn-pass',this)" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;font-size:14px;padding:0">👁</button>
-              </div>
-            </div>
-            <div class="form-group">
-              <label>שם משתמש ERP</label>
-              <input type="text" id="c-erp-user" placeholder="username" autocomplete="off">
-            </div>
-            <div class="form-group">
-              <label>סיסמה ERP</label>
-              <div style="position:relative">
-                <input type="password" id="c-erp-pass" placeholder="••••••••" autocomplete="new-password" style="padding-left:36px">
-                <button type="button" onclick="togglePass('c-erp-pass',this)" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;font-size:14px;padding:0">👁</button>
-              </div>
-            </div>
-            <div class="form-group full">
-              <label>כתובת URL להתחברות</label>
-              <input type="text" id="c-conn-url" placeholder="https://...">
-            </div>
-            <div class="form-group">
-              <label>פורט</label>
-              <input type="text" id="c-port" placeholder="443">
-            </div>
-            <div class="form-group">
-              <label>הערות התחברות</label>
-              <input type="text" id="c-conn-notes" placeholder="הערה קצרה...">
-            </div>
-          </div>
-        </div>
-
         <div class="modal-footer" style="padding:0;border:none;margin-top:4px">
           <button type="button" class="btn btn-ghost" onclick="closeModal('modal-client')">ביטול</button>
           <button type="submit" class="btn btn-primary" id="client-submit-btn">שמור לקוח</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<!-- Project Modal -->
-<div id="modal-project" class="modal-overlay" onclick="overlayClose(event,'modal-project')">
-  <div class="modal" onclick="event.stopPropagation()">
-    <div class="modal-header">
-      <span class="modal-title" id="project-modal-title">הוסף פרויקט</span>
-      <button class="modal-close" onclick="closeModal('modal-project')">×</button>
-    </div>
-    <div class="modal-body">
-      <form id="project-form" onsubmit="saveProject(event)">
-        <div class="form-grid">
-          <div class="form-group">
-            <label>תאריך פתיחה *</label>
-            <input type="date" id="p-opening-date" required>
-          </div>
-          <div class="form-group">
-            <label>מספר פרויקט</label>
-            <input type="text" id="p-number" readonly placeholder="יווצר אוטומטית" style="background:var(--bg);color:var(--text-muted);cursor:default">
-          </div>
-          <div class="form-group full">
-            <label>שם פרויקט *</label>
-            <input type="text" id="p-name" required placeholder="שם הפרויקט">
-          </div>
-          <div class="form-group">
-            <label>לקוח *</label>
-            <select id="p-client" required>
-              <option value="">בחר לקוח...</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>סטטוס</label>
-            <select id="p-status">
-              <option value="planning">📋 תכנון</option>
-              <option value="active">✅ פעיל</option>
-              <option value="paused">⏸ מושהה</option>
-              <option value="completed">🎯 הושלם</option>
-              <option value="cancelled">❌ בוטל</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>עדיפות</label>
-            <select id="p-priority">
-              <option value="low">נמוכה</option>
-              <option value="medium" selected>בינונית</option>
-              <option value="high">גבוהה</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>תאריך התחלה</label>
-            <input type="date" id="p-start">
-          </div>
-          <div class="form-group">
-            <label>תאריך סיום</label>
-            <input type="date" id="p-end">
-          </div>
-          <div class="form-group">
-            <label>מחיר לשעה (₪)</label>
-            <input type="number" id="p-budget" min="0" step="1" placeholder="0">
-          </div>
-          <div class="form-group">
-            <label>כמות שעות</label>
-            <input type="number" id="p-hours" min="0" step="0.5" placeholder="0">
-          </div>
-          <div class="form-group">
-            <label>התקדמות (%)</label>
-            <input type="number" id="p-progress" min="0" max="100" value="0">
-          </div>
-        </div>
-        <div class="form-group">
-          <label>תיאור</label>
-          <textarea id="p-desc" placeholder="תיאור הפרויקט..."></textarea>
-        </div>
-        <div class="modal-footer" style="padding:0;border:none;margin-top:4px">
-          <button type="button" class="btn btn-ghost" onclick="closeModal('modal-project')">ביטול</button>
-          <button type="submit" class="btn btn-primary" id="project-submit-btn">שמור פרויקט</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<!-- Task Modal -->
-<div id="modal-task" class="modal-overlay" onclick="overlayClose(event,'modal-task')">
-  <div class="modal" onclick="event.stopPropagation()">
-    <div class="modal-header">
-      <span class="modal-title" id="task-modal-title">הוסף משימה</span>
-      <button class="modal-close" onclick="closeModal('modal-task')">×</button>
-    </div>
-    <div class="modal-body">
-      <form id="task-form" onsubmit="saveTask(event)">
-        <div class="form-grid">
-          <div class="form-group">
-            <label>תאריך פתיחה *</label>
-            <input type="date" id="t-opening-date" required>
-          </div>
-          <div class="form-group">
-            <label>מספר משימה</label>
-            <input type="text" id="t-number" readonly placeholder="יווצר אוטומטית" style="background:var(--bg);color:var(--text-muted);cursor:default">
-          </div>
-          <div class="form-group full">
-            <label>כותרת *</label>
-            <input type="text" id="t-title" required placeholder="כותרת המשימה">
-          </div>
-          <div class="form-group">
-            <label>פרויקט *</label>
-            <select id="t-project" required>
-              <option value="">בחר פרויקט...</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>סטטוס</label>
-            <select id="t-status">
-              <option value="pending">⏳ ממתין</option>
-              <option value="in_progress">🔄 בביצוע</option>
-              <option value="completed">✅ הושלם</option>
-              <option value="blocked">🚫 חסום</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>עדיפות</label>
-            <select id="t-priority">
-              <option value="low">נמוכה</option>
-              <option value="medium" selected>בינונית</option>
-              <option value="high">גבוהה</option>
-              <option value="urgent">דחוף</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>תאריך יעד</label>
-            <input type="date" id="t-due">
-          </div>
-          <div class="form-group">
-            <label>אחראי</label>
-            <input type="text" id="t-assigned" placeholder="שם האחראי">
-          </div>
-        </div>
-        <div class="form-group">
-          <label>תיאור</label>
-          <textarea id="t-desc" placeholder="פרטי המשימה..."></textarea>
-        </div>
-        <div class="modal-footer" style="padding:0;border:none;margin-top:4px">
-          <button type="button" class="btn btn-ghost" onclick="closeModal('modal-task')">ביטול</button>
-          <button type="submit" class="btn btn-primary" id="task-submit-btn">שמור משימה</button>
         </div>
       </form>
     </div>
@@ -2191,37 +2247,6 @@
   </div>
 </div>
 
-<div id="modal-part" class="modal-overlay" onclick="overlayClose(event,'modal-part')">
-  <div class="modal" style="max-width:480px" onclick="event.stopPropagation()">
-    <div class="modal-header">
-      <span class="modal-title" id="part-modal-title">הוסף מוצר</span>
-      <button class="modal-close" onclick="closeModal('modal-part')">×</button>
-    </div>
-    <div class="modal-body">
-      <form id="part-form" onsubmit="savePart(event)">
-        <div class="form-grid">
-          <div class="form-group">
-            <label>מק"ט</label>
-            <input type="text" id="pt-part" placeholder="יווצר אוטומטית" style="background:var(--bg);color:var(--text-muted)" readonly>
-          </div>
-          <div class="form-group">
-            <label>שם מוצר *</label>
-            <input type="text" id="pt-name" required placeholder="שם המוצר / שירות">
-          </div>
-          <div class="form-group full">
-            <label>תיאור</label>
-            <textarea id="pt-desc" placeholder="תיאור המוצר..."></textarea>
-          </div>
-        </div>
-        <div class="modal-footer" style="padding:0;border:none;margin-top:4px">
-          <button type="button" class="btn btn-ghost" onclick="closeModal('modal-part')">ביטול</button>
-          <button type="submit" class="btn btn-primary" id="part-submit-btn">שמור מוצר</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
 <!-- PDF Report Template (hidden) -->
 <div id="pdf-report">
   <!-- LOGO PLACEHOLDER in PDF -->
@@ -2319,33 +2344,18 @@ async function openModal(type) {
     state.editingId = null;
     document.getElementById('client-modal-title').textContent = 'הוסף לקוח';
     document.getElementById('client-form').reset();
-    ['c-vpn-type','c-server','c-vpn-user','c-vpn-pass','c-erp-user','c-erp-pass','c-conn-url','c-port','c-conn-notes']
-      .forEach(f => { const el = document.getElementById(f); if(el) el.value=''; });
     document.getElementById('c-opening-date').value = today;
     document.getElementById('c-number').value = '';
     document.getElementById('modal-client').classList.add('open');
   } else if (type === 'project') {
-    state.editingId = null;
-    document.getElementById('project-modal-title').textContent = 'הוסף פרויקט';
-    document.getElementById('project-form').reset();
-    populateClientSelect('p-client');
-    document.getElementById('p-opening-date').value = today;
-    document.getElementById('p-number').value = '';
-    document.getElementById('modal-project').classList.add('open');
+    showSection('projects');
+    projNew();
   } else if (type === 'task') {
-    state.editingId = null;
-    document.getElementById('task-modal-title').textContent = 'הוסף משימה';
-    document.getElementById('task-form').reset();
-    populateProjectSelect('t-project');
-    document.getElementById('t-opening-date').value = today;
-    document.getElementById('t-number').value = '';
-    document.getElementById('modal-task').classList.add('open');
+    showSection('tasks');
+    taskNew();
   } else if (type === 'part') {
-    state.editingId = null;
-    document.getElementById('part-modal-title').textContent = 'הוסף מוצר';
-    document.getElementById('part-form').reset();
-    document.getElementById('pt-part').value = '';
-    document.getElementById('modal-part').classList.add('open');
+    showSection('parts');
+    partNew();
   } else if (type === 'event') {
     state.editingId = null;
     document.getElementById('event-modal-title').textContent = 'הוסף אירוע';
@@ -2378,7 +2388,7 @@ function showSection(name) {
   else if (name === 'projects') loadProjects();
   else if (name === 'tasks') loadTasks();
   else if (name === 'calendar') loadCalendar();
-  else if (name === 'parts') { loadPartsState().then(loadParts); }
+  else if (name === 'parts') loadParts();
   else if (name === 'statuses') loadStatuses();
   else if (name === 'quotes') {
     if (state.clients.length === 0) loadClients().then(() => loadQuotes());
@@ -2715,17 +2725,26 @@ function renderCustomerHistory(history) {
 }
 
 function switchDetailTab(tab, btn) {
-  ['projects','info','history'].forEach(t => {
-    document.getElementById('cd-tab-' + t).style.display = t === tab ? '' : 'none';
+  ['projects','connections','info','history'].forEach(t => {
+    const el = document.getElementById('cd-tab-' + t);
+    if (el) el.style.display = t === tab ? '' : 'none';
   });
+  // connection form resets when switching away
+  if (tab !== 'connections') cancelConnForm();
   document.querySelectorAll('.md-tab').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
+  if (tab === 'connections' && state.selectedCustomer) loadCustomerConnections(state.selectedCustomer.custid);
 }
 
 function openModalForCustomer() {
-  openModal('project');
+  // Navigate to projects ERP section and open new project with client pre-filled
+  showSection('projects');
+  projNew();
   if (state.selectedCustomer) {
-    setTimeout(() => populateClientSelect('p-client', state.selectedCustomer.custid), 50);
+    setTimeout(() => {
+      document.getElementById('prf-cust').value = state.selectedCustomer.custid;
+      markProjDirty();
+    }, 80);
   }
 }
 
@@ -2754,21 +2773,6 @@ async function editClient(id) {
   document.getElementById('c-email').value   = c.email;
   document.getElementById('c-phone').value   = c.phone||'';
   document.getElementById('c-notes').value   = c.notes||'';
-  // Load connection details
-  const connFields = ['c-vpn-type','c-server','c-vpn-user','c-vpn-pass','c-erp-user','c-erp-pass','c-conn-url','c-port','c-conn-notes'];
-  connFields.forEach(f => { const el = document.getElementById(f); if (el) el.value = ''; });
-  const { data: conn } = await db.from('client_connections').select('*').eq('custid', id).maybeSingle();
-  if (conn) {
-    document.getElementById('c-vpn-type').value   = conn.vpn_type||'';
-    document.getElementById('c-server').value     = conn.server_address||'';
-    document.getElementById('c-vpn-user').value   = conn.vpn_username||'';
-    document.getElementById('c-vpn-pass').value   = conn.vpn_password||'';
-    document.getElementById('c-erp-user').value   = conn.erp_username||'';
-    document.getElementById('c-erp-pass').value   = conn.erp_password||'';
-    document.getElementById('c-conn-url').value   = conn.connection_url||'';
-    document.getElementById('c-port').value       = conn.port||'';
-    document.getElementById('c-conn-notes').value = conn.notes||'';
-  }
   document.getElementById('modal-client').classList.add('open');
 }
 
@@ -2799,20 +2803,6 @@ async function saveClient(e) {
   btn.disabled = false;
   btn.textContent = 'שמור לקוח';
   if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
-  // Save connection details
-  const connPayload = {
-    custid:            id,
-    vpn_type:          document.getElementById('c-vpn-type').value || null,
-    server_address:    document.getElementById('c-server').value.trim() || null,
-    vpn_username:      document.getElementById('c-vpn-user').value.trim() || null,
-    vpn_password:      document.getElementById('c-vpn-pass').value || null,
-    erp_username: document.getElementById('c-erp-user').value.trim() || null,
-    erp_password: document.getElementById('c-erp-pass').value || null,
-    connection_url:    document.getElementById('c-conn-url').value.trim() || null,
-    port:              document.getElementById('c-port').value.trim() || null,
-    notes:             document.getElementById('c-conn-notes').value.trim() || null
-  };
-  await db.from('client_connections').upsert(connPayload, { onConflict: 'custid' });
   showToast(state.editingId ? 'הלקוח עודכן!' : 'הלקוח נוסף!', 'success');
   const justAddedId = state.editingId;
   closeModal('modal-client');
@@ -2866,7 +2856,114 @@ function copyPortalLink() {
   navigator.clipboard.writeText(txt).then(() => showToast('הקישור הועתק!', 'success'));
 }
 
-// ─── PROJECTS ───
+// ─── CLIENT CONNECTIONS (son tab) ───
+let _editingConnId = null;
+
+async function loadCustomerConnections(custid) {
+  const { data } = await db.from('client_connections').select('*').eq('custid', custid).order('cdate');
+  const list  = document.getElementById('cd-connections-list');
+  const empty = document.getElementById('cd-connections-empty');
+  const badge = document.getElementById('cd-conn-count');
+  const conns = data || [];
+  badge.textContent = conns.length || '';
+  if (!conns.length) { list.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  list.innerHTML = conns.map(c => `
+    <div style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px;background:var(--card)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <strong style="font-size:13px">${esc(c.connname||'חיבור')}</strong>
+        <div style="display:flex;gap:6px">
+          <button class="btn-icon" onclick="editConn('${c.connid}')" title="ערוך">✏️</button>
+          <button class="btn-icon danger" onclick="deleteConn('${c.connid}','${esc(c.connname||'חיבור')}')" title="מחק">🗑️</button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:12px;color:var(--text-muted)">
+        ${c.vpn_type ? `<span>VPN: <strong style="color:var(--text)">${esc(c.vpn_type)}</strong></span>` : ''}
+        ${c.server_address ? `<span>שרת: <strong style="color:var(--text)">${esc(c.server_address)}</strong></span>` : ''}
+        ${c.vpn_username ? `<span>משתמש VPN: <strong style="color:var(--text)">${esc(c.vpn_username)}</strong></span>` : ''}
+        ${c.erp_username ? `<span>משתמש ERP: <strong style="color:var(--text)">${esc(c.erp_username)}</strong></span>` : ''}
+        ${c.connection_url ? `<span style="grid-column:span 2">URL: <strong style="color:var(--text)">${esc(c.connection_url)}</strong></span>` : ''}
+        ${c.port ? `<span>פורט: <strong style="color:var(--text)">${esc(c.port)}</strong></span>` : ''}
+        ${c.notes ? `<span style="grid-column:span 2">הערות: ${esc(c.notes)}</span>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+function addConn() {
+  _editingConnId = null;
+  document.getElementById('cd-conn-form-title').textContent = 'הוספת חיבור';
+  ['conn-name','conn-server','conn-vpn-user','conn-vpn-pass','conn-erp-user','conn-erp-pass','conn-url','conn-port','conn-notes']
+    .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  document.getElementById('conn-vpn-type').value = '';
+  const form = document.getElementById('cd-conn-form');
+  form.style.display = '';
+  document.getElementById('cd-connections-list').insertAdjacentElement('beforebegin', form);
+  document.getElementById('conn-name').focus();
+}
+
+async function editConn(connid) {
+  const { data: c } = await db.from('client_connections').select('*').eq('connid', connid).single();
+  if (!c) return;
+  _editingConnId = connid;
+  document.getElementById('cd-conn-form-title').textContent = 'עריכת חיבור';
+  document.getElementById('conn-name').value      = c.connname||'';
+  document.getElementById('conn-vpn-type').value  = c.vpn_type||'';
+  document.getElementById('conn-server').value    = c.server_address||'';
+  document.getElementById('conn-vpn-user').value  = c.vpn_username||'';
+  document.getElementById('conn-vpn-pass').value  = c.vpn_password||'';
+  document.getElementById('conn-erp-user').value  = c.erp_username||'';
+  document.getElementById('conn-erp-pass').value  = c.erp_password||'';
+  document.getElementById('conn-url').value       = c.connection_url||'';
+  document.getElementById('conn-port').value      = c.port||'';
+  document.getElementById('conn-notes').value     = c.notes||'';
+  const form = document.getElementById('cd-conn-form');
+  form.style.display = '';
+  document.getElementById('cd-connections-list').insertAdjacentElement('beforebegin', form);
+  document.getElementById('conn-name').focus();
+}
+
+async function saveConn() {
+  if (!state.selectedCustomer) return;
+  const payload = {
+    custid:         state.selectedCustomer.custid,
+    connname:       document.getElementById('conn-name').value.trim()||null,
+    vpn_type:       document.getElementById('conn-vpn-type').value||null,
+    server_address: document.getElementById('conn-server').value.trim()||null,
+    vpn_username:   document.getElementById('conn-vpn-user').value.trim()||null,
+    vpn_password:   document.getElementById('conn-vpn-pass').value||null,
+    erp_username:   document.getElementById('conn-erp-user').value.trim()||null,
+    erp_password:   document.getElementById('conn-erp-pass').value||null,
+    connection_url: document.getElementById('conn-url').value.trim()||null,
+    port:           document.getElementById('conn-port').value.trim()||null,
+    notes:          document.getElementById('conn-notes').value.trim()||null
+  };
+  let error;
+  if (_editingConnId) {
+    ({ error } = await db.from('client_connections').update(payload).eq('connid', _editingConnId));
+  } else {
+    ({ error } = await db.from('client_connections').insert(payload));
+  }
+  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+  showToast(_editingConnId ? 'החיבור עודכן!' : 'החיבור נוסף!', 'success');
+  cancelConnForm();
+  loadCustomerConnections(state.selectedCustomer.custid);
+}
+
+async function deleteConn(connid, name) {
+  if (!confirm(`למחוק את החיבור "${name}"?`)) return;
+  const { error } = await db.from('client_connections').delete().eq('connid', connid);
+  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+  showToast('נמחק', 'success');
+  loadCustomerConnections(state.selectedCustomer.custid);
+}
+
+function cancelConnForm() {
+  const form = document.getElementById('cd-conn-form');
+  if (form) form.style.display = 'none';
+  _editingConnId = null;
+}
+
+// ─── PROJECTS (ERP Style) ───
 function populateClientSelect(selectId, selectedId = '') {
   const sel = document.getElementById(selectId);
   const prev = sel.value || selectedId;
@@ -2874,130 +2971,303 @@ function populateClientSelect(selectId, selectedId = '') {
     state.clients.map(c => `<option value="${c.custid}" ${c.custid===prev?'selected':''}>${esc(c.custname)}</option>`).join('');
 }
 
-async function loadProjects(filterClientId = '') {
+const projState = { list:[], idx:-1, current:null, dirty:false, saving:false };
+let _prSearchMode = false, _prSearchSnap = {};
+
+async function loadProjects() {
   if (state.clients.length === 0) await loadClients();
-  const { data, error } = await db.from('projects').select('*').order('cdate', { ascending: false });
+  const { data } = await db.from('projects').select('*').order('cdate', { ascending: false });
   state.projects = data || [];
-  populateClientFilter();
-  if (filterClientId) document.getElementById('proj-filter-client').value = filterClientId;
-  renderProjectsTable();
+  populateProjClientSelect();
+  projNew();
 }
 
-function goToClientProjects(clientId) {
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.getElementById('section-projects').classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.querySelector('.nav-item[data-section="projects"]').classList.add('active');
-  loadProjects(clientId);
+function populateProjClientSelect() {
+  const sel = document.getElementById('prf-cust');
+  if (!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">-- בחר לקוח --</option>' +
+    state.clients.map(c => `<option value="${c.custid}" ${c.custid===prev?'selected':''}>${esc(c.custname)}</option>`).join('');
 }
 
-function populateClientFilter() {
-  const sel = document.getElementById('proj-filter-client');
-  const curr = sel.value;
-  sel.innerHTML = '<option value="">כל הלקוחות</option>' +
-    state.clients.map(c => `<option value="${c.custid}" ${c.custid===curr?'selected':''}>${esc(c.custname)}</option>`).join('');
+function projNew() {
+  if (_prSearchMode) exitProjSearchMode(false);
+  projState.idx = -1; projState.current = null; projState.dirty = false; projState.saving = false;
+  document.getElementById('pr-docnum').textContent = 'פרויקט חדש';
+  document.getElementById('prf-num').value      = '';
+  document.getElementById('prf-odate').value    = new Date().toISOString().slice(0,10);
+  document.getElementById('prf-name').value     = '';
+  document.getElementById('prf-cust').value     = '';
+  document.getElementById('prf-status').value   = 'planning';
+  document.getElementById('prf-priority').value = 'medium';
+  document.getElementById('prf-sdate').value    = '';
+  document.getElementById('prf-edate').value    = '';
+  document.getElementById('prf-budget').value   = '';
+  document.getElementById('prf-hours').value    = '';
+  document.getElementById('prf-progress').value = '0';
+  document.getElementById('prf-desc').value     = '';
+  document.getElementById('pr-tasks-tbody').innerHTML = '';
+  projState.list = [];
+  setProjDirtyUI(false);
+  document.getElementById('pr-delete-btn').style.display = 'none';
+  updateProjNavButtons();
+  document.getElementById('prf-name').focus();
 }
 
-function renderProjectsTable() {
-  const clientId = document.getElementById('proj-filter-client').value;
-  const status   = document.getElementById('proj-filter-status').value;
-  const search   = document.getElementById('proj-search').value.toLowerCase();
-  const filtered = state.projects.filter(p =>
-    (!clientId || p.custid === clientId) &&
-    (!status   || p.status === status) &&
-    (!search   || p.projname.toLowerCase().includes(search))
-  );
-  document.getElementById('projects-count-sub').textContent = `${filtered.length} פרויקטים`;
-  const tbody = document.getElementById('projects-tbody');
-  const empty = document.getElementById('projects-empty');
-  if (filtered.length === 0) { tbody.innerHTML=''; empty.style.display='block'; return; }
-  empty.style.display='none';
-  tbody.innerHTML = filtered.map(p => {
-    const client = state.clients.find(c => c.custid === p.custid);
-    const total = (p.budget && p.hours) ? p.budget * p.hours : null;
-    return `<tr onclick="editProject('${p.projid}')" style="cursor:pointer">
-      <td><strong>${esc(p.projname)}</strong></td>
-      <td>${esc(client?.custname||'—')}</td>
-      <td>${badge(p.status, LABELS.status[p.status]||p.status)}</td>
-      <td>${badge(p.priority, LABELS.priority[p.priority]||p.priority)}</td>
-      <td>
-        <div class="prog-wrap">
-          <div class="prog-bar"><div class="prog-fill" style="width:${p.progress||0}%"></div></div>
-          <span class="prog-pct">${p.progress||0}%</span>
-        </div>
-      </td>
-      <td>${p.budget ? '₪'+Number(p.budget).toLocaleString('he-IL') : '—'}</td>
-      <td>${p.hours != null ? p.hours : '—'}</td>
-      <td>${total != null ? '<strong>₪'+Number(total).toLocaleString('he-IL')+'</strong>' : '—'}</td>
-      <td>${fmtDate(p.edate)}</td>
-      <td class="actions-cell" onclick="event.stopPropagation()">
-        <button class="btn-icon" onclick="editProject('${p.projid}')" title="ערוך">✏️</button>
-        <button class="btn-icon danger" onclick="confirmDelete('project','${p.projid}','${esc(p.projname)}')" title="מחק">🗑️</button>
-      </td>
-    </tr>`;
-  }).join('');
+async function projNav(dir) {
+  if (projState.dirty && projState.current) await saveProjHeader(true);
+  const list = projState.list;
+  if (!list.length) return;
+  let idx = projState.idx;
+  if      (dir === 'first') idx = 0;
+  else if (dir === 'last')  idx = list.length - 1;
+  else if (dir === 'prev')  idx = Math.max(0, idx - 1);
+  else if (dir === 'next')  idx = Math.min(list.length - 1, idx + 1);
+  await loadProjById(list[idx].projid, idx);
+}
+
+async function loadProjById(projid, idx) {
+  const { data: p } = await db.from('projects').select('*').eq('projid', projid).single();
+  const { data: tasks } = await db.from('tasks').select('*').eq('projid', projid).order('cdate');
+  projState.current = p;
+  projState.idx     = idx ?? projState.list.findIndex(x => x.projid === projid);
+  projState.dirty   = false;
+  document.getElementById('pr-docnum').textContent = p.projnum || '';
+  document.getElementById('prf-num').value      = p.projnum  || '';
+  document.getElementById('prf-odate').value    = p.odate    || '';
+  document.getElementById('prf-name').value     = p.projname || '';
+  document.getElementById('prf-cust').value     = p.custid   || '';
+  document.getElementById('prf-status').value   = p.status   || 'planning';
+  document.getElementById('prf-priority').value = p.priority || 'medium';
+  document.getElementById('prf-sdate').value    = p.sdate    || '';
+  document.getElementById('prf-edate').value    = p.edate    || '';
+  document.getElementById('prf-budget').value   = p.budget   ?? '';
+  document.getElementById('prf-hours').value    = p.hours    ?? '';
+  document.getElementById('prf-progress').value = p.progress ?? 0;
+  document.getElementById('prf-desc').value     = p.projdes  || '';
+  renderProjTasksSon(tasks || []);
+  setProjDirtyUI(false);
+  document.getElementById('pr-delete-btn').style.display = '';
+  updateProjNavButtons();
+  // Sync state.projects
+  const si = state.projects.findIndex(x => x.projid === projid);
+  if (si >= 0) state.projects[si] = p; else state.projects.unshift(p);
+}
+
+function renderProjTasksSon(tasks) {
+  const tbody = document.getElementById('pr-tasks-tbody');
+  if (!tasks.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px">אין משימות לפרויקט זה — <a href="#" onclick="addProjTask();return false" style="color:var(--primary)">הוסף משימה</a></td></tr>`;
+    return;
+  }
+  const statusOpts = ['pending','in_progress','completed','blocked'].map(s =>
+    `<option value="${s}">${{pending:'ממתין',in_progress:'בביצוע',completed:'הושלם',blocked:'חסום'}[s]}</option>`).join('');
+  const prioOpts = ['low','medium','high','urgent'].map(s =>
+    `<option value="${s}">${{low:'נמוכה',medium:'בינונית',high:'גבוהה',urgent:'דחוף'}[s]}</option>`).join('');
+  tbody.innerHTML = tasks.map((t, i) => `
+    <tr class="saved-row">
+      <td class="pri-line-num">${i+1}</td>
+      <td><input class="pri-cell" value="${esc(t.taskname)}" onchange="updateProjTask('${t.taskid}','taskname',this.value)"></td>
+      <td><select class="pri-cell" onchange="updateProjTask('${t.taskid}','status',this.value)">${statusOpts.replace(`value="${t.status}"`,`value="${t.status}" selected`)}</select></td>
+      <td><select class="pri-cell" onchange="updateProjTask('${t.taskid}','priority',this.value)">${prioOpts.replace(`value="${t.priority}"`,`value="${t.priority}" selected`)}</select></td>
+      <td><input class="pri-cell" type="date" value="${t.duedate||''}" onchange="updateProjTask('${t.taskid}','duedate',this.value||null)"></td>
+      <td><input class="pri-cell" value="${esc(t.assignto||'')}" onchange="updateProjTask('${t.taskid}','assignto',this.value)"></td>
+      <td><button class="pri-del-btn" onclick="deleteProjTask('${t.taskid}')">✕</button></td>
+    </tr>`).join('') +
+    `<tr><td colspan="7" style="padding:6px 10px"><button class="btn btn-ghost btn-sm" onclick="addProjTask()">+ משימה חדשה</button></td></tr>`;
+}
+
+async function addProjTask() {
+  if (!projState.current) { showToast('שמור את הפרויקט תחילה', 'info'); return; }
+  const payload = { projid: projState.current.projid, taskname: 'משימה חדשה', status: 'pending', priority: 'medium',
+    odate: new Date().toISOString().slice(0,10) };
+  const { data, error } = await db.from('tasks').insert(payload).select().single();
+  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+  await logActivity('task', data.taskid, data.taskname, 'created');
+  const { data: tasks } = await db.from('tasks').select('*').eq('projid', projState.current.projid).order('cdate');
+  state.tasks = state.tasks.filter(t => t.projid !== projState.current.projid).concat(tasks||[]);
+  renderProjTasksSon(tasks||[]);
+}
+
+async function updateProjTask(taskid, field, value) {
+  await db.from('tasks').update({ [field]: value||null }).eq('taskid', taskid);
+  const ti = state.tasks.findIndex(t => t.taskid === taskid);
+  if (ti >= 0) state.tasks[ti][field] = value;
+}
+
+async function deleteProjTask(taskid) {
+  if (!confirm('למחוק משימה זו?')) return;
+  await db.from('tasks').delete().eq('taskid', taskid);
+  state.tasks = state.tasks.filter(t => t.taskid !== taskid);
+  const { data: tasks } = await db.from('tasks').select('*').eq('projid', projState.current.projid).order('cdate');
+  renderProjTasksSon(tasks||[]);
+}
+
+function switchProjTab(tab, btn) {
+  document.getElementById('pr-tab-tasks').style.display = tab === 'tasks' ? '' : 'none';
+  document.getElementById('pr-tab-desc').style.display  = tab === 'desc'  ? '' : 'none';
+  document.querySelectorAll('.pri-son-tab[id^="pr-tab"]').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+}
+
+function markProjDirty() { projState.dirty = true; setProjDirtyUI(true); }
+
+function setProjDirtyUI(dirty) {
+  const btn = document.getElementById('pr-save-btn');
+  if (btn) btn.style.display = dirty ? '' : 'none';
+  document.getElementById('pr-master')?.classList.toggle('pri-unsaved', dirty);
+}
+
+async function saveProjHeader(silent = false) {
+  if (projState.saving) return;
+  const name = document.getElementById('prf-name').value.trim();
+  const cust = document.getElementById('prf-cust').value;
+  if (!name || !cust) { if (!silent) showToast('שם פרויקט ולקוח הם שדות חובה', 'error'); return; }
+  projState.saving = true;
+  const payload = {
+    projname:  name,
+    custid:    cust,
+    status:    document.getElementById('prf-status').value,
+    priority:  document.getElementById('prf-priority').value,
+    sdate:     document.getElementById('prf-sdate').value||null,
+    edate:     document.getElementById('prf-edate').value||null,
+    budget:    parseFloat(document.getElementById('prf-budget').value)||null,
+    hours:     parseFloat(document.getElementById('prf-hours').value)||null,
+    progress:  parseInt(document.getElementById('prf-progress').value)||0,
+    odate:     document.getElementById('prf-odate').value||null
+  };
+  let p, error;
+  if (projState.current) {
+    const r = await db.from('projects').update(payload).eq('projid', projState.current.projid).select().single();
+    error = r.error; p = r.data;
+    if (!error) await logActivity('project', projState.current.projid, name, 'updated');
+  } else {
+    const r = await db.from('projects').insert(payload).select().single();
+    error = r.error; p = r.data;
+    if (!error) await logActivity('project', p.projid, name, 'created');
+  }
+  projState.saving = false;
+  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+  projState.current = p; projState.dirty = false;
+  document.getElementById('prf-num').value = p.projnum||'';
+  document.getElementById('pr-docnum').textContent = p.projnum||'';
+  document.getElementById('pr-delete-btn').style.display = '';
+  setProjDirtyUI(false);
+  if (!silent) showToast('נשמר', 'success');
+  // Update state.projects
+  const si = state.projects.findIndex(x => x.projid === p.projid);
+  if (si >= 0) state.projects[si] = p; else state.projects.unshift(p);
+  if (!projState.list.length) { projState.list = [p]; projState.idx = 0; }
+  updateProjNavButtons();
+  loadDashboard();
+  if (state.selectedCustomer?.custid === p.custid) loadCustomerProjects(state.selectedCustomer.custid);
+}
+
+async function saveProjDesc() {
+  if (!projState.current) return;
+  const val = document.getElementById('prf-desc').value;
+  await db.from('projects').update({ projdes: val||null }).eq('projid', projState.current.projid);
+  if (projState.current) projState.current.projdes = val;
+}
+
+async function projCancel() {
+  if (!projState.current) { projNew(); return; }
+  await loadProjById(projState.current.projid, projState.idx);
+}
+
+async function projDelete() {
+  if (!projState.current) return;
+  const name = projState.current.projname;
+  if (!confirm(`למחוק את הפרויקט "${name}"? פעולה זו אינה הפיכה.`)) return;
+  const { error } = await db.from('projects').delete().eq('projid', projState.current.projid);
+  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+  await logActivity('project', projState.current.projid, name, 'deleted');
+  state.projects = state.projects.filter(p => p.projid !== projState.current.projid);
+  projState.list = projState.list.filter(p => p.projid !== projState.current.projid);
+  showToast('הפרויקט נמחק', 'success');
+  loadDashboard();
+  if (projState.list.length) await loadProjById(projState.list[Math.min(projState.idx, projState.list.length-1)].projid);
+  else projNew();
+}
+
+function updateProjNavButtons() {
+  const n = projState.list.length, i = projState.idx;
+  document.getElementById('pr-btn-first').disabled = i <= 0;
+  document.getElementById('pr-btn-prev').disabled  = i <= 0;
+  document.getElementById('pr-btn-next').disabled  = i >= n - 1;
+  document.getElementById('pr-btn-last').disabled  = i >= n - 1;
+  document.getElementById('pr-pos').textContent    = n ? `${i+1} / ${n}` : '—';
+}
+
+function toggleProjSearchMode() { _prSearchMode ? exitProjSearchMode(true) : enterProjSearchMode(); }
+
+function enterProjSearchMode() {
+  _prSearchMode = true;
+  const master = document.querySelector('#section-projects .pri-master');
+  const fields = master.querySelectorAll('input:not([readonly]), select');
+  fields.forEach(f => { _prSearchSnap[f.id] = f.value; f.value = ''; });
+  master.style.background = '#f0fdf4'; master.style.borderColor = '#86efac';
+  fields.forEach(f => { f.style.borderColor = '#4ade80'; f.style.background = '#f0fdf4'; });
+  const btn = document.getElementById('pr-search-btn');
+  btn.style.background = '#16a34a'; btn.style.color = 'white';
+  btn.textContent = '✓ בצע (Enter)  |  ESC לביטול';
+  master.addEventListener('keydown', _projSearchKey);
+  document.getElementById('prf-name').focus();
+}
+
+function exitProjSearchMode(restore) {
+  _prSearchMode = false;
+  const master = document.querySelector('#section-projects .pri-master');
+  const fields = master.querySelectorAll('input:not([readonly]), select');
+  master.style.background = ''; master.style.borderColor = '';
+  fields.forEach(f => { f.style.borderColor = ''; f.style.background = ''; });
+  const btn = document.getElementById('pr-search-btn');
+  btn.style.background = '#d1fae5'; btn.style.color = '#065f46'; btn.textContent = '🔍 חיפוש';
+  master.removeEventListener('keydown', _projSearchKey);
+  if (restore) Object.entries(_prSearchSnap).forEach(([id, val]) => { const el = document.getElementById(id); if (el) el.value = val; });
+}
+
+async function _projSearchKey(e) {
+  if (e.key === 'Escape') { exitProjSearchMode(true); return; }
+  if (e.key !== 'Enter')  return;
+  e.preventDefault();
+  const name   = document.getElementById('prf-name').value.trim();
+  const custid = document.getElementById('prf-cust').value;
+  const status = document.getElementById('prf-status').value;
+  const sdate  = document.getElementById('prf-sdate').value;
+  const edate  = document.getElementById('prf-edate').value;
+  exitProjSearchMode(false);
+  const allEmpty = !name && !custid && !status && !sdate && !edate;
+  if (allEmpty) { projNew(); return; }
+  let q = db.from('projects').select('projid,projname,projnum').order('cdate', { ascending: false });
+  if (name)   q = q.ilike('projname', `%${name}%`);
+  if (custid) q = q.eq('custid', custid);
+  if (status) q = q.eq('status', status);
+  if (sdate)  q = q.gte('sdate', sdate);
+  if (edate)  q = q.lte('edate', edate);
+  const { data, error } = await q;
+  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+  projState.list = data || [];
+  if (!projState.list.length) { showToast('לא נמצאו פרויקטים', 'info'); return; }
+  await loadProjById(projState.list[0].projid, 0);
+  if (projState.list.length > 1) showToast(`נמצאו ${projState.list.length} פרויקטים — נווט עם החיצים`, 'info');
 }
 
 function editProject(id) {
+  showSection('projects');
   const p = state.projects.find(x => x.projid === id);
-  if (!p) return;
-  state.editingId = id;
-  document.getElementById('project-modal-title').textContent = 'עריכת פרויקט';
-  document.getElementById('p-opening-date').value = p.odate||'';
-  document.getElementById('p-number').value        = p.projnum||'';
-  populateClientSelect('p-client', p.custid);
-  document.getElementById('p-name').value = p.projname;
-  document.getElementById('p-client').value = p.custid;
-  document.getElementById('p-status').value = p.status;
-  document.getElementById('p-priority').value = p.priority;
-  document.getElementById('p-start').value = p.sdate||'';
-  document.getElementById('p-end').value = p.edate||'';
-  document.getElementById('p-budget').value = p.budget||'';
-  document.getElementById('p-hours').value = p.hours||'';
-  document.getElementById('p-progress').value = p.progress||0;
-  document.getElementById('p-desc').value = p.projdes||'';
-  document.getElementById('modal-project').classList.add('open');
-}
-
-async function saveProject(e) {
-  e.preventDefault();
-  const btn = document.getElementById('project-submit-btn');
-  btn.disabled = true; btn.textContent = 'שומר...';
-  const payload = {
-    projname:  document.getElementById('p-name').value.trim(),
-    custid:    document.getElementById('p-client').value,
-    status:    document.getElementById('p-status').value,
-    priority:  document.getElementById('p-priority').value,
-    sdate:     document.getElementById('p-start').value||null,
-    edate:     document.getElementById('p-end').value||null,
-    budget:    parseFloat(document.getElementById('p-budget').value)||null,
-    hours:     parseFloat(document.getElementById('p-hours').value)||null,
-    progress:  parseInt(document.getElementById('p-progress').value)||0,
-    projdes:   document.getElementById('p-desc').value.trim()||null,
-    odate:     document.getElementById('p-opening-date').value||null
-  };
-  let error, id;
-  if (state.editingId) {
-    const r = await db.from('projects').update(payload).eq('projid', state.editingId).select().single();
-    error = r.error; id = state.editingId;
-    if (!error) await logActivity('project', id, payload.projname, 'updated');
+  if (p) {
+    if (!projState.list.find(x => x.projid === id)) projState.list = state.projects;
+    loadProjById(id, projState.list.findIndex(x => x.projid === id));
   } else {
-    const r = await db.from('projects').insert(payload).select().single();
-    error = r.error; id = r.data?.projid;
-    if (!error) await logActivity('project', id, payload.projname, 'created');
+    loadProjById(id, 0);
   }
-  btn.disabled = false; btn.textContent = 'שמור פרויקט';
-  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
-  showToast(state.editingId ? 'הפרויקט עודכן!' : 'הפרויקט נוסף!', 'success');
-  closeModal('modal-project');
-  loadProjects();
-  loadDashboard();
-  if (state.selectedCustomer) loadCustomerProjects(state.selectedCustomer.custid);
 }
 
-// ─── TASKS ───
+// ─── TASKS (ERP Style) ───
 function populateProjectSelect(selectId, selectedId = '') {
   const sel = document.getElementById(selectId);
+  if (!sel) return;
   const prev = sel.value || selectedId;
   sel.innerHTML = '<option value="">בחר פרויקט...</option>' +
     state.projects.map(p => {
@@ -3006,103 +3276,393 @@ function populateProjectSelect(selectId, selectedId = '') {
     }).join('');
 }
 
+const taskState = { list:[], idx:-1, current:null, dirty:false, saving:false };
+let _tkSearchMode = false, _tkSearchSnap = {};
+
 async function loadTasks() {
   if (state.clients.length === 0) await loadClients();
   if (state.projects.length === 0) await loadProjects();
   const { data } = await db.from('tasks').select('*').order('cdate', { ascending: false });
   state.tasks = data || [];
-  populateTaskProjectFilter();
-  renderTasksTable();
+  populateTaskProjSelect();
+  taskNew();
 }
 
-function populateTaskProjectFilter() {
-  const sel = document.getElementById('task-filter-project');
-  const curr = sel.value;
-  sel.innerHTML = '<option value="">כל הפרויקטים</option>' +
-    state.projects.map(p => `<option value="${p.projid}" ${p.projid===curr?'selected':''}>${esc(p.projname)}</option>`).join('');
+function populateTaskProjSelect() {
+  const sel = document.getElementById('tkf-proj');
+  if (!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">-- בחר פרויקט --</option>' +
+    state.projects.map(p => {
+      const c = state.clients.find(x => x.custid === p.custid);
+      return `<option value="${p.projid}" ${p.projid===prev?'selected':''}>${esc(p.projname)}${c?' — '+esc(c.custname):''}</option>`;
+    }).join('');
 }
 
-function renderTasksTable() {
-  const projectId = document.getElementById('task-filter-project').value;
-  const status    = document.getElementById('task-filter-status').value;
-  const search    = document.getElementById('task-search').value.toLowerCase();
-  const filtered  = state.tasks.filter(t =>
-    (!projectId || t.projid === projectId) &&
-    (!status    || t.status === status) &&
-    (!search    || t.taskname.toLowerCase().includes(search))
-  );
-  document.getElementById('tasks-count-sub').textContent = `${filtered.length} משימות`;
-  const tbody = document.getElementById('tasks-tbody');
-  const empty = document.getElementById('tasks-empty');
-  if (filtered.length === 0) { tbody.innerHTML=''; empty.style.display='block'; return; }
-  empty.style.display='none';
-  tbody.innerHTML = filtered.map(t => {
-    const proj = state.projects.find(p => p.projid === t.projid);
-    const client = proj ? state.clients.find(c => c.custid === proj.custid) : null;
-    return `<tr onclick="editTask('${t.taskid}')" style="cursor:pointer">
-      <td><strong>${esc(t.taskname)}</strong></td>
-      <td>${esc(proj?.projname||'—')}</td>
-      <td>${esc(client?.custname||'—')}</td>
-      <td>${badge(t.status, LABELS.status[t.status]||t.status)}</td>
-      <td>${badge(t.priority, LABELS.priority[t.priority]||t.priority)}</td>
-      <td>${fmtDate(t.duedate)}</td>
-      <td>${esc(t.assignto||'—')}</td>
-      <td class="actions-cell" onclick="event.stopPropagation()">
-        <button class="btn-icon" onclick="editTask('${t.taskid}')" title="ערוך">✏️</button>
-        <button class="btn-icon danger" onclick="confirmDelete('task','${t.taskid}','${esc(t.taskname)}')" title="מחק">🗑️</button>
-      </td>
-    </tr>`;
-  }).join('');
+function taskNew() {
+  if (_tkSearchMode) exitTaskSearchMode(false);
+  taskState.idx = -1; taskState.current = null; taskState.dirty = false; taskState.saving = false;
+  document.getElementById('tk-docnum').textContent = 'משימה חדשה';
+  document.getElementById('tkf-num').value      = '';
+  document.getElementById('tkf-odate').value    = new Date().toISOString().slice(0,10);
+  document.getElementById('tkf-name').value     = '';
+  document.getElementById('tkf-proj').value     = '';
+  document.getElementById('tkf-status').value   = 'pending';
+  document.getElementById('tkf-priority').value = 'medium';
+  document.getElementById('tkf-due').value      = '';
+  document.getElementById('tkf-assignto').value = '';
+  document.getElementById('tkf-desc').value     = '';
+  taskState.list = [];
+  setTaskDirtyUI(false);
+  document.getElementById('tk-delete-btn').style.display = 'none';
+  updateTaskNavButtons();
+  document.getElementById('tkf-name').focus();
 }
 
-function editTask(id) {
-  const t = state.tasks.find(x => x.taskid === id);
-  if (!t) return;
-  state.editingId = id;
-  document.getElementById('task-modal-title').textContent = 'עריכת משימה';
-  document.getElementById('t-opening-date').value = t.odate||'';
-  document.getElementById('t-number').value        = t.tasknum||'';
-  populateProjectSelect('t-project', t.projid);
-  document.getElementById('t-title').value = t.taskname;
-  document.getElementById('t-project').value = t.projid;
-  document.getElementById('t-status').value = t.status;
-  document.getElementById('t-priority').value = t.priority;
-  document.getElementById('t-due').value = t.duedate||'';
-  document.getElementById('t-assigned').value = t.assignto||'';
-  document.getElementById('t-desc').value = t.taskdes||'';
-  document.getElementById('modal-task').classList.add('open');
+async function taskNav(dir) {
+  if (taskState.dirty && taskState.current) await saveTaskHeader(true);
+  const list = taskState.list;
+  if (!list.length) return;
+  let idx = taskState.idx;
+  if      (dir === 'first') idx = 0;
+  else if (dir === 'last')  idx = list.length - 1;
+  else if (dir === 'prev')  idx = Math.max(0, idx - 1);
+  else if (dir === 'next')  idx = Math.min(list.length - 1, idx + 1);
+  await loadTaskById(list[idx].taskid, idx);
 }
 
-async function saveTask(e) {
-  e.preventDefault();
-  const btn = document.getElementById('task-submit-btn');
-  btn.disabled = true; btn.textContent = 'שומר...';
+async function loadTaskById(taskid, idx) {
+  const { data: t } = await db.from('tasks').select('*').eq('taskid', taskid).single();
+  taskState.current = t;
+  taskState.idx     = idx ?? taskState.list.findIndex(x => x.taskid === taskid);
+  taskState.dirty   = false;
+  document.getElementById('tk-docnum').textContent = t.tasknum || '';
+  document.getElementById('tkf-num').value      = t.tasknum   || '';
+  document.getElementById('tkf-odate').value    = t.odate     || '';
+  document.getElementById('tkf-name').value     = t.taskname  || '';
+  document.getElementById('tkf-proj').value     = t.projid    || '';
+  document.getElementById('tkf-status').value   = t.status    || 'pending';
+  document.getElementById('tkf-priority').value = t.priority  || 'medium';
+  document.getElementById('tkf-due').value      = t.duedate   || '';
+  document.getElementById('tkf-assignto').value = t.assignto  || '';
+  document.getElementById('tkf-desc').value     = t.taskdes   || '';
+  setTaskDirtyUI(false);
+  document.getElementById('tk-delete-btn').style.display = '';
+  updateTaskNavButtons();
+  const si = state.tasks.findIndex(x => x.taskid === taskid);
+  if (si >= 0) state.tasks[si] = t; else state.tasks.unshift(t);
+}
+
+function switchTaskTab(tab, btn) {
+  document.querySelectorAll('#section-tasks .pri-son-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+}
+
+function markTaskDirty() { taskState.dirty = true; setTaskDirtyUI(true); }
+
+function setTaskDirtyUI(dirty) {
+  const btn = document.getElementById('tk-save-btn');
+  if (btn) btn.style.display = dirty ? '' : 'none';
+  document.getElementById('tk-master')?.classList.toggle('pri-unsaved', dirty);
+}
+
+async function saveTaskHeader(silent = false) {
+  if (taskState.saving) return;
+  const name = document.getElementById('tkf-name').value.trim();
+  const proj = document.getElementById('tkf-proj').value;
+  if (!name || !proj) { if (!silent) showToast('כותרת ופרויקט הם שדות חובה', 'error'); return; }
+  taskState.saving = true;
   const payload = {
-    taskname: document.getElementById('t-title').value.trim(),
-    projid:   document.getElementById('t-project').value,
-    status:   document.getElementById('t-status').value,
-    priority: document.getElementById('t-priority').value,
-    duedate:  document.getElementById('t-due').value||null,
-    assignto: document.getElementById('t-assigned').value.trim()||null,
-    taskdes:  document.getElementById('t-desc').value.trim()||null,
-    odate:    document.getElementById('t-opening-date').value||null
+    taskname: name, projid: proj,
+    status:   document.getElementById('tkf-status').value,
+    priority: document.getElementById('tkf-priority').value,
+    duedate:  document.getElementById('tkf-due').value||null,
+    assignto: document.getElementById('tkf-assignto').value.trim()||null,
+    odate:    document.getElementById('tkf-odate').value||null
   };
-  let error, id;
-  if (state.editingId) {
-    const r = await db.from('tasks').update(payload).eq('taskid', state.editingId).select().single();
-    error = r.error; id = state.editingId;
-    if (!error) await logActivity('task', id, payload.taskname, 'updated');
+  let t, error;
+  if (taskState.current) {
+    const r = await db.from('tasks').update(payload).eq('taskid', taskState.current.taskid).select().single();
+    error = r.error; t = r.data;
+    if (!error) await logActivity('task', taskState.current.taskid, name, 'updated');
   } else {
     const r = await db.from('tasks').insert(payload).select().single();
-    error = r.error; id = r.data?.taskid;
-    if (!error) await logActivity('task', id, payload.taskname, 'created');
+    error = r.error; t = r.data;
+    if (!error) await logActivity('task', t.taskid, name, 'created');
   }
-  btn.disabled = false; btn.textContent = 'שמור משימה';
+  taskState.saving = false;
   if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
-  showToast(state.editingId ? 'המשימה עודכנה!' : 'המשימה נוספה!', 'success');
-  closeModal('modal-task');
-  loadTasks();
+  taskState.current = t; taskState.dirty = false;
+  document.getElementById('tkf-num').value = t.tasknum||'';
+  document.getElementById('tk-docnum').textContent = t.tasknum||'';
+  document.getElementById('tk-delete-btn').style.display = '';
+  setTaskDirtyUI(false);
+  if (!silent) showToast('נשמר', 'success');
+  const si = state.tasks.findIndex(x => x.taskid === t.taskid);
+  if (si >= 0) state.tasks[si] = t; else state.tasks.unshift(t);
+  if (!taskState.list.length) { taskState.list = [t]; taskState.idx = 0; }
+  updateTaskNavButtons();
   loadDashboard();
+}
+
+async function saveTaskDesc() {
+  if (!taskState.current) return;
+  const val = document.getElementById('tkf-desc').value;
+  await db.from('tasks').update({ taskdes: val||null }).eq('taskid', taskState.current.taskid);
+  if (taskState.current) taskState.current.taskdes = val;
+}
+
+async function taskCancel() {
+  if (!taskState.current) { taskNew(); return; }
+  await loadTaskById(taskState.current.taskid, taskState.idx);
+}
+
+async function taskDelete() {
+  if (!taskState.current) return;
+  const name = taskState.current.taskname;
+  if (!confirm(`למחוק את המשימה "${name}"?`)) return;
+  const { error } = await db.from('tasks').delete().eq('taskid', taskState.current.taskid);
+  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+  await logActivity('task', taskState.current.taskid, name, 'deleted');
+  state.tasks = state.tasks.filter(t => t.taskid !== taskState.current.taskid);
+  taskState.list = taskState.list.filter(t => t.taskid !== taskState.current.taskid);
+  showToast('המשימה נמחקה', 'success');
+  loadDashboard();
+  if (taskState.list.length) await loadTaskById(taskState.list[Math.min(taskState.idx, taskState.list.length-1)].taskid);
+  else taskNew();
+}
+
+function updateTaskNavButtons() {
+  const n = taskState.list.length, i = taskState.idx;
+  document.getElementById('tk-btn-first').disabled = i <= 0;
+  document.getElementById('tk-btn-prev').disabled  = i <= 0;
+  document.getElementById('tk-btn-next').disabled  = i >= n - 1;
+  document.getElementById('tk-btn-last').disabled  = i >= n - 1;
+  document.getElementById('tk-pos').textContent    = n ? `${i+1} / ${n}` : '—';
+}
+
+function toggleTaskSearchMode() { _tkSearchMode ? exitTaskSearchMode(true) : enterTaskSearchMode(); }
+
+function enterTaskSearchMode() {
+  _tkSearchMode = true;
+  const master = document.querySelector('#section-tasks .pri-master');
+  const fields = master.querySelectorAll('input:not([readonly]), select');
+  fields.forEach(f => { _tkSearchSnap[f.id] = f.value; f.value = ''; });
+  master.style.background = '#f0fdf4'; master.style.borderColor = '#86efac';
+  fields.forEach(f => { f.style.borderColor = '#4ade80'; f.style.background = '#f0fdf4'; });
+  const btn = document.getElementById('tk-search-btn');
+  btn.style.background = '#16a34a'; btn.style.color = 'white';
+  btn.textContent = '✓ בצע (Enter)  |  ESC לביטול';
+  master.addEventListener('keydown', _taskSearchKey);
+  document.getElementById('tkf-name').focus();
+}
+
+function exitTaskSearchMode(restore) {
+  _tkSearchMode = false;
+  const master = document.querySelector('#section-tasks .pri-master');
+  const fields = master.querySelectorAll('input:not([readonly]), select');
+  master.style.background = ''; master.style.borderColor = '';
+  fields.forEach(f => { f.style.borderColor = ''; f.style.background = ''; });
+  const btn = document.getElementById('tk-search-btn');
+  btn.style.background = '#d1fae5'; btn.style.color = '#065f46'; btn.textContent = '🔍 חיפוש';
+  master.removeEventListener('keydown', _taskSearchKey);
+  if (restore) Object.entries(_tkSearchSnap).forEach(([id, val]) => { const el = document.getElementById(id); if (el) el.value = val; });
+}
+
+async function _taskSearchKey(e) {
+  if (e.key === 'Escape') { exitTaskSearchMode(true); return; }
+  if (e.key !== 'Enter')  return;
+  e.preventDefault();
+  const name   = document.getElementById('tkf-name').value.trim();
+  const projid = document.getElementById('tkf-proj').value;
+  const status = document.getElementById('tkf-status').value;
+  const due    = document.getElementById('tkf-due').value;
+  const assignto = document.getElementById('tkf-assignto').value.trim();
+  exitTaskSearchMode(false);
+  const allEmpty = !name && !projid && !status && !due && !assignto;
+  if (allEmpty) { taskNew(); return; }
+  let q = db.from('tasks').select('taskid,taskname,tasknum').order('cdate', { ascending: false });
+  if (name)     q = q.ilike('taskname', `%${name}%`);
+  if (projid)   q = q.eq('projid', projid);
+  if (status)   q = q.eq('status', status);
+  if (due)      q = q.lte('duedate', due);
+  if (assignto) q = q.ilike('assignto', `%${assignto}%`);
+  const { data, error } = await q;
+  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+  taskState.list = data || [];
+  if (!taskState.list.length) { showToast('לא נמצאו משימות', 'info'); return; }
+  await loadTaskById(taskState.list[0].taskid, 0);
+  if (taskState.list.length > 1) showToast(`נמצאו ${taskState.list.length} משימות — נווט עם החיצים`, 'info');
+}
+
+// ─── PARTS (ERP Style) ───
+const partState = { list:[], idx:-1, current:null, dirty:false, saving:false };
+let _ptSearchMode = false, _ptSearchSnap = {};
+
+async function loadParts() {
+  await loadPartsState();
+  populateProjClientSelect();
+  partNew();
+}
+
+function partNew() {
+  if (_ptSearchMode) exitPartSearchMode(false);
+  partState.idx = -1; partState.current = null; partState.dirty = false; partState.saving = false;
+  document.getElementById('pt-docnum').textContent = 'מוצר חדש';
+  document.getElementById('ptf-id').value   = '';
+  document.getElementById('ptf-name').value = '';
+  document.getElementById('ptf-desc').value = '';
+  partState.list = [];
+  setPartDirtyUI(false);
+  document.getElementById('pt-delete-btn').style.display = 'none';
+  updatePartNavButtons();
+  document.getElementById('ptf-name').focus();
+}
+
+async function partNav(dir) {
+  if (partState.dirty && partState.current) await savePartHeader(true);
+  const list = partState.list;
+  if (!list.length) return;
+  let idx = partState.idx;
+  if      (dir === 'first') idx = 0;
+  else if (dir === 'last')  idx = list.length - 1;
+  else if (dir === 'prev')  idx = Math.max(0, idx - 1);
+  else if (dir === 'next')  idx = Math.min(list.length - 1, idx + 1);
+  await loadPartById(list[idx].partid, idx);
+}
+
+async function loadPartById(partid, idx) {
+  const { data: p } = await db.from('parts').select('*').eq('partid', partid).single();
+  partState.current = p;
+  partState.idx     = idx ?? partState.list.findIndex(x => x.partid === partid);
+  partState.dirty   = false;
+  document.getElementById('pt-docnum').textContent = p.partid;
+  document.getElementById('ptf-id').value   = p.partid   || '';
+  document.getElementById('ptf-name').value = p.partname || '';
+  document.getElementById('ptf-desc').value = p.partdes  || '';
+  setPartDirtyUI(false);
+  document.getElementById('pt-delete-btn').style.display = '';
+  updatePartNavButtons();
+  const si = state.parts.findIndex(x => x.partid === partid);
+  if (si >= 0) state.parts[si] = p; else state.parts.unshift(p);
+}
+
+function markPartDirty() { partState.dirty = true; setPartDirtyUI(true); }
+
+function setPartDirtyUI(dirty) {
+  const btn = document.getElementById('pt-save-btn');
+  if (btn) btn.style.display = dirty ? '' : 'none';
+  document.getElementById('pt-master')?.classList.toggle('pri-unsaved', dirty);
+}
+
+async function savePartHeader(silent = false) {
+  if (partState.saving) return;
+  const name = document.getElementById('ptf-name').value.trim();
+  if (!name) { if (!silent) showToast('שם מוצר הוא שדה חובה', 'error'); return; }
+  partState.saving = true;
+  const payload = {
+    partname: name,
+    partdes:  document.getElementById('ptf-desc').value.trim()||null
+  };
+  let p, error;
+  if (partState.current) {
+    const r = await db.from('parts').update(payload).eq('partid', partState.current.partid).select().single();
+    error = r.error; p = r.data;
+  } else {
+    const r = await db.from('parts').insert(payload).select().single();
+    error = r.error; p = r.data;
+  }
+  partState.saving = false;
+  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+  partState.current = p; partState.dirty = false;
+  document.getElementById('ptf-id').value = p.partid||'';
+  document.getElementById('pt-docnum').textContent = p.partid||'';
+  document.getElementById('pt-delete-btn').style.display = '';
+  setPartDirtyUI(false);
+  if (!silent) showToast('נשמר', 'success');
+  const si = state.parts.findIndex(x => x.partid === p.partid);
+  if (si >= 0) state.parts[si] = p; else state.parts.unshift(p);
+  if (!partState.list.length) { partState.list = [p]; partState.idx = 0; }
+  updatePartNavButtons();
+}
+
+async function partCancel() {
+  if (!partState.current) { partNew(); return; }
+  await loadPartById(partState.current.partid, partState.idx);
+}
+
+async function partDelete() {
+  if (!partState.current) return;
+  const name = partState.current.partname;
+  if (!confirm(`למחוק את המוצר "${name}"?`)) return;
+  const { error } = await db.from('parts').delete().eq('partid', partState.current.partid);
+  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+  state.parts = state.parts.filter(p => p.partid !== partState.current.partid);
+  partState.list = partState.list.filter(p => p.partid !== partState.current.partid);
+  showToast('המוצר נמחק', 'success');
+  if (partState.list.length) await loadPartById(partState.list[Math.min(partState.idx, partState.list.length-1)].partid);
+  else partNew();
+}
+
+function updatePartNavButtons() {
+  const n = partState.list.length, i = partState.idx;
+  document.getElementById('pt-btn-first').disabled = i <= 0;
+  document.getElementById('pt-btn-prev').disabled  = i <= 0;
+  document.getElementById('pt-btn-next').disabled  = i >= n - 1;
+  document.getElementById('pt-btn-last').disabled  = i >= n - 1;
+  document.getElementById('pt-pos').textContent    = n ? `${i+1} / ${n}` : '—';
+}
+
+function togglePartSearchMode() { _ptSearchMode ? exitPartSearchMode(true) : enterPartSearchMode(); }
+
+function enterPartSearchMode() {
+  _ptSearchMode = true;
+  const master = document.querySelector('#section-parts .pri-master');
+  const fields = master.querySelectorAll('input:not([readonly]), textarea');
+  fields.forEach(f => { _ptSearchSnap[f.id] = f.value; f.value = ''; });
+  master.style.background = '#f0fdf4'; master.style.borderColor = '#86efac';
+  fields.forEach(f => { f.style.borderColor = '#4ade80'; f.style.background = '#f0fdf4'; });
+  const btn = document.getElementById('pt-search-btn');
+  btn.style.background = '#16a34a'; btn.style.color = 'white';
+  btn.textContent = '✓ בצע (Enter)  |  ESC לביטול';
+  master.addEventListener('keydown', _partSearchKey);
+  document.getElementById('ptf-name').focus();
+}
+
+function exitPartSearchMode(restore) {
+  _ptSearchMode = false;
+  const master = document.querySelector('#section-parts .pri-master');
+  const fields = master.querySelectorAll('input:not([readonly]), textarea');
+  master.style.background = ''; master.style.borderColor = '';
+  fields.forEach(f => { f.style.borderColor = ''; f.style.background = ''; });
+  const btn = document.getElementById('pt-search-btn');
+  btn.style.background = '#d1fae5'; btn.style.color = '#065f46'; btn.textContent = '🔍 חיפוש';
+  master.removeEventListener('keydown', _partSearchKey);
+  if (restore) Object.entries(_ptSearchSnap).forEach(([id, val]) => { const el = document.getElementById(id); if (el) el.value = val; });
+}
+
+async function _partSearchKey(e) {
+  if (e.key === 'Escape') { exitPartSearchMode(true); return; }
+  if (e.key !== 'Enter')  return;
+  e.preventDefault();
+  const name = document.getElementById('ptf-name').value.trim();
+  const desc = document.getElementById('ptf-desc').value.trim();
+  exitPartSearchMode(false);
+  if (!name && !desc) { partNew(); return; }
+  let q = db.from('parts').select('partid,partname').order('partid');
+  if (name) q = q.ilike('partname', `%${name}%`);
+  if (desc) q = q.ilike('partdes',  `%${desc}%`);
+  const { data, error } = await q;
+  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+  partState.list = data || [];
+  if (!partState.list.length) { showToast('לא נמצאו מוצרים', 'info'); return; }
+  await loadPartById(partState.list[0].partid, 0);
+  if (partState.list.length > 1) showToast(`נמצאו ${partState.list.length} מוצרים — נווט עם החיצים`, 'info');
+}
+
+async function loadPartsState() {
+  const { data } = await db.from('parts').select('*').order('partid');
+  state.parts = data || [];
 }
 
 // ─── ADMIN TOOLS ───
@@ -3140,81 +3700,6 @@ async function runAdminQuery() {
       '<tr>' + cols.map(c => `<td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(String(row[c]??''))}">${esc(String(row[c]??'—'))}</td>`).join('') + '</tr>'
     ).join('');
   document.getElementById('sql-results-wrap').style.display = 'block';
-}
-
-// ─── PARTS ───
-async function loadParts() {
-  await loadPartsState();
-  const tbody = document.getElementById('parts-tbody');
-  if (!state.parts.length) {
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:32px">אין מוצרים עדיין</td></tr>';
-    return;
-  }
-  tbody.innerHTML = state.parts.map(p => `
-    <tr>
-      <td><span class="badge" style="background:var(--primary-light);color:var(--primary);font-family:monospace">${esc(p.partid)}</span></td>
-      <td><strong>${esc(p.partname)}</strong></td>
-      <td style="color:var(--text-muted)">${esc(p.partdes||'—')}</td>
-      <td>
-        <button class="btn-icon" onclick="editPart('${p.partid}')" title="עריכה">✏️</button>
-        <button class="btn-icon danger" onclick="confirmDeletePart('${p.partid}','${esc(p.partname)}')" title="מחק">🗑️</button>
-      </td>
-    </tr>`).join('');
-}
-
-function editPart(partKey) {
-  const p = state.parts?.find(x => x.partid === partKey);
-  if (!p) return;
-  state.editingId = partKey;
-  document.getElementById('part-modal-title').textContent = 'עריכת מוצר';
-  document.getElementById('pt-part').value = p.partid;
-  document.getElementById('pt-name').value = p.partname;
-  document.getElementById('pt-desc').value = p.partdes||'';
-  document.getElementById('modal-part').classList.add('open');
-}
-
-async function savePart(e) {
-  e.preventDefault();
-  const btn = document.getElementById('part-submit-btn');
-  btn.disabled = true; btn.textContent = 'שומר...';
-  const payload = {
-    partname: document.getElementById('pt-name').value.trim(),
-    partdes:  document.getElementById('pt-desc').value.trim()||null
-  };
-  let error;
-  if (state.editingId) {
-    ({ error } = await db.from('parts').update(payload).eq('partid', state.editingId));
-  } else {
-    ({ error } = await db.from('parts').insert(payload));
-  }
-  btn.disabled = false; btn.textContent = 'שמור מוצר';
-  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
-  showToast(state.editingId ? 'המוצר עודכן!' : 'המוצר נוסף!', 'success');
-  closeModal('modal-part');
-  await loadPartsState();
-  loadParts();
-}
-
-async function loadPartsState() {
-  const { data } = await db.from('parts').select('*').order('partid');
-  state.parts = data || [];
-}
-
-function confirmDeletePart(partKey, name) {
-  document.getElementById('confirm-text').textContent = `האם למחוק את המוצר "${name}"? פעולה זו אינה הפיכה.`;
-  document.getElementById('confirm-ok-btn').textContent = 'מחק';
-  document.getElementById('confirm-ok-btn').className = 'btn btn-danger';
-  document.querySelector('#modal-confirm .modal-title').textContent = 'אישור מחיקה';
-  document.getElementById('confirm-ok-btn').onclick = () => { closeModal('modal-confirm'); deletePart(partKey, name); };
-  document.getElementById('modal-confirm').classList.add('open');
-}
-
-async function deletePart(partKey, name) {
-  const { error } = await db.from('parts').delete().eq('partid', partKey);
-  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
-  showToast('המוצר נמחק', 'success');
-  await loadPartsState();
-  loadParts();
 }
 
 // ─── STATUSES ───

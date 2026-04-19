@@ -97,7 +97,8 @@ CREATE TABLE IF NOT EXISTS company (
 
 CREATE TABLE IF NOT EXISTS client_connections (
   connid          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  custid          UUID REFERENCES customers(custid) ON DELETE CASCADE UNIQUE,
+  custid          UUID REFERENCES customers(custid) ON DELETE CASCADE,
+  connname        TEXT,
   vpn_type        TEXT,
   server_address  TEXT,
   vpn_username    TEXT,
