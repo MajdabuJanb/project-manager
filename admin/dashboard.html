@@ -1992,7 +1992,12 @@
               </div>
               <div class="pri-field">
                 <label>הצעת מחיר מקושרת</label>
-                <input type="text" id="ivf-quote-display" readonly placeholder="—" style="cursor:pointer" onclick="invNavToQuote()" title="לחץ לניווט להצעה">
+                <div style="display:flex;gap:4px;align-items:center">
+                  <select id="ivf-quote" onchange="invQuoteSelected()" style="flex:1">
+                    <option value="">— ללא הצעה —</option>
+                  </select>
+                  <button type="button" id="inv-quote-nav-btn" onclick="invNavToQuote()" title="נווט להצעה" style="display:none;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);cursor:pointer;font-size:13px">🔗</button>
+                </div>
               </div>
               <div class="pri-field">
                 <label>מע"מ %</label>
@@ -2035,6 +2040,7 @@
               <thead>
                 <tr>
                   <th style="width:36px">#</th>
+                  <th style="width:130px">מקט</th>
                   <th>תיאור</th>
                   <th style="width:80px">כמות</th>
                   <th style="width:110px">מחיר יחידה</th>
@@ -3097,7 +3103,8 @@ function copyPortalLink() {
 let _editingConnId = null;
 
 async function loadCustomerConnections(custid) {
-  const { data } = await db.from('client_connections').select('*').eq('custid', custid).order('cdate');
+  const { data, error: connErr } = await db.from('client_connections').select('*').eq('custid', custid).order('cdate');
+  if (connErr) { showToast('שגיאה בטעינת חיבורים: ' + connErr.message, 'error'); return; }
   const list  = document.getElementById('cd-connections-list');
   const empty = document.getElementById('cd-connections-empty');
   const badge = document.getElementById('cd-conn-count');
@@ -4463,7 +4470,7 @@ async function loadQuoteById(quoteid, idx) {
   // Invoiced / locked state
   const locked = q.invoiced === true;
   document.getElementById('q-invoiced-banner').style.display = locked ? '' : 'none';
-  document.getElementById('q-inv-btn').style.display = (q.status === 'approved' && !locked) ? '' : 'none';
+  document.getElementById('q-inv-btn').style.display = (!locked && q.status !== 'cancelled') ? '' : 'none';
   document.querySelectorAll('#section-quotes .pri-master input:not([readonly]), #section-quotes .pri-master select')
     .forEach(el => { el.disabled = locked; });
   if (locked) { setDirtyUI(false); document.getElementById('q-save-btn').style.display = 'none'; }
@@ -4533,12 +4540,13 @@ async function saveQuoteHeader(silent = false) {
 
 // ── Lines ──
 function renderQuoteLines() {
-  const tbody = document.getElementById('q-lines-tbody');
-  const rows  = quoteState.lines.map((l, i) => buildLineRow(l, i, false)).join('');
-  tbody.innerHTML = rows + buildLineRow(null, quoteState.lines.length, true);
+  const tbody  = document.getElementById('q-lines-tbody');
+  const locked = quoteState.current?.invoiced === true;
+  const rows   = quoteState.lines.map((l, i) => buildLineRow(l, i, false, locked)).join('');
+  tbody.innerHTML = rows + (locked ? '' : buildLineRow(null, quoteState.lines.length, true, false));
 }
 
-function buildLineRow(line, idx, isNew) {
+function buildLineRow(line, idx, isNew, locked = false) {
   const n   = line?.linenum  ?? (idx + 1);
   const pid = line?.partid   ?? '';
   const pn  = line?.linedes  ?? '';
@@ -4550,6 +4558,7 @@ function buildLineRow(line, idx, isNew) {
   const totVat = line ? fmtMoney(calcLineTotal(line) * (1 + vatPct / 100)) : '';
   const lid = line?.lineid   ?? '';
   const cls = isNew ? 'new-row' : 'saved-row';
+  const dis_attr = locked ? 'disabled' : '';
 
   const partOpts = '<option value="">—</option>' +
     state.parts.map(p =>
@@ -4558,27 +4567,27 @@ function buildLineRow(line, idx, isNew) {
 
   return `<tr class="${cls}" data-idx="${idx}" data-lid="${lid}">
     <td class="pri-line-num">${isNew ? '' : n}</td>
-    <td><select class="pri-cell" onchange="linePartChange(this,${idx})" ${isNew?'onfocus="ensureQuoteSaved()"':''}>${partOpts}</select></td>
+    <td><select class="pri-cell" onchange="linePartChange(this,${idx})" ${dis_attr} ${isNew?'onfocus="ensureQuoteSaved()"':''}>${partOpts}</select></td>
     <td><input class="pri-cell" type="text" value="${esc(pn)}" placeholder="${isNew?'הזן תיאור להוספת שורה...':''}"
-      onchange="lineFieldChange(this,${idx},'linedes')"
+      onchange="lineFieldChange(this,${idx},'linedes')" ${dis_attr}
       ${isNew?'onfocus="ensureQuoteSaved()"':''}
       onkeydown="lineKeyDown(event,this,${idx},'linedes')"></td>
     <td><input class="pri-cell pri-cell-num" type="number" value="${qty}" placeholder="0"
-      onfocus="this.select()"
+      onfocus="this.select()" ${dis_attr}
       onchange="lineFieldChange(this,${idx},'qty');recalcLine(${idx})"
       onkeydown="lineKeyDown(event,this,${idx},'qty')"></td>
     <td><input class="pri-cell pri-cell-num" type="number" value="${pri}" placeholder="0.00"
-      onfocus="this.select()"
+      onfocus="this.select()" ${dis_attr}
       onchange="lineFieldChange(this,${idx},'unitprice');recalcLine(${idx})"
       onkeydown="lineKeyDown(event,this,${idx},'unitprice')"></td>
     <td><input class="pri-cell pri-cell-num" type="number" value="${dis}" placeholder="0"
       min="0" max="100"
-      onfocus="this.select()"
+      onfocus="this.select()" ${dis_attr}
       onchange="lineFieldChange(this,${idx},'discount');recalcLine(${idx})"
       onkeydown="lineKeyDown(event,this,${idx},'discount')"></td>
     <td><input class="pri-cell pri-cell-num" id="q-lt-${idx}" value="${tot}" readonly tabindex="-1"></td>
     <td><input class="pri-cell pri-cell-num" id="q-lv-${idx}" value="${totVat}" readonly tabindex="-1" style="color:var(--primary);font-weight:600"></td>
-    <td>${isNew ? '' : `<button class="pri-del-btn" onclick="deleteLine('${lid}',${idx})" tabindex="-1">✕</button>`}</td>
+    <td>${(isNew || locked) ? '' : `<button class="pri-del-btn" onclick="deleteLine('${lid}',${idx})" tabindex="-1">✕</button>`}</td>
   </tr>`;
 }
 
@@ -4721,7 +4730,6 @@ function quotePrint() {
 async function openInvFromQuote() {
   const q = quoteState.current;
   if (!q) return;
-  if (q.status !== 'approved')  { showToast('לא ניתן לפתוח חשבונית עבור הצעת מחיר שלא אושרה.', 'error'); return; }
   if (q.status === 'cancelled') { showToast('לא ניתן לפתוח חשבונית עבור הצעת מחיר מבוטלת.', 'error'); return; }
   if (q.invoiced)               { showToast('לא ניתן לפתוח חשבונית עבור הצעת מחיר שכבר חויבה.', 'error'); return; }
 
@@ -4733,17 +4741,28 @@ async function openInvFromQuote() {
   // Navigate to invoices section and open new invoice pre-filled from quote
   showSection('invoices');
   await invNew();
-  invState._fromQuoteid = q.quoteid;
+  invState._fromQuoteid  = q.quoteid;
   invState._fromQuotenum = q.quotenum;
-  document.getElementById('ivf-cust').value        = q.custid;
-  document.getElementById('ivf-vat').value         = q.vatrate ?? 17;
-  document.getElementById('ivf-notes').value       = q.notes || '';
-  document.getElementById('ivf-quote-display').value = q.quotenum || '';
+  document.getElementById('ivf-date').value  = new Date().toISOString().slice(0,10);
+  document.getElementById('ivf-cust').value  = q.custid;
+  document.getElementById('ivf-vat').value   = q.vatrate ?? 17;
+  document.getElementById('ivf-notes').value = q.notes || '';
+  // Set quote select option (add option if not present)
+  const sel = document.getElementById('ivf-quote');
+  if (!sel.querySelector(`option[value="${q.quoteid}"]`)) {
+    const opt = document.createElement('option');
+    opt.value = q.quoteid;
+    opt.textContent = q.quotenum || q.quoteid;
+    sel.appendChild(opt);
+  }
+  sel.value = q.quoteid;
+  document.getElementById('inv-quote-nav-btn').style.display = '';
   // Copy lines from quote
   const { data: qlines } = await db.from('quote_lines').select('*').eq('quoteid', q.quoteid).order('linenum');
   invState._copiedLines = (qlines || []).map(l => ({
-    linedes:   l.linedes || '',
-    qty:       l.qty     || 1,
+    partid:    l.partid    || null,
+    linedes:   l.linedes   || '',
+    qty:       l.qty       || 1,
     unitprice: l.unitprice || 0,
     discount:  l.discount  || 0,
     linetotal: l.linetotal || 0
@@ -4781,6 +4800,7 @@ async function loadInvoices() {
   if (state.clients.length === 0) await loadClients();
   populateInvCustomerSelect();
   invNew();
+  loadInvQuoteOptions(null);
 }
 
 function invNew() {
@@ -4797,12 +4817,13 @@ function invNew() {
   document.getElementById('ivf-num').value          = '';
   document.getElementById('ivf-status-display').value = 'טיוטה';
   document.getElementById('ivf-date').value         = new Date().toISOString().slice(0,10);
-  document.getElementById('ivf-cust').value         = '';
-  document.getElementById('ivf-quote-display').value = '';
-  document.getElementById('ivf-notes').value        = '';
-  document.getElementById('ivf-printed').checked    = false;
-  document.getElementById('ivf-vat').value          = '';
+  document.getElementById('ivf-cust').value    = '';
+  document.getElementById('ivf-notes').value   = '';
+  document.getElementById('ivf-printed').checked = false;
+  document.getElementById('ivf-vat').value     = '';
+  document.getElementById('inv-quote-nav-btn').style.display = 'none';
   getCompanyVat().then(v => { if (v !== null) document.getElementById('ivf-vat').value = v; });
+  loadInvQuoteOptions(null);
   renderInvLines();
   recalcInvTotals();
   setInvDirtyUI(false);
@@ -4855,12 +4876,9 @@ async function loadInvById(invid, idx) {
   document.getElementById('ivf-vat').value                 = inv.vatrate  ?? 17;
 
   // Quote link
-  if (inv.quoteid) {
-    const { data: qr } = await db.from('quotes').select('quotenum').eq('quoteid', inv.quoteid).single();
-    document.getElementById('ivf-quote-display').value = qr?.quotenum || inv.quoteid;
-  } else {
-    document.getElementById('ivf-quote-display').value = '';
-  }
+  await loadInvQuoteOptions(inv.quoteid || null);
+  document.getElementById('ivf-quote').value = inv.quoteid || '';
+  document.getElementById('inv-quote-nav-btn').style.display = inv.quoteid ? '' : 'none';
 
   renderInvLines();
   recalcInvTotals();
@@ -4917,10 +4935,9 @@ async function saveInvHeader(silent = false) {
     printed: document.getElementById('ivf-printed').checked
   };
 
-  // Attach quoteid if coming from a quote
-  if (invState._fromQuoteid && !invState.current) {
-    payload.quoteid = invState._fromQuoteid;
-  }
+  // Attach quoteid from select
+  const selectedQuoteid = document.getElementById('ivf-quote')?.value || null;
+  payload.quoteid = selectedQuoteid || null;
 
   let inv, error;
   if (invState.current) {
@@ -5137,22 +5154,24 @@ async function invNavFromList(invid, idx) {
 
 // ── Invoice navigate to linked quote ──
 function invNavToQuote() {
-  if (!invState.current?.quoteid) return;
+  const quoteid = document.getElementById('ivf-quote')?.value || invState.current?.quoteid;
+  if (!quoteid) return;
   showSection('quotes');
-  loadQuoteById(invState.current.quoteid, 0);
+  loadQuoteById(quoteid, 0);
 }
 
 // ── Invoice lines ──
 function renderInvLines() {
   const tbody  = document.getElementById('inv-lines-tbody');
   const source = invState._copiedLines || invState.lines;
-  const rows   = source.map((l, i) => buildInvLineRow(l, i, false)).join('');
-  const locked = invState.current && invState.current.status !== 'draft';
-  tbody.innerHTML = rows + (locked ? '' : buildInvLineRow(null, source.length, true));
+  const locked = !!(invState.current && invState.current.status !== 'draft');
+  const rows   = source.map((l, i) => buildInvLineRow(l, i, false, locked)).join('');
+  tbody.innerHTML = rows + (locked ? '' : buildInvLineRow(null, source.length, true, false));
 }
 
-function buildInvLineRow(line, idx, isNew) {
+function buildInvLineRow(line, idx, isNew, locked = false) {
   const n   = line?.linenum  ?? (idx + 1);
+  const pid = line?.partid   ?? '';
   const pn  = line?.linedes  ?? '';
   const qty = line?.qty      ?? '';
   const pri = line?.unitprice ?? '';
@@ -5162,26 +5181,83 @@ function buildInvLineRow(line, idx, isNew) {
   const totVat = line ? fmtMoney(calcInvLineTotal(line) * (1 + vatPct / 100)) : '';
   const lid = line?.ilineid ?? '';
   const cls = isNew ? 'new-row' : 'saved-row';
+  const dis_attr = locked ? 'disabled' : '';
+
+  const partOpts = '<option value="">—</option>' +
+    state.parts.map(p =>
+      `<option value="${p.partid}" ${p.partid===pid?'selected':''}>${esc(p.partid)} — ${esc(p.partname)}</option>`
+    ).join('');
+
   return `<tr class="${cls}" data-idx="${idx}" data-lid="${lid}">
     <td class="pri-line-num">${isNew ? '' : n}</td>
+    <td><select class="pri-cell" onchange="invLinePartChange(this,${idx})" ${dis_attr} ${isNew?'onfocus="ensureInvSaved()"':''}>${partOpts}</select></td>
     <td><input class="pri-cell" type="text" value="${esc(pn)}" placeholder="${isNew?'הזן תיאור להוספת שורה...':''}"
-      onchange="invLineFieldChange(this,${idx},'linedes')"
+      onchange="invLineFieldChange(this,${idx},'linedes')" ${dis_attr}
       ${isNew?'onfocus="ensureInvSaved()"':''}
       onkeydown="invLineKeyDown(event,this,${idx},'linedes')"></td>
     <td><input class="pri-cell pri-cell-num" type="number" value="${qty}" placeholder="0"
-      onfocus="this.select()" onchange="invLineFieldChange(this,${idx},'qty');recalcInvLine(${idx})"
+      onfocus="this.select()" ${dis_attr} onchange="invLineFieldChange(this,${idx},'qty');recalcInvLine(${idx})"
       onkeydown="invLineKeyDown(event,this,${idx},'qty')"></td>
     <td><input class="pri-cell pri-cell-num" type="number" value="${pri}" placeholder="0.00"
-      onfocus="this.select()" onchange="invLineFieldChange(this,${idx},'unitprice');recalcInvLine(${idx})"
+      onfocus="this.select()" ${dis_attr} onchange="invLineFieldChange(this,${idx},'unitprice');recalcInvLine(${idx})"
       onkeydown="invLineKeyDown(event,this,${idx},'unitprice')"></td>
     <td><input class="pri-cell pri-cell-num" type="number" value="${dis}" placeholder="0"
-      min="0" max="100" onfocus="this.select()"
+      min="0" max="100" onfocus="this.select()" ${dis_attr}
       onchange="invLineFieldChange(this,${idx},'discount');recalcInvLine(${idx})"
       onkeydown="invLineKeyDown(event,this,${idx},'discount')"></td>
     <td><input class="pri-cell pri-cell-num" id="i-lt-${idx}" value="${tot}" readonly tabindex="-1"></td>
     <td><input class="pri-cell pri-cell-num" id="i-lv-${idx}" value="${totVat}" readonly tabindex="-1" style="color:var(--primary);font-weight:600"></td>
-    <td>${isNew ? '' : `<button class="pri-del-btn" onclick="deleteInvLine('${lid}',${idx})" tabindex="-1">✕</button>`}</td>
+    <td>${(isNew || locked) ? '' : `<button class="pri-del-btn" onclick="deleteInvLine('${lid}',${idx})" tabindex="-1">✕</button>`}</td>
   </tr>`;
+}
+
+async function loadInvQuoteOptions(selectedQuoteid) {
+  const sel = document.getElementById('ivf-quote');
+  const { data: quotes } = await db.from('quotes')
+    .select('quoteid,quotenum,custid,vatrate')
+    .neq('status','cancelled')
+    .order('quotenum', { ascending: false });
+  sel.innerHTML = '<option value="">— ללא הצעה —</option>' +
+    (quotes||[]).map(q => {
+      const vatrate = q.vatrate ?? 17;
+      return `<option value="${q.quoteid}" data-custid="${q.custid||''}" data-vatrate="${vatrate}">${esc(q.quotenum||q.quoteid)}</option>`;
+    }).join('');
+  if (selectedQuoteid) {
+    sel.value = selectedQuoteid;
+    if (!sel.value && selectedQuoteid) {
+      const opt = document.createElement('option');
+      opt.value = selectedQuoteid;
+      opt.textContent = selectedQuoteid;
+      sel.appendChild(opt);
+      sel.value = selectedQuoteid;
+    }
+  }
+}
+
+function invQuoteSelected() {
+  const sel = document.getElementById('ivf-quote');
+  const opt = sel.options[sel.selectedIndex];
+  const custid  = opt?.dataset?.custid  || '';
+  const vatrate = opt?.dataset?.vatrate || '';
+  if (custid)  document.getElementById('ivf-cust').value = custid;
+  if (vatrate) document.getElementById('ivf-vat').value  = vatrate;
+  invState._fromQuoteid = sel.value || null;
+  document.getElementById('inv-quote-nav-btn').style.display = sel.value ? '' : 'none';
+  markInvDirty();
+}
+
+function invLinePartChange(sel, idx) {
+  const source = invState._copiedLines || invState.lines;
+  if (idx >= source.length) {
+    source.push({ invid: invState.current?.invid, linenum: idx+1, partid: null, linedes:'', qty:1, unitprice:0, discount:0 });
+  }
+  const partid = sel.value || null;
+  const part   = state.parts.find(p => p.partid === partid);
+  source[idx].partid = partid;
+  if (part && !source[idx].linedes) source[idx].linedes = part.partname || '';
+  invLineFieldChange({ value: source[idx].linedes }, idx, 'linedes');
+  renderInvLines();
+  saveInvLineDebounced(idx);
 }
 
 async function ensureInvSaved() {
@@ -5214,6 +5290,7 @@ async function saveInvLine(idx) {
   const payload = {
     invid:     invState.current.invid,
     linenum:   idx + 1,
+    partid:    l.partid    || null,
     linedes:   l.linedes   || null,
     qty:       l.qty       || 1,
     unitprice: l.unitprice || 0,
