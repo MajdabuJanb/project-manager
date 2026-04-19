@@ -4394,8 +4394,8 @@ async function loadQuotes() {
 }
 
 async function getCompanyVat() {
-  const { data } = await db.from('company').select('vatrate').maybeSingle();
-  return data?.vatrate ?? null;
+  const { data } = await db.from('company').select('vatrate').limit(1);
+  return data?.[0]?.vatrate ?? null;
 }
 
 function populateQuoteCustomerSelect() {
@@ -5546,8 +5546,9 @@ let companyLogo = null;
 let companyIsDemo = true;
 
 async function loadCompany() {
-  const { data, error } = await db.from('company').select('*').maybeSingle();
+  const { data: rows, error } = await db.from('company').select('*').limit(1);
   if (error) { showToast('שגיאה בטעינת נתוני חברה: ' + error.message, 'error'); return; }
+  const data = rows?.[0];
   if (!data) { showToast('לא נמצאו נתוני חברה בDB — צור רשומה ראשונה', 'info'); return; }
   companyId = data.id;
   document.getElementById('co-name').value    = data.compname || '';
@@ -5567,8 +5568,8 @@ async function loadCompany() {
 }
 
 async function loadDemoBanner() {
-  const { data } = await db.from('company').select('isdemo').maybeSingle();
-  if (data) updateDemoBanner(data.isdemo !== false);
+  const { data } = await db.from('company').select('isdemo').limit(1);
+  if (data?.[0]) updateDemoBanner(data[0].isdemo !== false);
 }
 
 function updateDemoBanner(isDemo) {
