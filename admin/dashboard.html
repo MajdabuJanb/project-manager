@@ -2239,11 +2239,11 @@
 
           <div style="margin-top:10px;font-size:11px;color:var(--text-muted)">
             דוגמאות מהירות:
-            <button class="btn btn-ghost" style="font-size:11px;padding:2px 8px" onclick="setSqlQuery('SELECT * FROM clients ORDER BY created_at DESC LIMIT 20')">לקוחות</button>
-            <button class="btn btn-ghost" style="font-size:11px;padding:2px 8px" onclick="setSqlQuery('SELECT * FROM projects ORDER BY created_at DESC LIMIT 20')">פרויקטים</button>
-            <button class="btn btn-ghost" style="font-size:11px;padding:2px 8px" onclick="setSqlQuery('SELECT * FROM tasks ORDER BY created_at DESC LIMIT 20')">משימות</button>
-            <button class="btn btn-ghost" style="font-size:11px;padding:2px 8px" onclick="setSqlQuery('SELECT * FROM parts ORDER BY part')">מוצרים</button>
-            <button class="btn btn-ghost" style="font-size:11px;padding:2px 8px" onclick="setSqlQuery('SELECT * FROM activity_log ORDER BY created_at DESC LIMIT 30')">לוג פעילות</button>
+            <button class="btn btn-ghost" style="font-size:11px;padding:2px 8px" onclick="setSqlQuery('SELECT * FROM customers ORDER BY cdate DESC LIMIT 20')">לקוחות</button>
+            <button class="btn btn-ghost" style="font-size:11px;padding:2px 8px" onclick="setSqlQuery('SELECT * FROM projects ORDER BY cdate DESC LIMIT 20')">פרויקטים</button>
+            <button class="btn btn-ghost" style="font-size:11px;padding:2px 8px" onclick="setSqlQuery('SELECT * FROM tasks ORDER BY cdate DESC LIMIT 20')">משימות</button>
+            <button class="btn btn-ghost" style="font-size:11px;padding:2px 8px" onclick="setSqlQuery('SELECT * FROM parts ORDER BY partid')">מוצרים</button>
+            <button class="btn btn-ghost" style="font-size:11px;padding:2px 8px" onclick="setSqlQuery('SELECT * FROM activity_log ORDER BY cdate DESC LIMIT 30')">לוג פעילות</button>
           </div>
         </div>
 
@@ -3841,7 +3841,6 @@ let _ptSearchMode = false, _ptSearchSnap = {};
 
 async function loadParts() {
   await loadPartsState();
-  populateProjClientSelect();
   partNew();
 }
 
@@ -4513,6 +4512,7 @@ function quoteNew() {
   recalcTotals();
   setDirtyUI(false);
   document.getElementById('q-print-btn').style.display = 'none';
+  document.getElementById('q-inv-btn').style.display   = 'none';
   quoteState.list = [];
   updateNavButtons();
   document.getElementById('qf-cust').focus();
@@ -4612,17 +4612,18 @@ async function saveQuoteHeader(silent = false) {
     vatrate:  parseFloat(document.getElementById('qf-vat').value) || 17,
     notes:    document.getElementById('qf-notes').value.trim() || null,
   };
-  let q;
+  let q, err;
   if (quoteState.current) {
-    const { data } = await db.from('quotes').update(payload).eq('quoteid', quoteState.current.quoteid).select().single();
-    q = data;
+    const { data, error } = await db.from('quotes').update(payload).eq('quoteid', quoteState.current.quoteid).select().single();
+    q = data; err = error;
   } else {
-    const { data } = await db.from('quotes').insert(payload).select().single();
-    q = data;
+    const { data, error } = await db.from('quotes').insert(payload).select().single();
+    q = data; err = error;
     if (q) await logActivity('quote', q.quoteid, q.quotenum, 'created');
   }
   quoteState.saving = false;
-  if (!q) { if (!silent) showToast('שגיאה בשמירה', 'error'); return; }
+  if (err) { if (!silent) showToast('שגיאה בשמירה: ' + err.message, 'error'); return; }
+  if (!q)  { if (!silent) showToast('שגיאה בשמירה', 'error'); return; }
   quoteState.current = q;
   quoteState.dirty   = false;
   document.getElementById('qf-num').value = q.quotenum || '';
@@ -4885,6 +4886,7 @@ function populateInvCustomerSelect() {
 }
 
 async function loadInvoices() {
+  if (state.parts.length === 0)   await loadPartsState();
   if (state.clients.length === 0) await loadClients();
   populateInvCustomerSelect();
   invNew();
@@ -4909,6 +4911,7 @@ function invNew() {
   document.getElementById('ivf-notes').value   = '';
   document.getElementById('ivf-printed').checked = false;
   document.getElementById('ivf-vat').value     = '';
+  document.getElementById('ivf-quote').value   = '';
   document.getElementById('inv-quote-nav-btn').style.display = 'none';
   getCompanyVat().then(v => { if (v !== null) document.getElementById('ivf-vat').value = v; });
   renderInvLines();
@@ -5343,7 +5346,6 @@ function invLinePartChange(sel, idx) {
   const part   = state.parts.find(p => p.partid === partid);
   source[idx].partid = partid;
   if (part && !source[idx].linedes) source[idx].linedes = part.partname || '';
-  invLineFieldChange({ value: source[idx].linedes }, idx, 'linedes');
   renderInvLines();
   saveInvLineDebounced(idx);
 }
@@ -5465,9 +5467,9 @@ async function loadReports() {
   const type   = document.getElementById('report-type').value;
 
   let query = db.from('activity_log').select('*').order('cdate', { ascending: false });
-  if (from)  query = query.gte('created_at', from + 'T00:00:00');
-  if (to)    query = query.lte('created_at', to   + 'T23:59:59');
-  if (type)  query = query.eq('entity_type', type);
+  if (from)  query = query.gte('cdate', from + 'T00:00:00');
+  if (to)    query = query.lte('cdate', to   + 'T23:59:59');
+  if (type)  query = query.eq('etype', type);
 
   const { data, error } = await query;
   if (error) { showToast('שגיאה בטעינת דוח', 'error'); return; }
@@ -5663,7 +5665,7 @@ async function saveCompany() {
   } else {
     const r = await db.from('company').insert(payload).select().single();
     error = r.error;
-    if (!error) companyId = r.data?.compid;
+    if (!error) companyId = r.data?.id;
   }
   if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
   showToast('הפרטים נשמרו בהצלחה!', 'success');

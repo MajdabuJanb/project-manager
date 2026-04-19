@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS parts (
 );
 
 CREATE TABLE IF NOT EXISTS company (
-  compid   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   compname TEXT,
   ownname  TEXT,
   taxnum   TEXT,
@@ -200,6 +200,7 @@ CREATE TABLE IF NOT EXISTS invoice_lines (
   ilineid   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   invid     UUID NOT NULL REFERENCES invoices(invid) ON DELETE CASCADE,
   linenum   INTEGER NOT NULL DEFAULT 1,
+  partid    TEXT REFERENCES parts(partid) ON DELETE SET NULL,
   linedes   TEXT,
   qty       DECIMAL(12,4) DEFAULT 1,
   unitprice DECIMAL(14,2) DEFAULT 0,
@@ -225,7 +226,7 @@ CREATE TRIGGER trg_inv_number BEFORE INSERT ON invoices
 
 CREATE TABLE IF NOT EXISTS activity_log (
   logid  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  etype  TEXT NOT NULL CHECK (etype IN ('client', 'project', 'task', 'part')),
+  etype  TEXT NOT NULL CHECK (etype IN ('client', 'project', 'task', 'part', 'quote', 'invoice')),
   eid    UUID NOT NULL,
   ename  TEXT,
   action TEXT NOT NULL,
@@ -237,10 +238,13 @@ CREATE TABLE IF NOT EXISTS activity_log (
 -- INDEXES
 -- ============================================================
 
-CREATE INDEX IF NOT EXISTS idx_projects_custid   ON projects(custid);
-CREATE INDEX IF NOT EXISTS idx_tasks_projid      ON tasks(projid);
-CREATE INDEX IF NOT EXISTS idx_actlog_cdate      ON activity_log(cdate DESC);
-CREATE INDEX IF NOT EXISTS idx_customers_token   ON customers(token);
+CREATE INDEX IF NOT EXISTS idx_projects_custid      ON projects(custid);
+CREATE INDEX IF NOT EXISTS idx_tasks_projid         ON tasks(projid);
+CREATE INDEX IF NOT EXISTS idx_actlog_cdate         ON activity_log(cdate DESC);
+CREATE INDEX IF NOT EXISTS idx_customers_token      ON customers(token);
+CREATE INDEX IF NOT EXISTS idx_invoices_custid      ON invoices(custid);
+CREATE INDEX IF NOT EXISTS idx_invoices_quoteid     ON invoices(quoteid);
+CREATE INDEX IF NOT EXISTS idx_invoice_lines_invid  ON invoice_lines(invid);
 
 -- ============================================================
 -- ROW LEVEL SECURITY
@@ -296,6 +300,21 @@ CREATE POLICY "statuses_read"  ON statuses FOR SELECT USING (true);
 DROP POLICY IF EXISTS "activity_admin"     ON activity_log;
 CREATE POLICY "activity_admin" ON activity_log FOR ALL USING (is_admin());
 
+ALTER TABLE company       ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "company_admin" ON company;
+CREATE POLICY "company_admin" ON company FOR ALL USING (is_admin());
+
+ALTER TABLE client_connections ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "connections_admin" ON client_connections;
+CREATE POLICY "connections_admin" ON client_connections FOR ALL USING (is_admin());
+
+ALTER TABLE invoices      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE invoice_lines ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "invoices_admin"      ON invoices;
+CREATE POLICY "invoices_admin"      ON invoices      FOR ALL USING (is_admin());
+DROP POLICY IF EXISTS "invoice_lines_admin" ON invoice_lines;
+CREATE POLICY "invoice_lines_admin" ON invoice_lines FOR ALL USING (is_admin());
+
 -- ============================================================
 -- TRIGGERS — udate + new user profile
 -- ============================================================
@@ -320,10 +339,12 @@ RETURNS TRIGGER AS $$
 BEGIN NEW.udate = NOW(); RETURN NEW; END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER customers_udate BEFORE UPDATE ON customers FOR EACH ROW EXECUTE FUNCTION update_udate();
-CREATE TRIGGER projects_udate  BEFORE UPDATE ON projects  FOR EACH ROW EXECUTE FUNCTION update_udate();
-CREATE TRIGGER tasks_udate     BEFORE UPDATE ON tasks     FOR EACH ROW EXECUTE FUNCTION update_udate();
-CREATE TRIGGER parts_udate     BEFORE UPDATE ON parts     FOR EACH ROW EXECUTE FUNCTION update_udate();
+CREATE TRIGGER customers_udate  BEFORE UPDATE ON customers  FOR EACH ROW EXECUTE FUNCTION update_udate();
+CREATE TRIGGER projects_udate   BEFORE UPDATE ON projects   FOR EACH ROW EXECUTE FUNCTION update_udate();
+CREATE TRIGGER tasks_udate      BEFORE UPDATE ON tasks      FOR EACH ROW EXECUTE FUNCTION update_udate();
+CREATE TRIGGER parts_udate      BEFORE UPDATE ON parts      FOR EACH ROW EXECUTE FUNCTION update_udate();
+DROP TRIGGER IF EXISTS invoices_udate ON invoices;
+CREATE TRIGGER invoices_udate   BEFORE UPDATE ON invoices   FOR EACH ROW EXECUTE FUNCTION update_udate();
 
 -- ============================================================
 -- SEQUENTIAL NUMBERS
@@ -450,6 +471,53 @@ GRANT EXECUTE ON FUNCTION get_client_portal_data(UUID) TO anon;
 -- go_live() — wipes demo data, resets sequences
 -- ============================================================
 
+-- ============================================================
+-- INVOICE RPCs
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION close_invoice(p_invid UUID)
+RETURNS TEXT AS $$
+DECLARE
+  v_finalnum TEXT;
+  v_status   TEXT;
+BEGIN
+  IF NOT is_admin() THEN RAISE EXCEPTION 'Unauthorized'; END IF;
+  SELECT status INTO v_status FROM invoices WHERE invid = p_invid;
+  IF v_status IS NULL THEN RAISE EXCEPTION 'חשבונית לא נמצאה'; END IF;
+  IF v_status <> 'draft' THEN RAISE EXCEPTION 'ניתן לסגור רק חשבוניות בסטטוס טיוטה'; END IF;
+  v_finalnum := 'INV' || TO_CHAR(NOW(), 'YY') || LPAD(nextval('inv_final_seq')::TEXT, 4, '0');
+  UPDATE invoices
+  SET status = 'final', invfinalnum = v_finalnum, invnum = v_finalnum, udate = NOW()
+  WHERE invid = p_invid;
+  RETURN v_finalnum;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION close_invoice(UUID) TO authenticated;
+
+CREATE OR REPLACE FUNCTION void_invoice(p_invid UUID)
+RETURNS void AS $$
+DECLARE
+  v_quoteid UUID;
+  v_status  TEXT;
+BEGIN
+  IF NOT is_admin() THEN RAISE EXCEPTION 'Unauthorized'; END IF;
+  SELECT status, quoteid INTO v_status, v_quoteid FROM invoices WHERE invid = p_invid;
+  IF v_status IS NULL THEN RAISE EXCEPTION 'חשבונית לא נמצאה'; END IF;
+  IF v_status = 'cancelled' THEN RAISE EXCEPTION 'החשבונית כבר מבוטלת'; END IF;
+  UPDATE invoices SET status = 'cancelled', udate = NOW() WHERE invid = p_invid;
+  IF v_quoteid IS NOT NULL THEN
+    UPDATE quotes SET invoiced = false WHERE quoteid = v_quoteid;
+  END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION void_invoice(UUID) TO authenticated;
+
+-- ============================================================
+-- go_live() — wipes demo data, resets sequences
+-- ============================================================
+
 CREATE OR REPLACE FUNCTION go_live()
 RETURNS void AS $$
 BEGIN
@@ -457,7 +525,6 @@ BEGIN
     RAISE EXCEPTION 'Unauthorized';
   END IF;
   DELETE FROM activity_log;
-  DELETE FROM calendar_events;
   DELETE FROM customers;
   DELETE FROM parts;
   UPDATE company SET isdemo = false;
@@ -465,6 +532,9 @@ BEGIN
   EXECUTE 'ALTER SEQUENCE project_num_seq RESTART WITH 1';
   EXECUTE 'ALTER SEQUENCE task_num_seq    RESTART WITH 1';
   EXECUTE 'ALTER SEQUENCE part_num_seq    RESTART WITH 1';
+  EXECUTE 'ALTER SEQUENCE quote_num_seq   RESTART WITH 1';
+  EXECUTE 'ALTER SEQUENCE inv_temp_seq    RESTART WITH 1';
+  EXECUTE 'ALTER SEQUENCE inv_final_seq   RESTART WITH 1';
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
