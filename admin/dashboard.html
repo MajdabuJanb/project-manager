@@ -4740,22 +4740,15 @@ async function openInvFromQuote() {
 
   // Navigate to invoices section and open new invoice pre-filled from quote
   showSection('invoices');
-  await invNew();
+  invNew();
+  await loadInvQuoteOptions(q.quoteid);
   invState._fromQuoteid  = q.quoteid;
   invState._fromQuotenum = q.quotenum;
   document.getElementById('ivf-date').value  = new Date().toISOString().slice(0,10);
   document.getElementById('ivf-cust').value  = q.custid;
   document.getElementById('ivf-vat').value   = q.vatrate ?? 17;
   document.getElementById('ivf-notes').value = q.notes || '';
-  // Set quote select option (add option if not present)
-  const sel = document.getElementById('ivf-quote');
-  if (!sel.querySelector(`option[value="${q.quoteid}"]`)) {
-    const opt = document.createElement('option');
-    opt.value = q.quoteid;
-    opt.textContent = q.quotenum || q.quoteid;
-    sel.appendChild(opt);
-  }
-  sel.value = q.quoteid;
+  document.getElementById('ivf-quote').value = q.quoteid;
   document.getElementById('inv-quote-nav-btn').style.display = '';
   // Copy lines from quote
   const { data: qlines } = await db.from('quote_lines').select('*').eq('quoteid', q.quoteid).order('linenum');
@@ -4800,7 +4793,7 @@ async function loadInvoices() {
   if (state.clients.length === 0) await loadClients();
   populateInvCustomerSelect();
   invNew();
-  loadInvQuoteOptions(null);
+  await loadInvQuoteOptions(null);
 }
 
 function invNew() {
@@ -4823,7 +4816,6 @@ function invNew() {
   document.getElementById('ivf-vat').value     = '';
   document.getElementById('inv-quote-nav-btn').style.display = 'none';
   getCompanyVat().then(v => { if (v !== null) document.getElementById('ivf-vat').value = v; });
-  loadInvQuoteOptions(null);
   renderInvLines();
   recalcInvTotals();
   setInvDirtyUI(false);
@@ -5567,11 +5559,13 @@ async function saveCompany() {
   };
   let error;
   if (companyId) {
-    ({ error } = await db.from('company').update(payload).eq('compid', companyId));
+    const r = await db.from('company').update(payload).eq('compid', companyId).select().single();
+    error = r.error;
+    if (!error && !r.data) { showToast('לא נשמר — בדוק הרשאות', 'error'); return; }
   } else {
     const r = await db.from('company').insert(payload).select().single();
     error = r.error;
-    if (!error) companyId = r.data.id;
+    if (!error) companyId = r.data?.compid;
   }
   if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
   showToast('הפרטים נשמרו בהצלחה!', 'success');
