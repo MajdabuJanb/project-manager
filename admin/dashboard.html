@@ -3197,7 +3197,7 @@ function copyPortalLink() {
 let _editingConnId = null;
 
 async function loadCustomerConnections(custid) {
-  const { data, error: connErr } = await db.from('client_connections').select('*').eq('custid', custid).order('cdate');
+  const { data, error: connErr } = await db.from('client_connections').select('*').eq('custid', custid).order('id');
   if (connErr) { showToast('שגיאה בטעינת חיבורים: ' + connErr.message, 'error'); return; }
   const list  = document.getElementById('cd-connections-list');
   const empty = document.getElementById('cd-connections-empty');
@@ -3211,8 +3211,8 @@ async function loadCustomerConnections(custid) {
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <strong style="font-size:13px">${esc(c.connname||'חיבור')}</strong>
         <div style="display:flex;gap:6px">
-          <button class="btn-icon" onclick="editConn('${c.connid}')" title="ערוך">✏️</button>
-          <button class="btn-icon danger" onclick="deleteConn('${c.connid}','${esc(c.connname||'חיבור')}')" title="מחק">🗑️</button>
+          <button class="btn-icon" onclick="editConn('${c.id}')" title="ערוך">✏️</button>
+          <button class="btn-icon danger" onclick="deleteConn('${c.id}','${esc(c.connname||'חיבור')}')" title="מחק">🗑️</button>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:12px;color:var(--text-muted)">
@@ -3240,7 +3240,7 @@ function addConn() {
 }
 
 async function editConn(connid) {
-  const { data: c } = await db.from('client_connections').select('*').eq('connid', connid).single();
+  const { data: c } = await db.from('client_connections').select('*').eq('id', connid).single();
   if (!c) return;
   _editingConnId = connid;
   document.getElementById('cd-conn-form-title').textContent = 'עריכת חיבור';
@@ -3277,7 +3277,7 @@ async function saveConn() {
   };
   let error;
   if (_editingConnId) {
-    ({ error } = await db.from('client_connections').update(payload).eq('connid', _editingConnId));
+    ({ error } = await db.from('client_connections').update(payload).eq('id', _editingConnId));
   } else {
     ({ error } = await db.from('client_connections').insert(payload));
   }
@@ -3289,7 +3289,7 @@ async function saveConn() {
 
 async function deleteConn(connid, name) {
   if (!confirm(`למחוק את החיבור "${name}"?`)) return;
-  const { error } = await db.from('client_connections').delete().eq('connid', connid);
+  const { error } = await db.from('client_connections').delete().eq('id', connid);
   if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
   showToast('נמחק', 'success');
   loadCustomerConnections(state.selectedCustomer.custid);
