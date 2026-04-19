@@ -5549,7 +5549,7 @@ async function loadCompany() {
   const { data, error } = await db.from('company').select('*').maybeSingle();
   if (error) { showToast('שגיאה בטעינת נתוני חברה: ' + error.message, 'error'); return; }
   if (!data) { showToast('לא נמצאו נתוני חברה בDB — צור רשומה ראשונה', 'info'); return; }
-  companyId = data.compid;
+  companyId = data.id;
   document.getElementById('co-name').value    = data.compname || '';
   document.getElementById('co-owner').value   = data.ownname || '';
   document.getElementById('co-tax').value     = data.taxnum || '';
@@ -5656,7 +5656,7 @@ async function saveCompany() {
   };
   let error;
   if (companyId) {
-    const r = await db.from('company').update(payload).eq('compid', companyId).select().single();
+    const r = await db.from('company').update(payload).eq('id', companyId).select().single();
     error = r.error;
     if (!error && !r.data) { showToast('לא נשמר — בדוק הרשאות', 'error'); return; }
   } else {
