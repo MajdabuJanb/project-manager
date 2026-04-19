@@ -642,9 +642,18 @@
       text-transform: uppercase;
       letter-spacing: 0.5px;
       background: var(--bg);
+      border-top: 2px solid var(--border);
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
     }
+    /* List view table */
+    .pri-list-view { flex: 1; overflow: auto; background: var(--card); }
+    .pri-list-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .pri-list-tbl th { padding: 9px 14px; text-align: right; font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 2px solid var(--border); background: #f8fafc; position: sticky; top: 0; z-index: 1; }
+    .pri-list-tbl td { padding: 9px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .pri-list-tbl tbody tr:hover td { background: var(--primary-light); cursor: pointer; }
+    .pri-list-tbl tbody tr.selected td { background: #eff6ff; font-weight: 500; }
+    .pri-list-btn.active { background: var(--primary) !important; color: white !important; border-color: var(--primary-dark) !important; }
     .pri-lines-wrap {
       flex: 1;
       overflow: auto;
@@ -940,10 +949,11 @@
     .md-tab-badge {
       display: inline-flex; align-items: center; justify-content: center;
       min-width: 18px; height: 18px;
-      background: var(--primary); color: white;
+      background: #e2e8f0; color: #64748b;
       border-radius: 999px; font-size: 10px; font-weight: 700;
       padding: 0 4px; margin-right: 4px;
     }
+    .md-tab.active .md-tab-badge { background: var(--primary); color: white; }
     .md-tab-body { padding: 20px 24px; overflow-y: auto; flex: 1; }
     #client-detail-content { display: flex; flex-direction: column; }
     .md-info-grid {
@@ -1405,11 +1415,8 @@
               <button class="md-tab" onclick="switchDetailTab('history', this)">היסטוריה</button>
             </div>
 
-            <!-- Tab: Projects -->
+            <!-- Tab: Projects (read-only history) -->
             <div id="cd-tab-projects" class="md-tab-body">
-              <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
-                <button class="btn btn-primary btn-sm" onclick="openModalForCustomer()">+ פרויקט חדש</button>
-              </div>
               <div id="cd-projects-list"></div>
               <div id="cd-projects-empty" class="empty" style="display:none;padding:40px 0;text-align:center">
                 <div style="font-size:36px;margin-bottom:8px">📁</div>
@@ -1529,6 +1536,8 @@
           <div class="pri-docnum" id="pr-docnum">פרויקט חדש</div>
           <div style="margin-right:auto;display:flex;gap:6px;align-items:center">
             <button class="btn btn-sm" id="pr-search-btn" onclick="toggleProjSearchMode()" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7">🔍 חיפוש</button>
+            <button class="btn btn-sm pri-list-btn" id="pr-list-btn" onclick="toggleProjListView()" title="תצוגת רשימה / כרטיס" style="border:1px solid var(--border);padding:0 8px;height:28px">☰</button>
+            <button class="btn btn-sm" onclick="projShowAll()" title="טען את כל הפרויקטים" style="background:#f1f5f9;color:#475569;border:1px solid var(--border);font-size:12px">הצג הכל</button>
             <button class="btn btn-ghost btn-sm" onclick="projCancel()">✕ בטל</button>
             <button class="btn btn-danger btn-sm" id="pr-delete-btn" onclick="projDelete()" style="display:none">🗑 מחק</button>
             <button class="btn btn-primary btn-sm" onclick="projNew()">🗋 חדש</button>
@@ -1600,6 +1609,7 @@
             <button class="btn btn-primary btn-sm" id="pr-save-btn" onclick="saveProjHeader()" style="display:none;margin-top:10px">💾 שמור</button>
           </div>
 
+          <div class="pri-son-label">ישויות בן</div>
           <!-- Son tabs -->
           <div class="pri-son-tabs">
             <button class="pri-son-tab active" id="pr-tab-tasks-btn" onclick="switchProjTab('tasks', this)">📋 משימות</button>
@@ -1630,6 +1640,26 @@
           </div>
 
         </div>
+
+        <!-- List view -->
+        <div id="pr-list-view" class="pri-list-view" style="display:none">
+          <table class="pri-list-tbl">
+            <thead>
+              <tr>
+                <th style="width:40px">#</th>
+                <th style="width:100px">מספר</th>
+                <th>שם פרויקט</th>
+                <th style="width:160px">לקוח</th>
+                <th style="width:110px">סטטוס</th>
+                <th style="width:90px">עדיפות</th>
+                <th style="width:100px">התחלה</th>
+                <th style="width:70px">התקדמות</th>
+              </tr>
+            </thead>
+            <tbody id="pr-list-tbody"></tbody>
+          </table>
+        </div>
+
       </section>
 
       <!-- ════ TASKS ════ -->
@@ -1648,6 +1678,8 @@
           <div class="pri-docnum" id="tk-docnum">משימה חדשה</div>
           <div style="margin-right:auto;display:flex;gap:6px;align-items:center">
             <button class="btn btn-sm" id="tk-search-btn" onclick="toggleTaskSearchMode()" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7">🔍 חיפוש</button>
+            <button class="btn btn-sm pri-list-btn" id="tk-list-btn" onclick="toggleTaskListView()" title="תצוגת רשימה / כרטיס" style="border:1px solid var(--border);padding:0 8px;height:28px">☰</button>
+            <button class="btn btn-sm" onclick="taskShowAll()" title="טען את כל המשימות" style="background:#f1f5f9;color:#475569;border:1px solid var(--border);font-size:12px">הצג הכל</button>
             <button class="btn btn-ghost btn-sm" onclick="taskCancel()">✕ בטל</button>
             <button class="btn btn-danger btn-sm" id="tk-delete-btn" onclick="taskDelete()" style="display:none">🗑 מחק</button>
             <button class="btn btn-primary btn-sm" onclick="taskNew()">🗋 חדש</button>
@@ -1707,6 +1739,7 @@
             <button class="btn btn-primary btn-sm" id="tk-save-btn" onclick="saveTaskHeader()" style="display:none;margin-top:10px">💾 שמור</button>
           </div>
 
+          <div class="pri-son-label">ישויות בן</div>
           <!-- Son tabs -->
           <div class="pri-son-tabs">
             <button class="pri-son-tab active" onclick="switchTaskTab('desc', this)">📝 תיאור</button>
@@ -1718,6 +1751,26 @@
           </div>
 
         </div>
+
+        <!-- List view -->
+        <div id="tk-list-view" class="pri-list-view" style="display:none">
+          <table class="pri-list-tbl">
+            <thead>
+              <tr>
+                <th style="width:40px">#</th>
+                <th style="width:100px">מספר</th>
+                <th>כותרת</th>
+                <th style="width:170px">פרויקט</th>
+                <th style="width:110px">סטטוס</th>
+                <th style="width:90px">עדיפות</th>
+                <th style="width:100px">תאריך יעד</th>
+                <th style="width:120px">אחראי</th>
+              </tr>
+            </thead>
+            <tbody id="tk-list-tbody"></tbody>
+          </table>
+        </div>
+
       </section>
 
       <!-- ════ CALENDAR ════ -->
@@ -1756,6 +1809,8 @@
           <div class="pri-docnum" id="q-docnum">הצעה חדשה</div>
           <div style="margin-right:auto;display:flex;gap:6px;align-items:center">
             <button class="btn btn-sm" id="q-search-btn" onclick="toggleQuoteSearchMode()" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7">🔍 חיפוש</button>
+            <button class="btn btn-sm pri-list-btn" id="q-list-btn" onclick="toggleQuoteListView()" title="תצוגת רשימה / כרטיס" style="border:1px solid var(--border);padding:0 8px;height:28px">☰</button>
+            <button class="btn btn-sm" onclick="quoteShowAll()" title="טען את כל הצעות המחיר" style="background:#f1f5f9;color:#475569;border:1px solid var(--border);font-size:12px">הצג הכל</button>
             <button class="btn btn-ghost btn-sm" id="q-cancel-btn" onclick="quoteCancel()">✕ בטל</button>
             <button class="btn btn-ghost btn-sm" onclick="quotePrint()" id="q-print-btn" style="display:none">🖨️ הדפס</button>
             <button class="btn btn-primary btn-sm" onclick="quoteNew()">🗋 חדש</button>
@@ -1850,8 +1905,26 @@
             </table>
           </div>
 
-
         </div>
+
+        <!-- List view -->
+        <div id="q-list-view" class="pri-list-view" style="display:none">
+          <table class="pri-list-tbl">
+            <thead>
+              <tr>
+                <th style="width:40px">#</th>
+                <th style="width:100px">מספר</th>
+                <th>לקוח</th>
+                <th style="width:100px">תאריך</th>
+                <th style="width:100px">בתוקף</th>
+                <th style="width:90px">סטטוס</th>
+                <th style="width:120px">סה"כ</th>
+              </tr>
+            </thead>
+            <tbody id="q-list-tbody"></tbody>
+          </table>
+        </div>
+
       </section>
 
       <!-- ════ PARTS ════ -->
@@ -1870,6 +1943,8 @@
           <div class="pri-docnum" id="pt-docnum">מוצר חדש</div>
           <div style="margin-right:auto;display:flex;gap:6px;align-items:center">
             <button class="btn btn-sm" id="pt-search-btn" onclick="togglePartSearchMode()" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7">🔍 חיפוש</button>
+            <button class="btn btn-sm pri-list-btn" id="pt-list-btn" onclick="togglePartListView()" title="תצוגת רשימה / כרטיס" style="border:1px solid var(--border);padding:0 8px;height:28px">☰</button>
+            <button class="btn btn-sm" onclick="partShowAll()" title="טען את כל המוצרים" style="background:#f1f5f9;color:#475569;border:1px solid var(--border);font-size:12px">הצג הכל</button>
             <button class="btn btn-ghost btn-sm" onclick="partCancel()">✕ בטל</button>
             <button class="btn btn-danger btn-sm" id="pt-delete-btn" onclick="partDelete()" style="display:none">🗑 מחק</button>
             <button class="btn btn-primary btn-sm" onclick="partNew()">🗋 חדש</button>
@@ -1900,6 +1975,22 @@
           </div>
 
         </div>
+
+        <!-- List view -->
+        <div id="pt-list-view" class="pri-list-view" style="display:none">
+          <table class="pri-list-tbl">
+            <thead>
+              <tr>
+                <th style="width:40px">#</th>
+                <th style="width:120px">מק"ט</th>
+                <th style="width:260px">שם מוצר / שירות</th>
+                <th>תיאור</th>
+              </tr>
+            </thead>
+            <tbody id="pt-list-tbody"></tbody>
+          </table>
+        </div>
+
       </section>
 
       <!-- ════ STATUSES ════ -->
@@ -2288,6 +2379,7 @@ const state = {
   projects: [],
   tasks: [],
   parts: [],
+  quotes: [],
   statuses: [],
   activity: [],
   selectedCustomer: null,
@@ -2685,9 +2777,7 @@ async function loadCustomerProjects(custid) {
             <span style="font-size:11px;color:var(--text-muted)">${tasks.length} משימות · ${done} הושלמו</span>
           </div>
         </div>
-        <div class="cd-project-actions" onclick="event.stopPropagation()">
-          <button class="btn-icon" onclick="editProject('${p.projid}')" title="ערוך">✏️</button>
-        </div>
+        <div class="cd-project-actions" onclick="event.stopPropagation()"></div>
         <span class="cd-project-chevron">▼</span>
       </div>
       <div class="cd-project-body">${tasksHtml}</div>
@@ -3104,6 +3194,7 @@ async function deleteProjTask(taskid) {
 }
 
 function switchProjTab(tab, btn) {
+  if (!projState.current) { showToast('יש לבחור פרויקט תחילה — בצע חיפוש או לחץ "הצג הכל"', 'info'); return; }
   document.getElementById('pr-tab-tasks').style.display = tab === 'tasks' ? '' : 'none';
   document.getElementById('pr-tab-desc').style.display  = tab === 'desc'  ? '' : 'none';
   document.querySelectorAll('.pri-son-tab[id^="pr-tab"]').forEach(b => b.classList.remove('active'));
@@ -3354,6 +3445,7 @@ async function loadTaskById(taskid, idx) {
 }
 
 function switchTaskTab(tab, btn) {
+  if (!taskState.current) { showToast('יש לבחור משימה תחילה — בצע חיפוש או לחץ "הצג הכל"', 'info'); return; }
   document.querySelectorAll('#section-tasks .pri-son-tab').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
 }
@@ -3663,6 +3755,220 @@ async function _partSearchKey(e) {
 async function loadPartsState() {
   const { data } = await db.from('parts').select('*').order('partid');
   state.parts = data || [];
+}
+
+// ─── SHOW ALL + LIST VIEW ───
+
+async function projShowAll() {
+  if (_prSearchMode) exitProjSearchMode(false);
+  const { data, error } = await db.from('projects').select('*').order('cdate', { ascending: false });
+  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+  state.projects = data || [];
+  projState.list = state.projects.map(p => ({ projid: p.projid, projname: p.projname, projnum: p.projnum }));
+  if (!projState.list.length) { showToast('אין פרויקטים', 'info'); return; }
+  showToast(`${projState.list.length} פרויקטים`, 'info');
+  if (_prListMode) { renderProjListView(); return; }
+  await loadProjById(projState.list[0].projid, 0);
+}
+
+let _prListMode = false;
+function toggleProjListView() {
+  _prListMode = !_prListMode;
+  const body = document.querySelector('#section-projects .pri-body');
+  const listDiv = document.getElementById('pr-list-view');
+  const btn = document.getElementById('pr-list-btn');
+  body.style.display = _prListMode ? 'none' : '';
+  listDiv.style.display = _prListMode ? '' : 'none';
+  btn.classList.toggle('active', _prListMode);
+  if (_prListMode) renderProjListView();
+}
+function renderProjListView() {
+  const tbody = document.getElementById('pr-list-tbody');
+  const projs = projState.list.length
+    ? state.projects.filter(p => projState.list.some(x => x.projid === p.projid))
+    : state.projects;
+  if (!projs.length) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">אין רשומות — לחץ "הצג הכל" לטעינה</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = projs.map((p, i) => {
+    const c = state.clients.find(x => x.custid === p.custid);
+    const idx = projState.list.findIndex(x => x.projid === p.projid);
+    const sel = projState.current?.projid === p.projid ? 'selected' : '';
+    return `<tr class="${sel}" onclick="projNavFromList('${p.projid}', ${idx >= 0 ? idx : i})">
+      <td>${i+1}</td>
+      <td style="font-family:monospace">${esc(p.projnum||'—')}</td>
+      <td style="font-weight:500">${esc(p.projname)}</td>
+      <td>${esc(c?.custname||'—')}</td>
+      <td>${badge2(p.status, LABELS.status[p.status]||p.status)}</td>
+      <td>${badge2(p.priority, LABELS.priority[p.priority]||p.priority)}</td>
+      <td>${p.sdate ? fmtDate(p.sdate) : '—'}</td>
+      <td>${p.progress ?? 0}%</td>
+    </tr>`;
+  }).join('');
+}
+async function projNavFromList(projid, idx) {
+  _prListMode = false;
+  document.querySelector('#section-projects .pri-body').style.display = '';
+  document.getElementById('pr-list-view').style.display = 'none';
+  document.getElementById('pr-list-btn').classList.remove('active');
+  await loadProjById(projid, idx);
+}
+
+async function taskShowAll() {
+  if (_tkSearchMode) exitTaskSearchMode(false);
+  const { data, error } = await db.from('tasks').select('*').order('cdate', { ascending: false });
+  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+  state.tasks = data || [];
+  taskState.list = state.tasks.map(t => ({ taskid: t.taskid, taskname: t.taskname, tasknum: t.tasknum }));
+  if (!taskState.list.length) { showToast('אין משימות', 'info'); return; }
+  showToast(`${taskState.list.length} משימות`, 'info');
+  if (_tkListMode) { renderTaskListView(); return; }
+  await loadTaskById(taskState.list[0].taskid, 0);
+}
+
+let _tkListMode = false;
+function toggleTaskListView() {
+  _tkListMode = !_tkListMode;
+  const body = document.querySelector('#section-tasks .pri-body');
+  const listDiv = document.getElementById('tk-list-view');
+  const btn = document.getElementById('tk-list-btn');
+  body.style.display = _tkListMode ? 'none' : '';
+  listDiv.style.display = _tkListMode ? '' : 'none';
+  btn.classList.toggle('active', _tkListMode);
+  if (_tkListMode) renderTaskListView();
+}
+function renderTaskListView() {
+  const tbody = document.getElementById('tk-list-tbody');
+  const tasks = taskState.list.length
+    ? state.tasks.filter(t => taskState.list.some(x => x.taskid === t.taskid))
+    : state.tasks;
+  if (!tasks.length) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">אין רשומות — לחץ "הצג הכל" לטעינה</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = tasks.map((t, i) => {
+    const p = state.projects.find(x => x.projid === t.projid);
+    const idx = taskState.list.findIndex(x => x.taskid === t.taskid);
+    const sel = taskState.current?.taskid === t.taskid ? 'selected' : '';
+    return `<tr class="${sel}" onclick="taskNavFromList('${t.taskid}', ${idx >= 0 ? idx : i})">
+      <td>${i+1}</td>
+      <td style="font-family:monospace">${esc(t.tasknum||'—')}</td>
+      <td style="font-weight:500">${esc(t.taskname)}</td>
+      <td>${esc(p?.projname||'—')}</td>
+      <td>${badge2(t.status, LABELS.status[t.status]||t.status)}</td>
+      <td>${badge2(t.priority, LABELS.priority[t.priority]||t.priority)}</td>
+      <td>${t.duedate ? fmtDate(t.duedate) : '—'}</td>
+      <td>${esc(t.assignto||'—')}</td>
+    </tr>`;
+  }).join('');
+}
+async function taskNavFromList(taskid, idx) {
+  _tkListMode = false;
+  document.querySelector('#section-tasks .pri-body').style.display = '';
+  document.getElementById('tk-list-view').style.display = 'none';
+  document.getElementById('tk-list-btn').classList.remove('active');
+  await loadTaskById(taskid, idx);
+}
+
+async function partShowAll() {
+  if (_ptSearchMode) exitPartSearchMode(false);
+  await loadPartsState();
+  partState.list = state.parts.map(p => ({ partid: p.partid, partname: p.partname }));
+  if (!partState.list.length) { showToast('אין מוצרים', 'info'); return; }
+  showToast(`${partState.list.length} מוצרים`, 'info');
+  if (_ptListMode) { renderPartListView(); return; }
+  await loadPartById(partState.list[0].partid, 0);
+}
+
+let _ptListMode = false;
+function togglePartListView() {
+  _ptListMode = !_ptListMode;
+  const body = document.querySelector('#section-parts .pri-body');
+  const listDiv = document.getElementById('pt-list-view');
+  const btn = document.getElementById('pt-list-btn');
+  body.style.display = _ptListMode ? 'none' : '';
+  listDiv.style.display = _ptListMode ? '' : 'none';
+  btn.classList.toggle('active', _ptListMode);
+  if (_ptListMode) renderPartListView();
+}
+function renderPartListView() {
+  const tbody = document.getElementById('pt-list-tbody');
+  const parts = state.parts;
+  if (!parts.length) {
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:40px;color:var(--text-muted)">אין רשומות — לחץ "הצג הכל" לטעינה</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = parts.map((p, i) => {
+    const idx = partState.list.findIndex(x => x.partid === p.partid);
+    const sel = partState.current?.partid === p.partid ? 'selected' : '';
+    return `<tr class="${sel}" onclick="partNavFromList('${p.partid}', ${idx >= 0 ? idx : i})">
+      <td>${i+1}</td>
+      <td style="font-family:monospace">${esc(p.partid||'—')}</td>
+      <td style="font-weight:500">${esc(p.partname)}</td>
+      <td style="color:var(--text-muted);font-size:12px">${esc(p.partdes||'')}</td>
+    </tr>`;
+  }).join('');
+}
+async function partNavFromList(partid, idx) {
+  _ptListMode = false;
+  document.querySelector('#section-parts .pri-body').style.display = '';
+  document.getElementById('pt-list-view').style.display = 'none';
+  document.getElementById('pt-list-btn').classList.remove('active');
+  await loadPartById(partid, idx);
+}
+
+async function quoteShowAll() {
+  if (_qSearchMode) exitQuoteSearchMode(false);
+  const { data, error } = await db.from('quotes').select('*').order('cdate', { ascending: false });
+  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+  state.quotes = data || [];
+  quoteState.list = state.quotes.map(q => ({ quoteid: q.quoteid, quotenum: q.quotenum }));
+  if (!quoteState.list.length) { showToast('אין הצעות מחיר', 'info'); return; }
+  showToast(`${quoteState.list.length} הצעות`, 'info');
+  if (_qListMode) { renderQuoteListView(); return; }
+  await loadQuoteById(quoteState.list[0].quoteid, 0);
+}
+
+let _qListMode = false;
+function toggleQuoteListView() {
+  _qListMode = !_qListMode;
+  const body = document.querySelector('#section-quotes .pri-body');
+  const listDiv = document.getElementById('q-list-view');
+  const btn = document.getElementById('q-list-btn');
+  body.style.display = _qListMode ? 'none' : '';
+  listDiv.style.display = _qListMode ? '' : 'none';
+  btn.classList.toggle('active', _qListMode);
+  if (_qListMode) renderQuoteListView();
+}
+function renderQuoteListView() {
+  const tbody = document.getElementById('q-list-tbody');
+  const quotes = (state.quotes || []);
+  if (!quotes.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)">אין רשומות — לחץ "הצג הכל" לטעינה</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = quotes.map((q, i) => {
+    const c = state.clients.find(x => x.custid === q.custid);
+    const idx = quoteState.list.findIndex(x => x.quoteid === q.quoteid);
+    const sel = quoteState.current?.quoteid === q.quoteid ? 'selected' : '';
+    return `<tr class="${sel}" onclick="quoteNavFromList('${q.quoteid}', ${idx >= 0 ? idx : i})">
+      <td>${i+1}</td>
+      <td style="font-family:monospace">${esc(q.quotenum||'—')}</td>
+      <td>${esc(c?.custname||'—')}</td>
+      <td>${q.qdate ? fmtDate(q.qdate) : '—'}</td>
+      <td>${q.validdate ? fmtDate(q.validdate) : '—'}</td>
+      <td>${badge2(q.status, QUOTE_STATUS[q.status]||q.status)}</td>
+      <td style="font-weight:600;color:var(--primary)">${fmtMoney(q.total||0)}</td>
+    </tr>`;
+  }).join('');
+}
+async function quoteNavFromList(quoteid, idx) {
+  _qListMode = false;
+  document.querySelector('#section-quotes .pri-body').style.display = '';
+  document.getElementById('q-list-view').style.display = 'none';
+  document.getElementById('q-list-btn').classList.remove('active');
+  await loadQuoteById(quoteid, idx);
 }
 
 // ─── ADMIN TOOLS ───
