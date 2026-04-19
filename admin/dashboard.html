@@ -1311,6 +1311,18 @@
               </div>
             </div>
 
+            <div class="section-divider">API רשות המסים — מספר הקצאה</div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Bearer Token (OAuth)</label>
+                <input type="password" id="co-ita-token" placeholder="טוקן מפורטל רשות המסים">
+              </div>
+              <div class="form-group" style="display:flex;align-items:center;gap:10px;padding-top:22px">
+                <input type="checkbox" id="co-ita-sandbox" style="width:18px;height:18px">
+                <label for="co-ita-sandbox" style="margin:0;cursor:pointer">סביבת Sandbox (בדיקות)</label>
+              </div>
+            </div>
+
             <div class="section-divider">פרטי בנק</div>
             <div class="form-group">
               <label>פרטי בנק (יופיעו בדרישת תשלום)</label>
@@ -3398,6 +3410,7 @@ async function projNav(dir) {
 
 async function loadProjById(projid, idx) {
   const { data: p } = await db.from('projects').select('*').eq('projid', projid).single();
+  if (!p) { showToast('הפרויקט לא נמצא', 'error'); return; }
   const { data: tasks } = await db.from('tasks').select('*').eq('projid', projid).order('cdate');
   projState.current = p;
   projState.idx     = idx ?? projState.list.findIndex(x => x.projid === projid);
@@ -3419,6 +3432,7 @@ async function loadProjById(projid, idx) {
   setProjDirtyUI(false);
   document.getElementById('pr-delete-btn').style.display = '';
   updateProjNavButtons();
+  renderTabsBar?.();
   // Sync state.projects
   const si = state.projects.findIndex(x => x.projid === projid);
   if (si >= 0) state.projects[si] = p; else state.projects.unshift(p);
@@ -3704,6 +3718,7 @@ async function taskNav(dir) {
 
 async function loadTaskById(taskid, idx) {
   const { data: t } = await db.from('tasks').select('*').eq('taskid', taskid).single();
+  if (!t) { showToast('המשימה לא נמצאה', 'error'); return; }
   taskState.current = t;
   taskState.idx     = idx ?? taskState.list.findIndex(x => x.taskid === taskid);
   taskState.dirty   = false;
@@ -3720,6 +3735,7 @@ async function loadTaskById(taskid, idx) {
   setTaskDirtyUI(false);
   document.getElementById('tk-delete-btn').style.display = '';
   updateTaskNavButtons();
+  renderTabsBar?.();
   const si = state.tasks.findIndex(x => x.taskid === taskid);
   if (si >= 0) state.tasks[si] = t; else state.tasks.unshift(t);
 }
@@ -3914,6 +3930,7 @@ async function loadPartById(partid, idx) {
   setPartDirtyUI(false);
   document.getElementById('pt-delete-btn').style.display = '';
   updatePartNavButtons();
+  renderTabsBar?.();
   const si = state.parts.findIndex(x => x.partid === partid);
   if (si >= 0) state.parts[si] = p; else state.parts.unshift(p);
 }
@@ -3935,6 +3952,7 @@ async function savePartHeader(silent = false) {
     partname: name,
     partdes:  document.getElementById('ptf-desc').value.trim()||null
   };
+  const isExistingPart = !!partState.current;
   let p, error;
   if (partState.current) {
     const r = await db.from('parts').update(payload).eq('partid', partState.current.partid).select().single();
@@ -3954,6 +3972,7 @@ async function savePartHeader(silent = false) {
   const si = state.parts.findIndex(x => x.partid === p.partid);
   if (si >= 0) state.parts[si] = p; else state.parts.unshift(p);
   if (!partState.list.length) { partState.list = [p]; partState.idx = 0; }
+  if (!isExistingPart) await logActivity('part', p.partid, name, 'created');
   updatePartNavButtons();
 }
 
@@ -3968,6 +3987,7 @@ async function partDelete() {
   if (!confirm(`למחוק את המוצר "${name}"?`)) return;
   const { error } = await db.from('parts').delete().eq('partid', partState.current.partid);
   if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+  await logActivity('part', partState.current.partid, name, 'deleted');
   state.parts = state.parts.filter(p => p.partid !== partState.current.partid);
   partState.list = partState.list.filter(p => p.partid !== partState.current.partid);
   showToast('המוצר נמחק', 'success');
@@ -4865,6 +4885,48 @@ function _pfmtMoney(n) {
 function _pEsc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+// ─── ITA (Israel Tax Authority) — Allocation Number API ───
+const ITA_THRESHOLD     = 5000; // ₪5,000 לפני מע"מ (מיוני 2026)
+const ITA_SANDBOX_URL   = 'https://api.taxes.gov.il/shaam/tsandbox/Invoices/v2/Approval';
+const ITA_PRODUCTION_URL = 'https://api.taxes.gov.il/shaam/production/Invoices/v2/Approval';
+
+async function _itaGetAllocationNum(inv, co) {
+  const token = co.ita_token;
+  if (!token) {
+    showToast('יש להגדיר Bearer Token של רשות המסים בנתוני החברה', 'error');
+    return null;
+  }
+  const url  = co.ita_sandbox !== false ? ITA_SANDBOX_URL : ITA_PRODUCTION_URL;
+  const vatRate  = Number(inv.vatrate || 17);
+  const subtotal = Number(inv.subtotal || 0);
+  const vatAmt   = Math.round(subtotal * vatRate) / 100;
+  const body = {
+    invoicenumber:       inv.invnum || '',
+    invoicedate:         inv.idate  || new Date().toISOString().slice(0,10),
+    invoiceamount:       subtotal,
+    vatnumber:           (co.taxnum || '').replace(/\D/g,''),
+    customervatnumber:   null,
+    vatamount:           vatAmt
+  };
+  try {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(body)
+    });
+    if (!resp.ok) {
+      const txt = await resp.text().catch(() => resp.statusText);
+      showToast(`שגיאת API רשות המסים (${resp.status}): ${txt}`, 'error');
+      return null;
+    }
+    const data = await resp.json();
+    return data.allocationNumber || data.allocation_number || null;
+  } catch (e) {
+    showToast(`שגיאת חיבור ל-API רשות המסים: ${e.message}`, 'error');
+    return null;
+  }
+}
+
 function togglePrintMenu(id) {
   const m = document.getElementById(id);
   const isOpen = m.style.display === 'block';
@@ -5024,12 +5086,8 @@ async function openInvFromQuote() {
   if (q.status === 'cancelled') { showToast('לא ניתן לפתוח חשבונית עבור הצעת מחיר מבוטלת.', 'error'); return; }
   if (q.invoiced)               { showToast('לא ניתן לפתוח חשבונית עבור הצעת מחיר שכבר חויבה.', 'error'); return; }
 
-  // Mark quote as invoiced
-  const { error: qErr } = await db.from('quotes').update({ invoiced: true }).eq('quoteid', q.quoteid);
-  if (qErr) { showToast('שגיאה: ' + qErr.message, 'error'); return; }
-  quoteState.current.invoiced = true;
-
   // Navigate to invoices section and open new invoice pre-filled from quote
+  // (quote marked invoiced only after invoice is successfully saved — see saveInvHeader)
   showSection('invoices');
   invNew();
   await loadInvQuoteOptions(q.quoteid);
@@ -5193,7 +5251,7 @@ function invNew() {
 
 function _setInvActionBtns(hasRecord, isDraft) {
   document.getElementById('inv-close-btn').style.display  = (hasRecord && isDraft)  ? '' : 'none';
-  document.getElementById('inv-void-btn').style.display   = (hasRecord && !isDraft) ? '' : 'none';
+  document.getElementById('inv-void-btn').style.display   = (hasRecord && invState.current?.status === 'final') ? '' : 'none';
   document.getElementById('inv-delete-btn').style.display = (hasRecord && isDraft)  ? '' : 'none';
   document.getElementById('inv-print-btn').style.display  = hasRecord ? 'inline-block' : 'none';
 }
@@ -5319,6 +5377,11 @@ async function saveInvHeader(silent = false) {
         await updateInvTotalsInDB(inv.invid);
       }
       await logActivity('invoice', inv.invid, inv.invnum, 'created');
+      // Mark source quote as invoiced now that invoice is confirmed saved
+      if (invState._fromQuoteid) {
+        await db.from('quotes').update({ invoiced: true }).eq('quoteid', invState._fromQuoteid);
+        if (quoteState.current?.quoteid === invState._fromQuoteid) quoteState.current.invoiced = true;
+      }
     }
   }
 
@@ -5363,6 +5426,24 @@ async function invDelete() {
 async function invClose() {
   if (!invState.current || invState.current.status !== 'draft') return;
   if (!confirm(`לסגור את החשבונית ${invState.current.invnum}? פעולה זו תנעל את החשבונית לעריכה.`)) return;
+
+  const inv = invState.current;
+  const sub = Number(inv.subtotal || 0);
+
+  // ITA allocation number required if subtotal >= threshold
+  if (sub >= ITA_THRESHOLD && !inv.allocnum) {
+    const coR = await db.from('company').select('*').limit(1);
+    const co  = coR.data?.[0] || {};
+    showToast('מקבל מספר הקצאה מרשות המסים...', 'info');
+    const allocnum = await _itaGetAllocationNum(inv, co);
+    if (!allocnum) return;
+    const { error: aErr } = await db.from('invoices').update({ allocnum }).eq('invid', inv.invid);
+    if (aErr) { showToast('שגיאה בשמירת מספר הקצאה: ' + aErr.message, 'error'); return; }
+    invState.current.allocnum = allocnum;
+    document.getElementById('ivf-alloc').value = allocnum;
+    showToast(`מספר הקצאה: ${allocnum}`, 'success');
+  }
+
   const { data, error } = await db.rpc('close_invoice', { p_invid: invState.current.invid });
   if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
   const finalnum = data;
@@ -5381,7 +5462,8 @@ async function invClose() {
 }
 
 async function invVoid() {
-  if (!invState.current || invState.current.status === 'cancelled') return;
+  if (!invState.current) return;
+  if (invState.current.status === 'cancelled') { showToast('החשבונית כבר מבוטלת', 'info'); return; }
   if (!confirm(`לבטל את החשבונית ${invState.current.invnum}? החשבונית תישאר לתיעוד.`)) return;
   const { error } = await db.rpc('void_invoice', { p_invid: invState.current.invid });
   if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
@@ -5607,7 +5689,8 @@ function invQuoteSelected() {
   markInvDirty();
 }
 
-function invLinePartChange(sel, idx) {
+async function invLinePartChange(sel, idx) {
+  await ensureInvSaved();
   const source = invState._copiedLines || invState.lines;
   if (idx >= source.length) {
     source.push({ invid: invState.current?.invid, linenum: idx+1, partid: null, linedes:'', qty:1, unitprice:0, discount:0 });
@@ -5834,8 +5917,10 @@ async function loadCompany() {
   document.getElementById('co-city').value    = data.city || '';
   document.getElementById('co-zip').value     = data.zip || '';
   document.getElementById('co-bank').value    = data.bankdet || '';
-  document.getElementById('co-vatrate').value  = data.vatrate ?? '';
-  document.getElementById('co-taxconst').value = data.taxconst ?? '';
+  document.getElementById('co-vatrate').value    = data.vatrate ?? '';
+  document.getElementById('co-taxconst').value   = data.taxconst ?? '';
+  document.getElementById('co-ita-token').value  = data.ita_token || '';
+  document.getElementById('co-ita-sandbox').checked = data.ita_sandbox !== false;
   if (data.logo) { companyLogo = data.logo; showLogoPreview(data.logo); }
   updateDemoBanner(data.isdemo !== false);
 }
@@ -5861,9 +5946,11 @@ function confirmGoLive() {
   document.getElementById('confirm-text').innerHTML =
     '<strong>⚠️ פעולה בלתי הפיכה!</strong><br><br>' +
     'פעולה זו תמחק לצמיתות:<br>' +
-    '• כל הלקוחות, הפרויקטים והמשימות<br>' +
-    '• לוג הפעילות ואירועי היומן<br><br>' +
-    '<strong>נתוני החברה וההרשאות יישמרו.</strong><br><br>' +
+    '• כל הלקוחות, פרויקטים ומשימות<br>' +
+    '• כל הצעות מחיר וחשבוניות<br>' +
+    '• לוג פעילות וחיבורי לקוחות<br>' +
+    '• כל המוצרים<br><br>' +
+    '<strong>נתוני החברה וההגדרות יישמרו.</strong><br><br>' +
     'לאחר הפעולה המערכת תהיה פעילה לשימוש אמיתי.';
   const okBtn = document.getElementById('confirm-ok-btn');
   okBtn.textContent = '🚀 כן, העלה לאוויר';
@@ -5924,8 +6011,10 @@ async function saveCompany() {
     city:     document.getElementById('co-city').value.trim(),
     zip:      document.getElementById('co-zip').value.trim(),
     bankdet:  document.getElementById('co-bank').value.trim(),
-    vatrate:  parseFloat(document.getElementById('co-vatrate').value) || null,
-    taxconst: parseFloat(document.getElementById('co-taxconst').value) || null,
+    vatrate:     parseFloat(document.getElementById('co-vatrate').value) || null,
+    taxconst:    parseFloat(document.getElementById('co-taxconst').value) || null,
+    ita_token:   document.getElementById('co-ita-token').value.trim() || null,
+    ita_sandbox: document.getElementById('co-ita-sandbox').checked,
     logo:     companyLogo,
     udate:    new Date().toISOString()
   };

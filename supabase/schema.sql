@@ -92,7 +92,9 @@ CREATE TABLE IF NOT EXISTS company (
   bankdet  TEXT,
   logo     TEXT,
   vatrate  DECIMAL(5,2) DEFAULT 17,
-  taxconst NUMERIC,
+  taxconst    NUMERIC,
+  ita_token   TEXT,
+  ita_sandbox BOOLEAN DEFAULT true,
   isdemo   BOOLEAN DEFAULT true,
   udate    TIMESTAMPTZ DEFAULT NOW()
 );
@@ -526,8 +528,14 @@ BEGIN
   IF NOT is_admin() THEN
     RAISE EXCEPTION 'Unauthorized';
   END IF;
+  -- Delete in FK-safe order (RESTRICT constraints on customers)
+  DELETE FROM invoice_lines;
+  DELETE FROM invoices;
+  DELETE FROM quote_lines;
+  DELETE FROM quotes;
+  DELETE FROM client_connections;
   DELETE FROM activity_log;
-  DELETE FROM customers;
+  DELETE FROM customers;  -- cascades → projects → tasks
   DELETE FROM parts;
   UPDATE company SET isdemo = false;
   EXECUTE 'ALTER SEQUENCE client_num_seq  RESTART WITH 1';
