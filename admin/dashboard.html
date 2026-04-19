@@ -5005,12 +5005,12 @@ async function quotePrint(previewOnly = false) {
   </tr></thead><tbody>${linesHtml}</tbody></table>
   <table class="bottom-table">
   <tr>
+    <td style="width:50%;direction:rtl;font-size:12px;line-height:1.8;padding-left:20px">
+      ${q.validdate ? `<b>בתוקף עד:</b> ${_pfmtDate(q.validdate)}<br>` : ''}
+    </td>
     <td style="width:50%">
       ${_printTotalsBlock(q.subtotal, q.vatrate)}
       ${_printFooter(co)}
-    </td>
-    <td style="width:50%;direction:rtl;font-size:12px;line-height:1.8;padding-right:20px">
-      ${q.validdate ? `<b>בתוקף עד:</b> ${_pfmtDate(q.validdate)}<br>` : ''}
     </td>
   </tr></table>
   ${q.notes ? `<div style="margin-top:14px;direction:rtl"><b>הערות:</b> ${_pEsc(q.notes)}</div>` : ''}`;
@@ -5114,12 +5114,12 @@ async function invPrint(previewOnly = false) {
   </tr></thead><tbody>${linesHtml}</tbody></table>
   <table class="bottom-table">
   <tr>
+    <td style="width:50%;direction:rtl;font-size:12px;line-height:1.8;padding-left:20px">
+      ${inv.allocnum ? `<b>מספר הקצאה:</b> ${_pEsc(inv.allocnum)}<br>` : ''}
+    </td>
     <td style="width:50%">
       ${_printTotalsBlock(inv.subtotal, inv.vatrate)}
       ${_printFooter(co)}
-    </td>
-    <td style="width:50%;direction:rtl;font-size:12px;line-height:1.8;padding-right:20px">
-      ${inv.allocnum ? `<b>מספר הקצאה:</b> ${_pEsc(inv.allocnum)}<br>` : ''}
     </td>
   </tr></table>
   ${inv.notes ? `<div style="margin-top:14px;direction:rtl"><b>הערות:</b> ${_pEsc(inv.notes)}</div>` : ''}`;
