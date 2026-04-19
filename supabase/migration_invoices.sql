@@ -150,5 +150,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 13. Reload schema cache
+-- 13. Extend activity_log etype CHECK to include quote + invoice
+ALTER TABLE activity_log DROP CONSTRAINT IF EXISTS activity_log_etype_check;
+ALTER TABLE activity_log ADD CONSTRAINT activity_log_etype_check
+  CHECK (etype IN ('client', 'project', 'task', 'part', 'quote', 'invoice'));
+
+-- 14. Reload schema cache
 NOTIFY pgrst, 'reload schema';

@@ -1936,6 +1936,140 @@
 
       </section>
 
+      <!-- ════ INVOICES ════ -->
+      <section id="section-invoices" class="section pri-section">
+
+        <!-- Toolbar -->
+        <div class="pri-toolbar">
+          <span class="pri-toolbar-title">🧾 חשבוניות</span>
+          <div style="width:1px;height:24px;background:var(--border);margin:0 4px"></div>
+          <button class="pri-nav-btn" id="inv-btn-first" onclick="invNav('first')" title="ראשון">⏮</button>
+          <button class="pri-nav-btn" id="inv-btn-prev"  onclick="invNav('prev')"  title="קודם">◀</button>
+          <span class="pri-pos" id="inv-pos">—</span>
+          <button class="pri-nav-btn" id="inv-btn-next"  onclick="invNav('next')"  title="הבא">▶</button>
+          <button class="pri-nav-btn" id="inv-btn-last"  onclick="invNav('last')"  title="אחרון">⏭</button>
+          <div style="width:1px;height:24px;background:var(--border);margin:0 4px"></div>
+          <div class="pri-docnum" id="inv-docnum">חשבונית חדשה</div>
+          <div style="margin-right:auto;display:flex;gap:6px;align-items:center">
+            <button class="btn btn-sm" id="inv-search-btn" onclick="toggleInvSearchMode()" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7">🔍 חיפוש</button>
+            <button class="btn btn-sm pri-list-btn" id="inv-list-btn" onclick="toggleInvListView()" title="תצוגת רשימה / כרטיס" style="border:1px solid var(--border);padding:0 8px;height:28px">☰</button>
+            <button class="btn btn-sm" onclick="invShowAll()" style="background:#f1f5f9;color:#475569;border:1px solid var(--border);font-size:12px">הצג הכל</button>
+            <button class="btn btn-ghost btn-sm" onclick="invCancel()">✕ בטל</button>
+            <button class="btn btn-sm" id="inv-close-btn" onclick="invClose()" style="display:none;background:#059669;color:white;border:none">✅ סגור</button>
+            <button class="btn btn-danger btn-sm" id="inv-void-btn" onclick="invVoid()" style="display:none">⛔ בטל חשבונית</button>
+            <button class="btn btn-danger btn-sm" id="inv-delete-btn" onclick="invDelete()" style="display:none">🗑 מחק</button>
+            <button class="btn btn-primary btn-sm" onclick="invNew()">🗋 חדש</button>
+          </div>
+        </div>
+
+        <div class="pri-body" id="inv-body">
+
+          <!-- Lock banner (final / cancelled) -->
+          <div id="inv-lock-banner" style="display:none;background:#fef3c7;border-bottom:1px solid #fbbf24;padding:8px 20px;font-size:12px;font-weight:600;color:#92400e;flex-shrink:0">
+            🔒 <span id="inv-lock-msg">חשבונית נעולה לעריכה</span>
+          </div>
+
+          <!-- Master -->
+          <div class="pri-master" id="inv-master">
+            <div class="pri-master-grid">
+              <div class="pri-field">
+                <label>מספר חשבונית</label>
+                <input type="text" id="ivf-num" readonly placeholder="יווצר אוטומטית">
+              </div>
+              <div class="pri-field">
+                <label>סטטוס</label>
+                <input type="text" id="ivf-status-display" readonly style="font-weight:600">
+              </div>
+              <div class="pri-field">
+                <label>תאריך חשבונית</label>
+                <input type="date" id="ivf-date" onchange="markInvDirty()">
+              </div>
+              <div class="pri-field">
+                <label>לקוח *</label>
+                <select id="ivf-cust" onchange="markInvDirty()">
+                  <option value="">-- בחר לקוח --</option>
+                </select>
+              </div>
+              <div class="pri-field">
+                <label>הצעת מחיר מקושרת</label>
+                <input type="text" id="ivf-quote-display" readonly placeholder="—" style="cursor:pointer" onclick="invNavToQuote()" title="לחץ לניווט להצעה">
+              </div>
+              <div class="pri-field">
+                <label>מע"מ %</label>
+                <input type="number" id="ivf-vat" value="17" min="0" max="100" step="0.1" onfocus="this.select()" onchange="markInvDirty();recalcInvTotals()">
+              </div>
+              <div class="pri-field wide">
+                <label>הערות</label>
+                <input type="text" id="ivf-notes" placeholder="הערות לחשבונית..." onchange="markInvDirty()">
+              </div>
+              <div class="pri-field" style="display:flex;align-items:center;gap:8px;padding-top:18px">
+                <input type="checkbox" id="ivf-printed" onchange="markInvDirty()" style="width:16px;height:16px">
+                <label for="ivf-printed" style="margin:0;font-weight:500;cursor:pointer">הודפסה</label>
+              </div>
+            </div>
+            <div style="display:flex;gap:12px;margin-top:10px;align-items:center;flex-wrap:wrap">
+              <button class="btn btn-primary btn-sm" id="inv-save-btn" onclick="saveInvHeader()" style="display:none">💾 שמור</button>
+              <span id="inv-dirty-indicator" style="font-size:12px;color:#f59e0b;display:none">● שינויים לא שמורים</span>
+              <span id="inv-saved-indicator" style="font-size:12px;color:#10b981;display:none">✓ נשמר</span>
+              <div style="margin-right:auto;display:flex;gap:0">
+                <div class="pri-total-box" style="border:1px solid var(--border);border-radius:8px 0 0 8px;padding:6px 16px">
+                  <div class="pri-total-lbl">לפני מע"מ</div>
+                  <div class="pri-total-val" id="it-sub" style="font-size:14px">₪0.00</div>
+                </div>
+                <div class="pri-total-box" style="border:1px solid var(--border);border-right:none;padding:6px 16px">
+                  <div class="pri-total-lbl">מע"מ</div>
+                  <div class="pri-total-val" id="it-vat" style="font-size:14px">₪0.00</div>
+                </div>
+                <div class="pri-total-box" style="border:1px solid var(--primary);border-radius:0 8px 8px 0;background:var(--primary-light);padding:6px 16px">
+                  <div class="pri-total-lbl" style="color:var(--primary)">סה"כ לתשלום</div>
+                  <div class="pri-total-val grand" id="it-total" style="font-size:15px">₪0.00</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Son: Invoice Lines -->
+          <div class="pri-son-label">שורות חשבונית</div>
+          <div class="pri-lines-wrap">
+            <table class="pri-lines" id="inv-lines-table">
+              <thead>
+                <tr>
+                  <th style="width:36px">#</th>
+                  <th>תיאור</th>
+                  <th style="width:80px">כמות</th>
+                  <th style="width:110px">מחיר יחידה</th>
+                  <th style="width:80px">הנחה %</th>
+                  <th style="width:110px">סה"כ שורה</th>
+                  <th style="width:120px">כולל מע"מ</th>
+                  <th style="width:36px"></th>
+                </tr>
+              </thead>
+              <tbody id="inv-lines-tbody"></tbody>
+            </table>
+          </div>
+
+        </div>
+
+        <!-- List view -->
+        <div id="inv-list-view" class="pri-list-view" style="display:none">
+          <table class="pri-list-tbl">
+            <thead>
+              <tr>
+                <th style="width:40px">#</th>
+                <th style="width:110px">מספר</th>
+                <th>לקוח</th>
+                <th style="width:100px">תאריך</th>
+                <th style="width:95px">סטטוס</th>
+                <th style="width:80px">הודפסה</th>
+                <th style="width:120px">סה"כ</th>
+              </tr>
+            </thead>
+            <tbody id="inv-list-tbody"></tbody>
+          </table>
+        </div>
+
+      </section>
+
       <!-- ════ PARTS ════ -->
       <section id="section-parts" class="section pri-section">
 
@@ -4363,6 +4497,7 @@ function setDirtyUI(dirty) {
 
 async function saveQuoteHeader(silent = false) {
   if (quoteState.saving) return;
+  if (quoteState.current?.invoiced) { if (!silent) showToast('הצעה זו חויבה ונעולה לעריכה', 'error'); return; }
   const custid = document.getElementById('qf-cust').value;
   if (!custid) { if (!silent) showToast('יש לבחור לקוח', 'error'); return; }
   quoteState.saving = true;
@@ -4581,6 +4716,581 @@ function updateQuoteCustomerInfo() { /* placeholder for future customer details 
 function quotePrint() {
   if (!quoteState.current) return;
   showToast('הדפסה תתווסף בשלב הבא', 'info');
+}
+
+async function openInvFromQuote() {
+  const q = quoteState.current;
+  if (!q) return;
+  if (q.status !== 'approved')  { showToast('לא ניתן לפתוח חשבונית עבור הצעת מחיר שלא אושרה.', 'error'); return; }
+  if (q.status === 'cancelled') { showToast('לא ניתן לפתוח חשבונית עבור הצעת מחיר מבוטלת.', 'error'); return; }
+  if (q.invoiced)               { showToast('לא ניתן לפתוח חשבונית עבור הצעת מחיר שכבר חויבה.', 'error'); return; }
+
+  // Mark quote as invoiced
+  const { error: qErr } = await db.from('quotes').update({ invoiced: true }).eq('quoteid', q.quoteid);
+  if (qErr) { showToast('שגיאה: ' + qErr.message, 'error'); return; }
+  quoteState.current.invoiced = true;
+
+  // Navigate to invoices section and open new invoice pre-filled from quote
+  showSection('invoices');
+  await invNew();
+  invState._fromQuoteid = q.quoteid;
+  invState._fromQuotenum = q.quotenum;
+  document.getElementById('ivf-cust').value        = q.custid;
+  document.getElementById('ivf-vat').value         = q.vatrate ?? 17;
+  document.getElementById('ivf-notes').value       = q.notes || '';
+  document.getElementById('ivf-quote-display').value = q.quotenum || '';
+  // Copy lines from quote
+  const { data: qlines } = await db.from('quote_lines').select('*').eq('quoteid', q.quoteid).order('linenum');
+  invState._copiedLines = (qlines || []).map(l => ({
+    linedes:   l.linedes || '',
+    qty:       l.qty     || 1,
+    unitprice: l.unitprice || 0,
+    discount:  l.discount  || 0,
+    linetotal: l.linetotal || 0
+  }));
+  renderInvLines();
+  recalcInvTotals();
+  markInvDirty();
+}
+
+// ─── INVOICES ───
+const invState = {
+  list:    [],
+  idx:     -1,
+  current: null,
+  lines:   [],
+  dirty:   false,
+  saving:  false,
+  _fromQuoteid:  null,
+  _fromQuotenum: null,
+  _copiedLines:  null
+};
+const INV_STATUS = { draft:'טיוטה', final:'סופית', cancelled:'מבוטלת' };
+
+function populateInvCustomerSelect() {
+  const sel = document.getElementById('ivf-cust');
+  if (!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">-- בחר לקוח --</option>' +
+    state.clients.filter(c => c.status === 'active').map(c =>
+      `<option value="${c.custid}" ${c.custid===prev?'selected':''}>${esc(c.custname)}${c.custcomp?' — '+esc(c.custcomp):''}</option>`
+    ).join('');
+}
+
+async function loadInvoices() {
+  if (state.clients.length === 0) await loadClients();
+  populateInvCustomerSelect();
+  invNew();
+}
+
+function invNew() {
+  if (_invSearchMode) exitInvSearchMode(false);
+  invState.idx     = -1;
+  invState.current = null;
+  invState.lines   = [];
+  invState.dirty   = false;
+  invState.saving  = false;
+  invState._fromQuoteid  = null;
+  invState._fromQuotenum = null;
+  invState._copiedLines  = null;
+  document.getElementById('inv-docnum').textContent = 'חשבונית חדשה';
+  document.getElementById('ivf-num').value          = '';
+  document.getElementById('ivf-status-display').value = 'טיוטה';
+  document.getElementById('ivf-date').value         = new Date().toISOString().slice(0,10);
+  document.getElementById('ivf-cust').value         = '';
+  document.getElementById('ivf-quote-display').value = '';
+  document.getElementById('ivf-notes').value        = '';
+  document.getElementById('ivf-printed').checked    = false;
+  document.getElementById('ivf-vat').value          = '';
+  getCompanyVat().then(v => { if (v !== null) document.getElementById('ivf-vat').value = v; });
+  renderInvLines();
+  recalcInvTotals();
+  setInvDirtyUI(false);
+  setInvLockedUI(false, '');
+  invState.list = [];
+  updateInvNavButtons();
+  _setInvActionBtns(false, false);
+  document.getElementById('ivf-cust').focus();
+}
+
+function _setInvActionBtns(hasRecord, isDraft) {
+  document.getElementById('inv-close-btn').style.display  = (hasRecord && isDraft)  ? '' : 'none';
+  document.getElementById('inv-void-btn').style.display   = (hasRecord && !isDraft) ? '' : 'none';
+  document.getElementById('inv-delete-btn').style.display = (hasRecord && isDraft)  ? '' : 'none';
+}
+
+async function invNav(dir) {
+  if (invState.dirty && invState.current) await saveInvHeader(true);
+  const list = invState.list;
+  if (!list.length) return;
+  let idx = invState.idx;
+  if      (dir === 'first') idx = 0;
+  else if (dir === 'last')  idx = list.length - 1;
+  else if (dir === 'prev')  idx = Math.max(0, idx - 1);
+  else if (dir === 'next')  idx = Math.min(list.length - 1, idx + 1);
+  await loadInvById(list[idx].invid, idx);
+}
+
+async function loadInvById(invid, idx) {
+  const { data: inv } = await db.from('invoices').select('*').eq('invid', invid).single();
+  const { data: lines } = await db.from('invoice_lines').select('*').eq('invid', invid).order('linenum');
+  invState.current = inv;
+  invState.lines   = lines || [];
+  invState.idx     = idx ?? invState.list.findIndex(x => x.invid === invid);
+  invState.dirty   = false;
+  invState._fromQuoteid  = inv.quoteid || null;
+  invState._fromQuotenum = null;
+  invState._copiedLines  = null;
+
+  const isDraft  = inv.status === 'draft';
+  const locked   = !isDraft;
+
+  document.getElementById('inv-docnum').textContent        = inv.invnum || '';
+  document.getElementById('ivf-num').value                 = inv.invnum || '';
+  document.getElementById('ivf-status-display').value      = INV_STATUS[inv.status] || inv.status;
+  document.getElementById('ivf-date').value                = inv.idate    || '';
+  document.getElementById('ivf-cust').value                = inv.custid   || '';
+  document.getElementById('ivf-notes').value               = inv.notes    || '';
+  document.getElementById('ivf-printed').checked           = !!inv.printed;
+  document.getElementById('ivf-vat').value                 = inv.vatrate  ?? 17;
+
+  // Quote link
+  if (inv.quoteid) {
+    const { data: qr } = await db.from('quotes').select('quotenum').eq('quoteid', inv.quoteid).single();
+    document.getElementById('ivf-quote-display').value = qr?.quotenum || inv.quoteid;
+  } else {
+    document.getElementById('ivf-quote-display').value = '';
+  }
+
+  renderInvLines();
+  recalcInvTotals();
+  setInvDirtyUI(false);
+  setInvLockedUI(locked, locked ? (inv.status === 'final' ? 'חשבונית סופית — נעולה לעריכה' : 'חשבונית מבוטלת') : '');
+  _setInvActionBtns(true, isDraft);
+  _setInvFieldsReadonly(locked);
+  updateInvNavButtons();
+
+  // Sync state.invoices
+  if (!state.invoices) state.invoices = [];
+  const si = state.invoices.findIndex(x => x.invid === invid);
+  if (si >= 0) state.invoices[si] = inv; else state.invoices.unshift(inv);
+}
+
+function _setInvFieldsReadonly(locked) {
+  document.querySelectorAll('#inv-master input:not([readonly]):not([type="checkbox"]), #inv-master select')
+    .forEach(el => { el.disabled = locked; });
+  document.getElementById('ivf-printed').disabled = locked;
+}
+
+function setInvLockedUI(locked, msg) {
+  const banner = document.getElementById('inv-lock-banner');
+  banner.style.display = locked ? '' : 'none';
+  if (msg) document.getElementById('inv-lock-msg').textContent = msg;
+}
+
+function markInvDirty() { invState.dirty = true; setInvDirtyUI(true); }
+
+function setInvDirtyUI(dirty) {
+  document.getElementById('inv-dirty-indicator').style.display = dirty ? '' : 'none';
+  document.getElementById('inv-saved-indicator').style.display = 'none';
+  document.getElementById('inv-save-btn').style.display = dirty ? '' : 'none';
+  document.querySelectorAll('#ivf-cust,#ivf-date,#ivf-vat,#ivf-notes').forEach(el => {
+    el.classList.toggle('pri-unsaved', dirty);
+  });
+}
+
+async function saveInvHeader(silent = false) {
+  if (invState.saving) return;
+  if (invState.current && invState.current.status !== 'draft') {
+    if (!silent) showToast('ניתן לערוך חשבונית רק כאשר היא בסטטוס טיוטה ובעלת מספר זמני.', 'error');
+    return;
+  }
+  const custid = document.getElementById('ivf-cust').value;
+  if (!custid) { if (!silent) showToast('יש לבחור לקוח', 'error'); return; }
+  invState.saving = true;
+
+  const payload = {
+    custid:  custid,
+    idate:   document.getElementById('ivf-date').value || null,
+    vatrate: parseFloat(document.getElementById('ivf-vat').value) || 17,
+    notes:   document.getElementById('ivf-notes').value.trim() || null,
+    printed: document.getElementById('ivf-printed').checked
+  };
+
+  // Attach quoteid if coming from a quote
+  if (invState._fromQuoteid && !invState.current) {
+    payload.quoteid = invState._fromQuoteid;
+  }
+
+  let inv, error;
+  if (invState.current) {
+    const r = await db.from('invoices').update(payload).eq('invid', invState.current.invid).select().single();
+    error = r.error; inv = r.data;
+  } else {
+    const r = await db.from('invoices').insert(payload).select().single();
+    error = r.error; inv = r.data;
+    if (!error && inv) {
+      // Save copied lines from quote
+      if (invState._copiedLines?.length) {
+        const linesPayload = invState._copiedLines.map((l, i) => ({ ...l, invid: inv.invid, linenum: i+1 }));
+        const { data: savedLines } = await db.from('invoice_lines').insert(linesPayload).select();
+        invState.lines = savedLines || [];
+        invState._copiedLines = null;
+        renderInvLines();
+        recalcInvTotals();
+        await updateInvTotalsInDB(inv.invid);
+      }
+      await logActivity('invoice', inv.invid, inv.invnum, 'created');
+    }
+  }
+
+  invState.saving = false;
+  if (error || !inv) { if (!silent) showToast('שגיאה: ' + (error?.message || 'לא ידוע'), 'error'); return; }
+  invState.current = inv;
+  invState.dirty   = false;
+  document.getElementById('ivf-num').value              = inv.invnum || '';
+  document.getElementById('inv-docnum').textContent     = inv.invnum || '';
+  document.getElementById('ivf-status-display').value   = INV_STATUS[inv.status] || inv.status;
+  setInvDirtyUI(false);
+  document.getElementById('inv-saved-indicator').style.display = '';
+  setTimeout(() => { document.getElementById('inv-saved-indicator').style.display = 'none'; }, 2000);
+  _setInvActionBtns(true, true);
+  if (!silent) showToast('נשמר', 'success');
+  if (!invState.list.length) { invState.list = [{ invid: inv.invid, invnum: inv.invnum }]; invState.idx = 0; }
+  updateInvNavButtons();
+}
+
+async function invCancel() {
+  if (!invState.current) { invNew(); return; }
+  await loadInvById(invState.current.invid, invState.idx);
+}
+
+async function invDelete() {
+  if (!invState.current) return;
+  if (invState.current.status !== 'draft') { showToast('ניתן למחוק רק חשבוניות בסטטוס טיוטה', 'error'); return; }
+  if (!confirm(`למחוק את החשבונית ${invState.current.invnum}? פעולה זו אינה הפיכה.`)) return;
+  // If linked to a quote, release it
+  if (invState.current.quoteid) {
+    await db.from('quotes').update({ invoiced: false }).eq('quoteid', invState.current.quoteid);
+  }
+  const { error } = await db.from('invoices').delete().eq('invid', invState.current.invid);
+  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+  await logActivity('invoice', invState.current.invid, invState.current.invnum, 'deleted');
+  invState.list = invState.list.filter(x => x.invid !== invState.current.invid);
+  showToast('החשבונית נמחקה', 'success');
+  if (invState.list.length) await loadInvById(invState.list[Math.min(invState.idx, invState.list.length-1)].invid);
+  else invNew();
+}
+
+async function invClose() {
+  if (!invState.current || invState.current.status !== 'draft') return;
+  if (!confirm(`לסגור את החשבונית ${invState.current.invnum}? פעולה זו תנעל את החשבונית לעריכה.`)) return;
+  const { data, error } = await db.rpc('close_invoice', { p_invid: invState.current.invid });
+  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+  const finalnum = data;
+  invState.current.status      = 'final';
+  invState.current.invfinalnum = finalnum;
+  invState.current.invnum      = finalnum;
+  document.getElementById('ivf-num').value            = finalnum;
+  document.getElementById('inv-docnum').textContent   = finalnum;
+  document.getElementById('ivf-status-display').value = 'סופית';
+  setInvLockedUI(true, 'חשבונית סופית — נעולה לעריכה');
+  _setInvFieldsReadonly(true);
+  _setInvActionBtns(true, false);
+  setInvDirtyUI(false);
+  await logActivity('invoice', invState.current.invid, finalnum, 'closed');
+  showToast(`החשבונית נסגרה — מספר סופי: ${finalnum}`, 'success');
+}
+
+async function invVoid() {
+  if (!invState.current || invState.current.status === 'cancelled') return;
+  if (!confirm(`לבטל את החשבונית ${invState.current.invnum}? החשבונית תישאר לתיעוד.`)) return;
+  const { error } = await db.rpc('void_invoice', { p_invid: invState.current.invid });
+  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+  invState.current.status = 'cancelled';
+  document.getElementById('ivf-status-display').value = 'מבוטלת';
+  setInvLockedUI(true, 'חשבונית מבוטלת');
+  _setInvFieldsReadonly(true);
+  _setInvActionBtns(true, false);
+  setInvDirtyUI(false);
+  await logActivity('invoice', invState.current.invid, invState.current.invnum, 'cancelled');
+  showToast('החשבונית בוטלה', 'success');
+}
+
+function updateInvNavButtons() {
+  const n = invState.list.length, i = invState.idx;
+  document.getElementById('inv-btn-first').disabled = i <= 0;
+  document.getElementById('inv-btn-prev').disabled  = i <= 0;
+  document.getElementById('inv-btn-next').disabled  = i >= n - 1;
+  document.getElementById('inv-btn-last').disabled  = i >= n - 1;
+  document.getElementById('inv-pos').textContent    = n ? `${i+1} / ${n}` : '—';
+}
+
+// ── Invoice search mode ──
+let _invSearchMode = false, _invSearchSnap = {};
+
+function toggleInvSearchMode() { _invSearchMode ? exitInvSearchMode(true) : enterInvSearchMode(); }
+
+function enterInvSearchMode() {
+  _invSearchMode = true;
+  const btn    = document.getElementById('inv-search-btn');
+  const master = document.querySelector('#section-invoices .pri-master');
+  const numFld = document.getElementById('ivf-num');
+  numFld.removeAttribute('readonly');
+  const fields = master.querySelectorAll('input:not([id="ivf-status-display"]):not([id="ivf-quote-display"]):not([id="ivf-printed"]), select');
+  fields.forEach(f => { _invSearchSnap[f.id] = f.value; f.value = ''; });
+  master.style.background = '#f0fdf4'; master.style.borderColor = '#86efac';
+  fields.forEach(f => { f.style.borderColor = '#4ade80'; f.style.background = '#f0fdf4'; });
+  btn.style.background = '#16a34a'; btn.style.color = 'white';
+  btn.textContent = '✓ בצע (Enter)  |  ESC לביטול';
+  master.addEventListener('keydown', _invSearchKey);
+  numFld.focus();
+}
+
+function exitInvSearchMode(restore) {
+  _invSearchMode = false;
+  document.getElementById('ivf-num').setAttribute('readonly', '');
+  const btn    = document.getElementById('inv-search-btn');
+  const master = document.querySelector('#section-invoices .pri-master');
+  const fields = master.querySelectorAll('input:not([id="ivf-status-display"]):not([id="ivf-quote-display"]):not([id="ivf-printed"]), select');
+  master.style.background = ''; master.style.borderColor = '';
+  fields.forEach(f => { f.style.borderColor = ''; f.style.background = ''; });
+  btn.style.background = '#d1fae5'; btn.style.color = '#065f46'; btn.textContent = '🔍 חיפוש';
+  master.removeEventListener('keydown', _invSearchKey);
+  if (restore) Object.entries(_invSearchSnap).forEach(([id, val]) => { const el = document.getElementById(id); if (el) el.value = val; });
+}
+
+async function _invSearchKey(e) {
+  if (e.key === 'Escape') { exitInvSearchMode(true); return; }
+  if (e.key !== 'Enter')  return;
+  e.preventDefault();
+  const invnum = document.getElementById('ivf-num').value.trim();
+  const custid = document.getElementById('ivf-cust').value;
+  const status = document.getElementById('ivf-status-display').value;
+  const date   = document.getElementById('ivf-date').value;
+  exitInvSearchMode(false);
+  const allEmpty = !invnum && !custid && !date;
+  if (allEmpty) { invNew(); return; }
+  let q = db.from('invoices').select('invid,invnum,idate,status,total').order('cdate', { ascending: false });
+  if (invnum) q = q.ilike('invnum', `%${invnum}%`);
+  if (custid) q = q.eq('custid', custid);
+  if (date)   q = q.gte('idate', date);
+  const { data, error } = await q;
+  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+  invState.list = data || [];
+  if (!invState.list.length) { showToast('לא נמצאו חשבוניות', 'info'); return; }
+  await loadInvById(invState.list[0].invid, 0);
+  if (invState.list.length > 1) showToast(`נמצאו ${invState.list.length} חשבוניות — נווט עם החיצים`, 'info');
+}
+
+async function invShowAll() {
+  if (_invSearchMode) exitInvSearchMode(false);
+  const { data, error } = await db.from('invoices').select('*').order('cdate', { ascending: false });
+  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+  state.invoices = data || [];
+  invState.list  = state.invoices.map(x => ({ invid: x.invid, invnum: x.invnum }));
+  if (!invState.list.length) { showToast('אין חשבוניות', 'info'); return; }
+  showToast(`${invState.list.length} חשבוניות`, 'info');
+  if (_invListMode) { renderInvListView(); return; }
+  await loadInvById(invState.list[0].invid, 0);
+}
+
+let _invListMode = false;
+function toggleInvListView() {
+  _invListMode = !_invListMode;
+  document.getElementById('inv-body').style.display    = _invListMode ? 'none' : '';
+  document.getElementById('inv-list-view').style.display = _invListMode ? '' : 'none';
+  document.getElementById('inv-list-btn').classList.toggle('active', _invListMode);
+  if (_invListMode) renderInvListView();
+}
+function renderInvListView() {
+  const tbody = document.getElementById('inv-list-tbody');
+  const invs  = state.invoices || [];
+  if (!invs.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)">אין רשומות — לחץ "הצג הכל" לטעינה</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = invs.map((inv, i) => {
+    const c   = state.clients.find(x => x.custid === inv.custid);
+    const idx = invState.list.findIndex(x => x.invid === inv.invid);
+    const sel = invState.current?.invid === inv.invid ? 'selected' : '';
+    const stColors = { draft:'#f1f5f9;color:#475569', final:'#ecfdf5;color:#059669', cancelled:'#fef2f2;color:#dc2626' };
+    const stBg = stColors[inv.status] || stColors.draft;
+    return `<tr class="${sel}" onclick="invNavFromList('${inv.invid}', ${idx >= 0 ? idx : i})">
+      <td>${i+1}</td>
+      <td style="font-family:monospace;font-weight:600">${esc(inv.invnum||'—')}</td>
+      <td>${esc(c?.custname||'—')}</td>
+      <td>${inv.idate ? fmtDate(inv.idate) : '—'}</td>
+      <td><span style="padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;background:${stBg}">${INV_STATUS[inv.status]||inv.status}</span></td>
+      <td style="text-align:center">${inv.printed ? '✅' : '—'}</td>
+      <td style="font-weight:600;color:var(--primary)">${fmtMoney(inv.total||0)}</td>
+    </tr>`;
+  }).join('');
+}
+async function invNavFromList(invid, idx) {
+  _invListMode = false;
+  document.getElementById('inv-body').style.display    = '';
+  document.getElementById('inv-list-view').style.display = 'none';
+  document.getElementById('inv-list-btn').classList.remove('active');
+  await loadInvById(invid, idx);
+}
+
+// ── Invoice navigate to linked quote ──
+function invNavToQuote() {
+  if (!invState.current?.quoteid) return;
+  showSection('quotes');
+  loadQuoteById(invState.current.quoteid, 0);
+}
+
+// ── Invoice lines ──
+function renderInvLines() {
+  const tbody  = document.getElementById('inv-lines-tbody');
+  const source = invState._copiedLines || invState.lines;
+  const rows   = source.map((l, i) => buildInvLineRow(l, i, false)).join('');
+  const locked = invState.current && invState.current.status !== 'draft';
+  tbody.innerHTML = rows + (locked ? '' : buildInvLineRow(null, source.length, true));
+}
+
+function buildInvLineRow(line, idx, isNew) {
+  const n   = line?.linenum  ?? (idx + 1);
+  const pn  = line?.linedes  ?? '';
+  const qty = line?.qty      ?? '';
+  const pri = line?.unitprice ?? '';
+  const dis = line?.discount  ?? '';
+  const vatPct = parseFloat(document.getElementById('ivf-vat').value) || 0;
+  const tot    = line ? fmtMoney(calcInvLineTotal(line)) : '';
+  const totVat = line ? fmtMoney(calcInvLineTotal(line) * (1 + vatPct / 100)) : '';
+  const lid = line?.ilineid ?? '';
+  const cls = isNew ? 'new-row' : 'saved-row';
+  return `<tr class="${cls}" data-idx="${idx}" data-lid="${lid}">
+    <td class="pri-line-num">${isNew ? '' : n}</td>
+    <td><input class="pri-cell" type="text" value="${esc(pn)}" placeholder="${isNew?'הזן תיאור להוספת שורה...':''}"
+      onchange="invLineFieldChange(this,${idx},'linedes')"
+      ${isNew?'onfocus="ensureInvSaved()"':''}
+      onkeydown="invLineKeyDown(event,this,${idx},'linedes')"></td>
+    <td><input class="pri-cell pri-cell-num" type="number" value="${qty}" placeholder="0"
+      onfocus="this.select()" onchange="invLineFieldChange(this,${idx},'qty');recalcInvLine(${idx})"
+      onkeydown="invLineKeyDown(event,this,${idx},'qty')"></td>
+    <td><input class="pri-cell pri-cell-num" type="number" value="${pri}" placeholder="0.00"
+      onfocus="this.select()" onchange="invLineFieldChange(this,${idx},'unitprice');recalcInvLine(${idx})"
+      onkeydown="invLineKeyDown(event,this,${idx},'unitprice')"></td>
+    <td><input class="pri-cell pri-cell-num" type="number" value="${dis}" placeholder="0"
+      min="0" max="100" onfocus="this.select()"
+      onchange="invLineFieldChange(this,${idx},'discount');recalcInvLine(${idx})"
+      onkeydown="invLineKeyDown(event,this,${idx},'discount')"></td>
+    <td><input class="pri-cell pri-cell-num" id="i-lt-${idx}" value="${tot}" readonly tabindex="-1"></td>
+    <td><input class="pri-cell pri-cell-num" id="i-lv-${idx}" value="${totVat}" readonly tabindex="-1" style="color:var(--primary);font-weight:600"></td>
+    <td>${isNew ? '' : `<button class="pri-del-btn" onclick="deleteInvLine('${lid}',${idx})" tabindex="-1">✕</button>`}</td>
+  </tr>`;
+}
+
+async function ensureInvSaved() {
+  if (!invState.current) await saveInvHeader();
+}
+
+function invLineFieldChange(el, idx, field) {
+  const source = invState._copiedLines || invState.lines;
+  if (idx >= source.length) {
+    source.push({ invid: invState.current?.invid, linenum: idx+1, linedes:'', qty:1, unitprice:0, discount:0 });
+    if (invState._copiedLines) invState._copiedLines = source;
+  }
+  source[idx][field] = (field === 'qty' || field === 'unitprice' || field === 'discount')
+    ? parseFloat(el.value) || 0 : el.value;
+  saveInvLineDebounced(idx);
+}
+
+const _invLineTimers = {};
+function saveInvLineDebounced(idx) {
+  clearTimeout(_invLineTimers[idx]);
+  _invLineTimers[idx] = setTimeout(() => saveInvLine(idx), 600);
+}
+
+async function saveInvLine(idx) {
+  if (!invState.current) return;
+  const source = invState._copiedLines || invState.lines;
+  const l = source[idx];
+  if (!l) return;
+  if (!l.linedes && !l.qty && !l.unitprice) return;
+  const payload = {
+    invid:     invState.current.invid,
+    linenum:   idx + 1,
+    linedes:   l.linedes   || null,
+    qty:       l.qty       || 1,
+    unitprice: l.unitprice || 0,
+    discount:  l.discount  || 0,
+    linetotal: calcInvLineTotal(l)
+  };
+  if (l.ilineid) {
+    const { data } = await db.from('invoice_lines').update(payload).eq('ilineid', l.ilineid).select().single();
+    if (data) invState.lines[idx] = data;
+  } else {
+    const { data } = await db.from('invoice_lines').insert(payload).select().single();
+    if (data) {
+      invState.lines[idx] = data;
+      if (invState._copiedLines) invState._copiedLines = null;
+      renderInvLines();
+    }
+  }
+  recalcInvTotals();
+  await updateInvTotalsInDB(invState.current.invid);
+}
+
+function recalcInvLine(idx) {
+  const source = invState._copiedLines || invState.lines;
+  const l = source[idx];
+  if (!l) return;
+  const tot    = calcInvLineTotal(l);
+  const vatPct = parseFloat(document.getElementById('ivf-vat').value) || 0;
+  const ltEl   = document.getElementById(`i-lt-${idx}`);
+  const lvEl   = document.getElementById(`i-lv-${idx}`);
+  if (ltEl) ltEl.value = fmtMoney(tot);
+  if (lvEl) lvEl.value = fmtMoney(tot * (1 + vatPct / 100));
+  recalcInvTotals();
+}
+
+function calcInvLineTotal(l) {
+  return (parseFloat(l.qty)||0) * (parseFloat(l.unitprice)||0) * (1 - (parseFloat(l.discount)||0) / 100);
+}
+
+function recalcInvTotals() {
+  const source = invState._copiedLines || invState.lines;
+  const sub  = source.reduce((s, l) => s + calcInvLineTotal(l), 0);
+  const vat  = parseFloat(document.getElementById('ivf-vat').value) || 0;
+  const vatA = sub * vat / 100;
+  document.getElementById('it-sub').textContent   = fmtMoney(sub);
+  document.getElementById('it-vat').textContent   = fmtMoney(vatA);
+  document.getElementById('it-total').textContent = fmtMoney(sub + vatA);
+}
+
+async function updateInvTotalsInDB(invid) {
+  const sub  = invState.lines.reduce((s, l) => s + calcInvLineTotal(l), 0);
+  const vat  = parseFloat(document.getElementById('ivf-vat').value) || 0;
+  const vatA = sub * vat / 100;
+  await db.from('invoices').update({ subtotal: sub, vatamt: vatA, total: sub + vatA }).eq('invid', invid);
+}
+
+async function deleteInvLine(ilineid, idx) {
+  if (ilineid) await db.from('invoice_lines').delete().eq('ilineid', ilineid);
+  invState.lines.splice(idx, 1);
+  invState.lines.forEach((l, i) => { l.linenum = i + 1; });
+  renderInvLines();
+  recalcInvTotals();
+  if (invState.current) await updateInvTotalsInDB(invState.current.invid);
+}
+
+function invLineKeyDown(e, el, idx, field) {
+  if (e.key === 'Enter' || (e.key === 'Tab' && !e.shiftKey)) {
+    const row   = el.closest('tr');
+    const cells = [...row.querySelectorAll('.pri-cell:not([readonly])')];
+    const pos   = cells.indexOf(el);
+    if (pos < cells.length - 1) return;
+    e.preventDefault();
+    const tbody   = document.getElementById('inv-lines-tbody');
+    const rows    = [...tbody.querySelectorAll('tr')];
+    const rowIdx  = rows.indexOf(row);
+    const nextRow = rows[rowIdx + 1];
+    if (nextRow) { const first = nextRow.querySelector('.pri-cell:not([readonly])'); if (first) first.focus(); }
+  }
 }
 
 // ─── REPORTS ───
