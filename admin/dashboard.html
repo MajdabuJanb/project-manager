@@ -1095,6 +1095,41 @@
       justify-content: center;
     }
     .demo-banner.visible { display: flex; }
+    #tabs-bar {
+      display: none;
+      flex-wrap: nowrap;
+      gap: 2px;
+      padding: 6px 16px 0;
+      background: var(--sidebar);
+      border-bottom: 2px solid var(--border);
+      overflow-x: auto;
+      flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      z-index: 190;
+    }
+    #tabs-bar.has-tabs { display: flex; }
+    .app-tab {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px 7px 12px;
+      border-radius: 6px 6px 0 0;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      white-space: nowrap;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-bottom: none;
+      color: var(--text-muted);
+      transition: background 0.12s, color 0.12s;
+      user-select: none;
+    }
+    .app-tab:hover { background: var(--hover); color: var(--text); }
+    .app-tab.active { background: var(--card); color: var(--primary); font-weight: 600; position: relative; bottom: -2px; border-bottom: 2px solid var(--card); }
+    .app-tab-close { font-size: 13px; color: var(--text-muted); border-radius: 3px; padding: 0 1px; line-height: 1; }
+    .app-tab-close:hover { background: rgba(0,0,0,0.12); color: var(--text); }
     .btn-go-live-banner {
       background: white;
       color: #d97706;
@@ -1202,6 +1237,7 @@
       <span>🧪 מצב הדגמה — הנתונים אינם אמיתיים</span>
       <button class="btn-go-live-banner" onclick="showSection('company')">⚙️ הגדרות חברה</button>
     </div>
+    <div id="tabs-bar"></div>
     <div class="content">
 
       <!-- ════ COMPANY ════ -->
@@ -2618,30 +2654,88 @@ function overlayClose(e, id) {
 }
 
 // ─── Navigation ───
+// ─── Tab bar ───
+const _TAB_SECTIONS = new Set(['clients','projects','tasks','parts','quotes','invoices']);
+const _sectionLoaded = new Set();
+let _openTabs = [];
+let _currentSection = 'dashboard';
+
+function getTabLabel(section) {
+  const base = { clients:'לקוחות', projects:'פרויקטים', tasks:'משימות', parts:'מוצרים', quotes:'הצעות מחיר', invoices:'חשבוניות' }[section] || section;
+  if (section === 'quotes'   && quoteState?.current) return `הצעה ${quoteState.current.quotenum || '—'}`;
+  if (section === 'invoices' && invState?.current)   return `חשבונית ${invState.current.invnum || '—'}`;
+  if (section === 'clients'  && state.selectedCustomer) return state.selectedCustomer.custname || base;
+  if (section === 'projects' && projState?.current)  return `פרויקט ${projState.current.projnum || '—'}`;
+  if (section === 'tasks'    && taskState?.current)  return `משימה ${taskState.current.tasknum || '—'}`;
+  if (section === 'parts'    && partState?.current)  return `מוצר ${partState.current.partid || '—'}`;
+  return base;
+}
+
+function renderTabsBar(active) {
+  const bar = document.getElementById('tabs-bar');
+  if (!bar) return;
+  if (_openTabs.length === 0) { bar.classList.remove('has-tabs'); bar.innerHTML = ''; return; }
+  bar.classList.add('has-tabs');
+  bar.innerHTML = _openTabs.map(s => {
+    const isActive = s === (active || _currentSection);
+    return `<div class="app-tab${isActive?' active':''}" onclick="showSection('${s}')">
+      <span>${getTabLabel(s)}</span>
+      <span class="app-tab-close" onclick="event.stopPropagation();closeTab('${s}')" title="סגור">✕</span>
+    </div>`;
+  }).join('');
+}
+
+function closeTab(section) {
+  _openTabs = _openTabs.filter(t => t !== section);
+  _sectionLoaded.delete(section);
+  if (_currentSection === section) {
+    const next = _openTabs[_openTabs.length - 1];
+    if (next) showSection(next);
+    else showSection('dashboard');
+  } else {
+    renderTabsBar();
+  }
+}
+
 function showSection(name) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('section-' + name).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.querySelector(`.nav-item[data-section="${name}"]`).classList.add('active');
-  if (name === 'company') loadCompany();
-  else if (name === 'dashboard') loadDashboard();
-  else if (name === 'clients') loadClients();
-  else if (name === 'projects') loadProjects();
-  else if (name === 'tasks') loadTasks();
-  else if (name === 'calendar') loadCalendar();
-  else if (name === 'parts') loadParts();
-  else if (name === 'statuses') loadStatuses();
-  else if (name === 'quotes') {
-    if (state.clients.length === 0) loadClients().then(() => loadQuotes());
-    else loadQuotes();
+  document.querySelector(`.nav-item[data-section="${name}"]`)?.classList.add('active');
+
+  const isTabSection = _TAB_SECTIONS.has(name);
+  const alreadyLoaded = _sectionLoaded.has(name);
+
+  if (isTabSection && alreadyLoaded) {
+    // Just switch display — state preserved
+    if (name === 'quotes')   renderQuoteLines?.();
+    if (name === 'invoices') renderInvLines?.();
+  } else {
+    // First load for tab sections, or always-reload for non-tab sections
+    if (isTabSection) _sectionLoaded.add(name);
+    if      (name === 'company')   loadCompany();
+    else if (name === 'dashboard') loadDashboard();
+    else if (name === 'clients')   loadClients();
+    else if (name === 'projects')  loadProjects();
+    else if (name === 'tasks')     loadTasks();
+    else if (name === 'calendar')  loadCalendar();
+    else if (name === 'parts')     loadParts();
+    else if (name === 'statuses')  loadStatuses();
+    else if (name === 'quotes') {
+      if (state.clients.length === 0) loadClients().then(() => loadQuotes());
+      else loadQuotes();
+    }
+    else if (name === 'invoices') {
+      if (state.clients.length === 0) loadClients().then(() => loadInvoices());
+      else loadInvoices();
+    }
+    else if (name === 'reports')  loadReports();
+    else if (name === 'security') loadMFAStatus();
   }
-  else if (name === 'invoices') {
-    if (state.clients.length === 0) loadClients().then(() => loadInvoices());
-    else loadInvoices();
-  }
-  else if (name === 'reports') loadReports();
-  else if (name === 'admin-tools') { /* ready on demand */ }
-  else if (name === 'security') loadMFAStatus();
+
+  if (isTabSection && !_openTabs.includes(name)) _openTabs.push(name);
+  _currentSection = name;
+  renderTabsBar(name);
 }
 
 // ─── Auth ───
@@ -4455,6 +4549,7 @@ async function loadQuoteById(quoteid, idx) {
   quoteState.dirty   = false;
 
   document.getElementById('q-docnum').textContent = q.quotenum || '';
+  renderTabsBar?.();
   document.getElementById('qf-num').value    = q.quotenum || '';
   document.getElementById('qf-date').value   = q.qdate || '';
   document.getElementById('qf-cust').value   = q.custid || '';
@@ -4859,6 +4954,7 @@ async function loadInvById(invid, idx) {
   const locked   = !isDraft;
 
   document.getElementById('inv-docnum').textContent        = inv.invnum || '';
+  renderTabsBar?.();
   document.getElementById('ivf-num').value                 = inv.invnum || '';
   document.getElementById('ivf-status-display').value      = INV_STATUS[inv.status] || inv.status;
   document.getElementById('ivf-date').value                = inv.idate    || '';
