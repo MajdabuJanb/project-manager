@@ -1163,6 +1163,9 @@
       <button class="nav-item" data-section="quotes">
         <span class="icon">📋</span> הצעות מחיר
       </button>
+      <button class="nav-item" data-section="invoices">
+        <span class="icon">🧾</span> חשבוניות
+      </button>
 
       <div class="nav-section-label">כלי עזר</div>
       <button class="nav-item" data-section="statuses">
@@ -1813,11 +1816,17 @@
             <button class="btn btn-sm" onclick="quoteShowAll()" title="טען את כל הצעות המחיר" style="background:#f1f5f9;color:#475569;border:1px solid var(--border);font-size:12px">הצג הכל</button>
             <button class="btn btn-ghost btn-sm" id="q-cancel-btn" onclick="quoteCancel()">✕ בטל</button>
             <button class="btn btn-ghost btn-sm" onclick="quotePrint()" id="q-print-btn" style="display:none">🖨️ הדפס</button>
+            <button class="btn btn-sm" id="q-inv-btn" onclick="openInvFromQuote()" style="display:none;background:#7c3aed;color:white;border:none">🧾 פתח חשבונית</button>
             <button class="btn btn-primary btn-sm" onclick="quoteNew()">🗋 חדש</button>
           </div>
         </div>
 
         <div class="pri-body">
+
+          <!-- Invoiced lock banner -->
+          <div id="q-invoiced-banner" style="display:none;background:#fef3c7;border-bottom:1px solid #fbbf24;padding:8px 20px;font-size:12px;font-weight:600;color:#92400e;flex-shrink:0">
+            🔒 הצעה זו חויבה — נעולה לעריכה. לשחרור, בטל את החשבונית המקושרת.
+          </div>
 
           <!-- Master: Quote Header -->
           <div class="pri-master">
@@ -2485,6 +2494,10 @@ function showSection(name) {
   else if (name === 'quotes') {
     if (state.clients.length === 0) loadClients().then(() => loadQuotes());
     else loadQuotes();
+  }
+  else if (name === 'invoices') {
+    if (state.clients.length === 0) loadClients().then(() => loadInvoices());
+    else loadInvoices();
   }
   else if (name === 'reports') loadReports();
   else if (name === 'admin-tools') { /* ready on demand */ }
@@ -4313,6 +4326,13 @@ async function loadQuoteById(quoteid, idx) {
   recalcTotals();
   setDirtyUI(false);
   document.getElementById('q-print-btn').style.display = '';
+  // Invoiced / locked state
+  const locked = q.invoiced === true;
+  document.getElementById('q-invoiced-banner').style.display = locked ? '' : 'none';
+  document.getElementById('q-inv-btn').style.display = (q.status === 'approved' && !locked) ? '' : 'none';
+  document.querySelectorAll('#section-quotes .pri-master input:not([readonly]), #section-quotes .pri-master select')
+    .forEach(el => { el.disabled = locked; });
+  if (locked) { setDirtyUI(false); document.getElementById('q-save-btn').style.display = 'none'; }
   updateNavButtons();
 }
 

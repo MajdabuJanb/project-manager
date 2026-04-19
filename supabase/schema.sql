@@ -139,6 +139,7 @@ CREATE TABLE IF NOT EXISTS quotes (
   vatamt    DECIMAL(14,2) DEFAULT 0,
   total     DECIMAL(14,2) DEFAULT 0,
   notes     TEXT,
+  invoiced  BOOLEAN DEFAULT false,
   cdate     TIMESTAMPTZ DEFAULT NOW(),
   udate     TIMESTAMPTZ DEFAULT NOW()
 );
@@ -170,6 +171,57 @@ $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS trg_quote_number ON quotes;
 CREATE TRIGGER trg_quote_number BEFORE INSERT ON quotes
   FOR EACH ROW EXECUTE FUNCTION gen_quote_number();
+
+-- Invoice sequences + tables
+CREATE SEQUENCE IF NOT EXISTS inv_temp_seq  START 1;
+CREATE SEQUENCE IF NOT EXISTS inv_final_seq START 1;
+
+CREATE TABLE IF NOT EXISTS invoices (
+  invid       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  invtempnum  TEXT,
+  invfinalnum TEXT,
+  invnum      TEXT,
+  status      TEXT NOT NULL DEFAULT 'draft'
+    CHECK (status IN ('draft','final','cancelled')),
+  idate       DATE NOT NULL DEFAULT CURRENT_DATE,
+  custid      UUID NOT NULL REFERENCES customers(custid) ON DELETE RESTRICT,
+  quoteid     UUID REFERENCES quotes(quoteid) ON DELETE SET NULL,
+  vatrate     DECIMAL(5,2) DEFAULT 17,
+  subtotal    DECIMAL(14,2) DEFAULT 0,
+  vatamt      DECIMAL(14,2) DEFAULT 0,
+  total       DECIMAL(14,2) DEFAULT 0,
+  notes       TEXT,
+  printed     BOOLEAN DEFAULT false,
+  cdate       TIMESTAMPTZ DEFAULT NOW(),
+  udate       TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS invoice_lines (
+  ilineid   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  invid     UUID NOT NULL REFERENCES invoices(invid) ON DELETE CASCADE,
+  linenum   INTEGER NOT NULL DEFAULT 1,
+  linedes   TEXT,
+  qty       DECIMAL(12,4) DEFAULT 1,
+  unitprice DECIMAL(14,2) DEFAULT 0,
+  discount  DECIMAL(5,2)  DEFAULT 0,
+  linetotal DECIMAL(14,2) DEFAULT 0,
+  cdate     TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE OR REPLACE FUNCTION gen_inv_number()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.invtempnum IS NULL THEN
+    NEW.invtempnum := 'T' || TO_CHAR(NOW(), 'YY') || LPAD(nextval('inv_temp_seq')::TEXT, 4, '0');
+    NEW.invnum     := NEW.invtempnum;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_inv_number ON invoices;
+CREATE TRIGGER trg_inv_number BEFORE INSERT ON invoices
+  FOR EACH ROW EXECUTE FUNCTION gen_inv_number();
 
 CREATE TABLE IF NOT EXISTS activity_log (
   logid  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
