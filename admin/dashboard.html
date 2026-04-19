@@ -1302,6 +1302,10 @@
                 <label>שיעור מע"מ (%)</label>
                 <input type="number" id="co-vatrate" placeholder="17" min="0" max="100" step="0.1">
               </div>
+              <div class="form-group">
+                <label>קבוע רשות המסים</label>
+                <input type="number" id="co-taxconst" placeholder="קבוע רשות המסים">
+              </div>
             </div>
 
             <div class="section-divider">פרטי בנק</div>
@@ -1991,6 +1995,7 @@
             <button class="btn btn-sm pri-list-btn" id="inv-list-btn" onclick="toggleInvListView()" title="תצוגת רשימה / כרטיס" style="border:1px solid var(--border);padding:0 8px;height:28px">☰</button>
             <button class="btn btn-sm" onclick="invShowAll()" style="background:#f1f5f9;color:#475569;border:1px solid var(--border);font-size:12px">הצג הכל</button>
             <button class="btn btn-ghost btn-sm" onclick="invCancel()">✕ בטל</button>
+            <button class="btn btn-ghost btn-sm" id="inv-print-btn" onclick="invPrint()" style="display:none">🖨️ הדפס</button>
             <button class="btn btn-sm" id="inv-close-btn" onclick="invClose()" style="display:none;background:#059669;color:white;border:none">✅ סגור</button>
             <button class="btn btn-danger btn-sm" id="inv-void-btn" onclick="invVoid()" style="display:none">⛔ בטל חשבונית</button>
             <button class="btn btn-danger btn-sm" id="inv-delete-btn" onclick="invDelete()" style="display:none">🗑 מחק</button>
@@ -2038,6 +2043,10 @@
               <div class="pri-field">
                 <label>מע"מ %</label>
                 <input type="number" id="ivf-vat" value="17" min="0" max="100" step="0.1" onfocus="this.select()" onchange="markInvDirty();recalcInvTotals()">
+              </div>
+              <div class="pri-field">
+                <label>מספר הקצאה</label>
+                <input type="text" id="ivf-alloc" maxlength="20" placeholder="מספר הקצאה" onchange="markInvDirty()">
               </div>
               <div class="pri-field wide">
                 <label>הערות</label>
@@ -2350,6 +2359,10 @@
           <div class="form-group">
             <label>טלפון</label>
             <input type="tel" id="c-phone" placeholder="050-0000000">
+          </div>
+          <div class="form-group">
+            <label>כתובת</label>
+            <input type="text" id="c-address" placeholder="רחוב, מספר, עיר">
           </div>
         </div>
         <div class="form-group">
@@ -3109,6 +3122,7 @@ async function editClient(id) {
   document.getElementById('c-company').value = c.custcomp||'';
   document.getElementById('c-email').value   = c.email;
   document.getElementById('c-phone').value   = c.phone||'';
+  document.getElementById('c-address').value = c.address||'';
   document.getElementById('c-notes').value   = c.notes||'';
   document.getElementById('modal-client').classList.add('open');
 }
@@ -3123,6 +3137,7 @@ async function saveClient(e) {
     custcomp: document.getElementById('c-company').value.trim()||null,
     email:    document.getElementById('c-email').value.trim(),
     phone:    document.getElementById('c-phone').value.trim()||null,
+    address:  document.getElementById('c-address').value.trim()||null,
     notes:    document.getElementById('c-notes').value.trim()||null,
     odate:    document.getElementById('c-opening-date').value||null,
     status:   document.getElementById('c-status').value||'active'
@@ -4818,9 +4833,146 @@ function fmtMoney(n) {
 
 function updateQuoteCustomerInfo() { /* placeholder for future customer details */ }
 
-function quotePrint() {
+// ─── PRINT ENGINE ───
+
+function _pfmtDate(d) {
+  if (!d) return '';
+  const dt = new Date(d);
+  if (isNaN(dt)) return d;
+  return `${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}/${dt.getFullYear()}`;
+}
+function _pfmtMoney(n) {
+  return Number(n||0).toLocaleString('he-IL',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function _pEsc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function _printStatusLabel(s) {
+  return {draft:'טיוטה',sent:'נשלחה',approved:'מאושרת',rejected:'נדחתה',cancelled:'מבוטלת'}[s] || s || '';
+}
+function _printCompanyHeader(co) {
+  const logo = co.logo ? `<img src="${co.logo}" style="max-height:80px;max-width:150px;object-fit:contain">` : '';
+  const parts = [
+    co.compname && `<b style="font-size:15px">${_pEsc(co.compname)}</b>`,
+    co.addr1 && _pEsc(co.addr1),
+    co.city  && _pEsc(co.city),
+    co.phone && `טלפון: ${_pEsc(co.phone)}`,
+    co.email && `דוא"ל: ${_pEsc(co.email)}`,
+    co.taxnum && `ח.פ / ע.מ: ${_pEsc(co.taxnum)}`,
+    co.taxconst && `קבוע רשות המסים: ${co.taxconst}`,
+  ].filter(Boolean).join('<br>');
+  return `<table width="100%" style="margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #e3eeff">
+  <tr>
+    <td style="text-align:left;vertical-align:middle;width:170px">${logo}</td>
+    <td style="text-align:right;direction:rtl;vertical-align:top;font-size:12px;line-height:1.6">${parts}</td>
+  </tr></table>`;
+}
+function _printCustomerBlock(cust) {
+  const parts = [
+    cust.custname && `<b>${_pEsc(cust.custname)}</b>`,
+    cust.custcomp && _pEsc(cust.custcomp),
+    cust.custnum  && `מספר לקוח: ${_pEsc(cust.custnum)}`,
+    cust.address  && _pEsc(cust.address),
+    cust.phone    && `טלפון: ${_pEsc(cust.phone)}`,
+    cust.email    && `דוא"ל: ${_pEsc(cust.email)}`,
+  ].filter(Boolean);
+  if (!parts.length) return '';
+  return `<div style="direction:rtl;font-size:12px;line-height:1.7">
+    <b>לכבוד:</b><br>${parts.join('<br>')}
+  </div>`;
+}
+function _printTotalsBlock(subtotal, vatrate) {
+  const sub = Number(subtotal||0);
+  const vat = Number(vatrate||0);
+  const vatAmt = sub * vat / 100;
+  const total  = sub + vatAmt;
+  return `<table width="100%" border="1" cellpadding="6" style="border-collapse:collapse;border-color:#dde2e6;font-size:12px">
+    <tr>
+      <td align="right" dir="rtl" style="background:#f8faff"><b>סה"כ לפני מע"מ</b></td>
+      <td align="left" style="background:#f8faff"><b>${_pfmtMoney(sub)}</b></td>
+    </tr><tr>
+      <td align="right" dir="rtl"><b>מע"מ (${vat}%)</b></td>
+      <td align="left"><b>${_pfmtMoney(vatAmt)}</b></td>
+    </tr><tr style="background:#e3eeff">
+      <td align="right" dir="rtl"><b>סה"כ לתשלום</b></td>
+      <td align="left"><b>${_pfmtMoney(total)} ₪</b></td>
+    </tr>
+  </table>`;
+}
+function _printFooter(co) {
+  const name = [co.ownname, co.compname].filter(Boolean).map(_pEsc).join('<br>');
+  return `<div style="margin-top:50px;direction:rtl;font-size:12px">
+    <div style="display:inline-block;min-width:180px;border-top:1px solid #333;padding-top:5px;text-align:right">${name}</div>
+  </div>`;
+}
+function _printOpenWindow(html) {
+  const w = window.open('', '_blank');
+  if (!w) { showToast('אנא אפשר חלונות קופצים בדפדפן', 'error'); return; }
+  w.document.write(html);
+  w.document.close();
+}
+function _printBase(title, body) {
+  return `<!DOCTYPE html><html lang="he" dir="rtl"><head>
+  <meta charset="UTF-8"><title>${title}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Arial,sans-serif;font-size:12px;direction:rtl;color:#17223d;padding:22px}
+    table{border-collapse:collapse;width:100%}
+    .doc-title{text-align:center;font-size:17px;font-weight:bold;text-decoration:underline;margin:14px 0 10px}
+    .lines-table th{background:#e3eeff;border:1px solid #dde2e6;padding:6px 8px;text-align:center;font-size:11px}
+    .lines-table td{border:1px solid #dde2e6;padding:5px 8px;font-size:12px}
+    .bottom-wrap{display:flex;gap:24px;margin-top:16px;align-items:flex-start}
+    .totals-col{width:44%}
+    .info-col{flex:1;text-align:right;direction:rtl;font-size:12px;line-height:1.8}
+    @media print{body{padding:10px}button{display:none}}
+  </style>
+</head><body>${body}<script>window.onload=()=>window.print();<\/script></body></html>`;
+}
+
+async function quotePrint() {
   if (!quoteState.current) return;
-  showToast('הדפסה תתווסף בשלב הבא', 'info');
+  const q = quoteState.current;
+  const [cr, coR, lr] = await Promise.all([
+    db.from('customers').select('*').eq('custid', q.custid).single(),
+    db.from('company').select('*').limit(1),
+    db.from('quote_lines').select('*').eq('quoteid', q.quoteid).order('linenum')
+  ]);
+  const cust  = cr.data  || {};
+  const co    = coR.data?.[0] || {};
+  const lines = lr.data  || [];
+  const today = _pfmtDate(new Date().toISOString().slice(0,10));
+
+  const linesHtml = lines.map(l => `<tr>
+    <td align="right" dir="rtl">${_pEsc(l.partid||'')}</td>
+    <td align="right" dir="rtl">${_pEsc(l.linedes||'')}</td>
+    <td align="right">${Number(l.qty||0).toLocaleString('he-IL',{maximumFractionDigits:4})}</td>
+    <td align="right">${_pfmtMoney(l.unitprice)}</td>
+    <td align="right">${_pfmtMoney(l.linetotal)}</td>
+  </tr>`).join('');
+
+  const body = `
+  ${_printCompanyHeader(co)}
+  <table style="margin-bottom:12px"><tr>
+    <td style="width:50%;vertical-align:top">${_printCustomerBlock(cust)}</td>
+    <td style="width:50%;text-align:right;direction:rtl;vertical-align:top;font-size:12px;line-height:1.8">
+      <b>תאריך הצעה:</b> ${_pfmtDate(q.qdate)}<br>
+      <b>תאריך הדפסה:</b> ${today}
+    </td>
+  </tr></table>
+  <div class="doc-title">הצעת מחיר מספר ${_pEsc(q.quotenum||'')} — ${_printStatusLabel(q.status)}</div>
+  <table class="lines-table"><thead><tr>
+    <th>מק"ט</th><th>תיאור מוצר</th><th>כמות</th><th>מחיר יחידה</th><th>סה"כ שורה</th>
+  </tr></thead><tbody>${linesHtml}</tbody></table>
+  <div class="bottom-wrap">
+    <div class="totals-col">${_printTotalsBlock(q.subtotal, q.vatrate)}</div>
+    <div class="info-col">
+      ${q.validdate ? `<b>בתוקף עד:</b> ${_pfmtDate(q.validdate)}<br>` : ''}
+    </div>
+  </div>
+  ${q.notes ? `<div style="margin-top:14px;direction:rtl"><b>הערות:</b> ${_pEsc(q.notes)}</div>` : ''}
+  ${_printFooter(co)}`;
+
+  _printOpenWindow(_printBase(`הצעת מחיר ${q.quotenum||''}`, body));
 }
 
 async function openInvFromQuote() {
@@ -4859,6 +5011,74 @@ async function openInvFromQuote() {
   renderInvLines();
   recalcInvTotals();
   markInvDirty();
+}
+
+async function invPrint() {
+  if (!invState.current) return;
+  const inv = invState.current;
+  const [cr, coR, lr] = await Promise.all([
+    db.from('customers').select('*').eq('custid', inv.custid).single(),
+    db.from('company').select('*').limit(1),
+    db.from('invoice_lines').select('*').eq('invid', inv.invid).order('linenum')
+  ]);
+  const cust  = cr.data  || {};
+  const co    = coR.data?.[0] || {};
+  const lines = lr.data  || [];
+  const today = _pfmtDate(new Date().toISOString().slice(0,10));
+
+  // Determine label
+  let docLabel = 'העתק';
+  let isWatermark = false;
+  if (inv.status === 'cancelled') {
+    isWatermark = true;
+  } else if (inv.invnum?.startsWith('T')) {
+    docLabel = 'העתק';
+  } else if (inv.status === 'final' && !inv.printed) {
+    docLabel = 'מסמך מקור';
+    await db.from('invoices').update({ printed: true }).eq('invid', inv.invid);
+    invState.current.printed = true;
+    document.getElementById('ivf-printed').checked = true;
+  }
+
+  const watermark = isWatermark
+    ? `<div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-35deg);
+        font-size:90px;font-weight:bold;color:rgba(220,0,0,0.13);pointer-events:none;white-space:nowrap;z-index:9999">מבוטלת</div>`
+    : '';
+
+  const linesHtml = lines.map(l => `<tr>
+    <td align="right" dir="rtl">${_pEsc(l.partid||'')}</td>
+    <td align="right" dir="rtl">${_pEsc(l.linedes||'')}</td>
+    <td align="right">${Number(l.qty||0).toLocaleString('he-IL',{maximumFractionDigits:4})}</td>
+    <td align="right">${_pfmtMoney(l.unitprice)}</td>
+    <td align="right">${_pfmtMoney(l.linetotal)}</td>
+  </tr>`).join('');
+
+  const titleLabel = isWatermark ? 'מבוטלת' : docLabel;
+
+  const body = `
+  ${watermark}
+  ${_printCompanyHeader(co)}
+  <table style="margin-bottom:12px"><tr>
+    <td style="width:50%;vertical-align:top">${_printCustomerBlock(cust)}</td>
+    <td style="width:50%;text-align:right;direction:rtl;vertical-align:top;font-size:12px;line-height:1.8">
+      <b>תאריך חשבונית:</b> ${_pfmtDate(inv.idate)}<br>
+      <b>תאריך הדפסה:</b> ${today}
+    </td>
+  </tr></table>
+  <div class="doc-title">חשבונית מספר ${_pEsc(inv.invnum||'')} — ${titleLabel}</div>
+  <table class="lines-table"><thead><tr>
+    <th>מק"ט</th><th>תיאור</th><th>כמות</th><th>מחיר יחידה</th><th>סה"כ שורה</th>
+  </tr></thead><tbody>${linesHtml}</tbody></table>
+  <div class="bottom-wrap">
+    <div class="totals-col">${_printTotalsBlock(inv.subtotal, inv.vatrate)}</div>
+    <div class="info-col">
+      ${inv.allocnum ? `<b>מספר הקצאה:</b> ${_pEsc(inv.allocnum)}<br>` : ''}
+    </div>
+  </div>
+  ${inv.notes ? `<div style="margin-top:14px;direction:rtl"><b>הערות:</b> ${_pEsc(inv.notes)}</div>` : ''}
+  ${_printFooter(co)}`;
+
+  _printOpenWindow(_printBase(`חשבונית ${inv.invnum||''}`, body));
 }
 
 // ─── INVOICES ───
@@ -4911,6 +5131,7 @@ function invNew() {
   document.getElementById('ivf-notes').value   = '';
   document.getElementById('ivf-printed').checked = false;
   document.getElementById('ivf-vat').value     = '';
+  document.getElementById('ivf-alloc').value   = '';
   document.getElementById('ivf-quote').value   = '';
   document.getElementById('inv-quote-nav-btn').style.display = 'none';
   getCompanyVat().then(v => { if (v !== null) document.getElementById('ivf-vat').value = v; });
@@ -4928,6 +5149,7 @@ function _setInvActionBtns(hasRecord, isDraft) {
   document.getElementById('inv-close-btn').style.display  = (hasRecord && isDraft)  ? '' : 'none';
   document.getElementById('inv-void-btn').style.display   = (hasRecord && !isDraft) ? '' : 'none';
   document.getElementById('inv-delete-btn').style.display = (hasRecord && isDraft)  ? '' : 'none';
+  document.getElementById('inv-print-btn').style.display  = hasRecord ? '' : 'none';
 }
 
 async function invNav(dir) {
@@ -4963,6 +5185,7 @@ async function loadInvById(invid, idx) {
   document.getElementById('ivf-date').value                = inv.idate    || '';
   document.getElementById('ivf-cust').value                = inv.custid   || '';
   document.getElementById('ivf-notes').value               = inv.notes    || '';
+  document.getElementById('ivf-alloc').value               = inv.allocnum || '';
   document.getElementById('ivf-printed').checked           = !!inv.printed;
   document.getElementById('ivf-vat').value                 = inv.vatrate  ?? 17;
 
@@ -5021,9 +5244,10 @@ async function saveInvHeader(silent = false) {
   const payload = {
     custid:  custid,
     idate:   document.getElementById('ivf-date').value || null,
-    vatrate: parseFloat(document.getElementById('ivf-vat').value) || 17,
-    notes:   document.getElementById('ivf-notes').value.trim() || null,
-    printed: document.getElementById('ivf-printed').checked
+    vatrate:  parseFloat(document.getElementById('ivf-vat').value) || 17,
+    notes:    document.getElementById('ivf-notes').value.trim() || null,
+    allocnum: document.getElementById('ivf-alloc').value.trim() || null,
+    printed:  document.getElementById('ivf-printed').checked
   };
 
   // Attach quoteid from select
@@ -5564,7 +5788,8 @@ async function loadCompany() {
   document.getElementById('co-city').value    = data.city || '';
   document.getElementById('co-zip').value     = data.zip || '';
   document.getElementById('co-bank').value    = data.bankdet || '';
-  document.getElementById('co-vatrate').value = data.vatrate ?? '';
+  document.getElementById('co-vatrate').value  = data.vatrate ?? '';
+  document.getElementById('co-taxconst').value = data.taxconst ?? '';
   if (data.logo) { companyLogo = data.logo; showLogoPreview(data.logo); }
   updateDemoBanner(data.isdemo !== false);
 }
@@ -5654,6 +5879,7 @@ async function saveCompany() {
     zip:      document.getElementById('co-zip').value.trim(),
     bankdet:  document.getElementById('co-bank').value.trim(),
     vatrate:  parseFloat(document.getElementById('co-vatrate').value) || null,
+    taxconst: parseFloat(document.getElementById('co-taxconst').value) || null,
     logo:     companyLogo,
     udate:    new Date().toISOString()
   };

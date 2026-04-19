@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS customers (
   email    TEXT NOT NULL,
   phone    TEXT,
   custcomp TEXT,
+  address  TEXT,
   notes    TEXT,
   status   TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
   token    UUID DEFAULT gen_random_uuid() UNIQUE NOT NULL,
@@ -91,6 +92,7 @@ CREATE TABLE IF NOT EXISTS company (
   bankdet  TEXT,
   logo     TEXT,
   vatrate  DECIMAL(5,2) DEFAULT 17,
+  taxconst NUMERIC,
   isdemo   BOOLEAN DEFAULT true,
   udate    TIMESTAMPTZ DEFAULT NOW()
 );
@@ -190,6 +192,7 @@ CREATE TABLE IF NOT EXISTS invoices (
   vatamt      DECIMAL(14,2) DEFAULT 0,
   total       DECIMAL(14,2) DEFAULT 0,
   notes       TEXT,
+  allocnum    VARCHAR(20),
   printed     BOOLEAN DEFAULT false,
   cdate       TIMESTAMPTZ DEFAULT NOW(),
   udate       TIMESTAMPTZ DEFAULT NOW()
