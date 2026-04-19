@@ -5546,8 +5546,9 @@ let companyLogo = null;
 let companyIsDemo = true;
 
 async function loadCompany() {
-  const { data } = await db.from('company').select('*').maybeSingle();
-  if (!data) return;
+  const { data, error } = await db.from('company').select('*').maybeSingle();
+  if (error) { showToast('שגיאה בטעינת נתוני חברה: ' + error.message, 'error'); return; }
+  if (!data) { showToast('לא נמצאו נתוני חברה בDB — צור רשומה ראשונה', 'info'); return; }
   companyId = data.compid;
   document.getElementById('co-name').value    = data.compname || '';
   document.getElementById('co-owner').value   = data.ownname || '';
