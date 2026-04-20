@@ -2071,6 +2071,7 @@
                 <th style="width:100px">תאריך</th>
                 <th style="width:100px">בתוקף</th>
                 <th style="width:90px">סטטוס</th>
+                <th style="width:80px">חויבה</th>
                 <th style="width:120px">סה"כ</th>
               </tr>
             </thead>
@@ -4326,7 +4327,7 @@ function renderQuoteListView() {
   const tbody = document.getElementById('q-list-tbody');
   const quotes = (state.quotes || []);
   if (!quotes.length) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)">אין רשומות — לחץ "הצג הכל" לטעינה</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">אין רשומות — לחץ "הצג הכל" לטעינה</td></tr>`;
     return;
   }
   tbody.innerHTML = quotes.map((q, i) => {
@@ -4340,6 +4341,7 @@ function renderQuoteListView() {
       <td>${q.qdate ? fmtDate(q.qdate) : '—'}</td>
       <td>${q.validdate ? fmtDate(q.validdate) : '—'}</td>
       <td>${badge2(q.status, QUOTE_STATUS[q.status]||q.status)}</td>
+      <td style="text-align:center">${q.invoiced ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;font-weight:700;padding:2px 8px;border-radius:12px">✓ חויבה</span>' : ''}</td>
       <td style="font-weight:600;color:var(--primary)">${fmtMoney(q.total||0)}</td>
     </tr>`;
   }).join('');
@@ -5251,16 +5253,18 @@ async function openInvFromQuote() {
 async function invPrint(previewOnly = false) {
   if (!invState.current) return;
   const inv = invState.current;
-  const [cr, coR, lr] = await Promise.all([
+  const [cr, coR, lr, arR] = await Promise.all([
     db.from('customers').select('*').eq('custid', inv.custid).single(),
     db.from('company').select('*').limit(1),
-    db.from('invoice_lines').select('*').eq('invid', inv.invid).order('linenum')
+    db.from('invoice_lines').select('*').eq('invid', inv.invid).order('linenum'),
+    db.from('quotes').select('subtotal').eq('custid', inv.custid).eq('status', 'approved').eq('invoiced', false)
   ]);
   const cust  = cr.data  || {};
   const co    = coR.data?.[0] || {};
   const lines = lr.data  || [];
   const today = _pfmtDate(new Date().toISOString().slice(0,10));
   const cfg   = getPrintConfig(co);
+  const arBalance = (arR.data || []).reduce((s, q) => s + Number(q.subtotal||0), 0);
 
   // Determine label
   let docLabel = 'העתק';
@@ -5297,10 +5301,16 @@ async function invPrint(previewOnly = false) {
 
   const totalsHtml = _printTotalsBlock(inv.subtotal, inv.vatrate, cfg);
   const footerHtml = _printFooter(co, cfg);
+  const arHtml = arBalance > 0
+    ? `<div style="margin-bottom:8px;direction:rtl;font-size:12px;padding:6px 10px;background:#fef3c7;border:1px solid #fbbf24;border-radius:6px">
+        <b>יתרה בהנח"ש:</b> ${_pfmtMoney(arBalance)} ₪
+       </div>`
+    : '';
   const totalsLeft = cfg.totalsPos === 'left';
+  const infoCell = `${arHtml}${inv.allocnum ? `<div style="direction:rtl;font-size:12px"><b>מספר הקצאה:</b> ${_pEsc(inv.allocnum)}</div>` : ''}`;
   const bottomRow  = totalsLeft
-    ? `<td style="width:50%">${totalsHtml}${footerHtml}</td><td style="width:50%;direction:rtl;font-size:12px;line-height:1.8;padding-right:20px">${inv.allocnum ? `<b>מספר הקצאה:</b> ${_pEsc(inv.allocnum)}<br>` : ''}</td>`
-    : `<td style="width:50%;direction:rtl;font-size:12px;line-height:1.8;padding-left:20px">${inv.allocnum ? `<b>מספר הקצאה:</b> ${_pEsc(inv.allocnum)}<br>` : ''}</td><td style="width:50%">${totalsHtml}${footerHtml}</td>`;
+    ? `<td style="width:50%">${totalsHtml}${footerHtml}</td><td style="width:50%;vertical-align:top;padding-right:20px">${infoCell}</td>`
+    : `<td style="width:50%;vertical-align:top;padding-left:20px">${infoCell}</td><td style="width:50%">${totalsHtml}${footerHtml}</td>`;
 
   const body = `
   ${watermark}
