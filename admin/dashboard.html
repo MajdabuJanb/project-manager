@@ -5049,6 +5049,7 @@ async function quotePrint(previewOnly = false) {
         font-size:90px;font-weight:900;color:rgba(239,68,68,0.13);pointer-events:none;white-space:nowrap;z-index:9999;letter-spacing:6px">מסמך הדגמה</div>`
     : '';
 
+  const hasDiscount = lines.some(l => parseFloat(l.discount) > 0);
   const linesHtml = lines.map(l => {
     const lineTotal = (parseFloat(l.qty)||0) * (parseFloat(l.unitprice)||0) * (1 - (parseFloat(l.discount)||0) / 100);
     return `<tr>
@@ -5056,6 +5057,7 @@ async function quotePrint(previewOnly = false) {
     <td align="right" dir="rtl">${_pEsc(l.linedes||'')}</td>
     <td align="right">${Number(l.qty||0).toLocaleString('he-IL',{maximumFractionDigits:4})}</td>
     <td align="right">${_pfmtMoney(l.unitprice)}</td>
+    ${hasDiscount ? `<td align="right">${parseFloat(l.discount||0) > 0 ? parseFloat(l.discount)+'%' : ''}</td>` : ''}
     <td align="right">${_pfmtMoney(lineTotal)}</td>
   </tr>`;
   }).join('');
@@ -5072,7 +5074,7 @@ async function quotePrint(previewOnly = false) {
   </tr></table>
   <div class="doc-title">הצעת מחיר מספר ${_pEsc(q.quotenum||'')} — ${_printStatusLabel(q.status)}</div>
   <table class="lines-table"><thead><tr>
-    <th>מק"ט</th><th>תיאור מוצר</th><th>כמות</th><th>מחיר יחידה</th><th>סה"כ שורה</th>
+    <th>מק"ט</th><th>תיאור מוצר</th><th>כמות</th><th>מחיר יחידה</th>${hasDiscount ? '<th>הנחה</th>' : ''}<th>סה"כ שורה</th>
   </tr></thead><tbody>${linesHtml}</tbody></table>
   <table class="bottom-table">
   <tr>
@@ -5159,6 +5161,7 @@ async function invPrint(previewOnly = false) {
         font-size:90px;font-weight:bold;color:rgba(220,0,0,0.13);pointer-events:none;white-space:nowrap;z-index:9999">מבוטלת</div>`
     : demoWatermark;
 
+  const hasDiscount = lines.some(l => parseFloat(l.discount) > 0);
   const linesHtml = lines.map(l => {
     const lineTotal = (parseFloat(l.qty)||0) * (parseFloat(l.unitprice)||0) * (1 - (parseFloat(l.discount)||0) / 100);
     return `<tr>
@@ -5166,6 +5169,7 @@ async function invPrint(previewOnly = false) {
     <td align="right" dir="rtl">${_pEsc(l.linedes||'')}</td>
     <td align="right">${Number(l.qty||0).toLocaleString('he-IL',{maximumFractionDigits:4})}</td>
     <td align="right">${_pfmtMoney(l.unitprice)}</td>
+    ${hasDiscount ? `<td align="right">${parseFloat(l.discount||0) > 0 ? parseFloat(l.discount)+'%' : ''}</td>` : ''}
     <td align="right">${_pfmtMoney(lineTotal)}</td>
   </tr>`;
   }).join('');
@@ -5184,7 +5188,7 @@ async function invPrint(previewOnly = false) {
   </tr></table>
   <div class="doc-title">חשבונית מספר ${_pEsc(inv.invnum||'')} — ${titleLabel}</div>
   <table class="lines-table"><thead><tr>
-    <th>מק"ט</th><th>תיאור</th><th>כמות</th><th>מחיר יחידה</th><th>סה"כ שורה</th>
+    <th>מק"ט</th><th>תיאור</th><th>כמות</th><th>מחיר יחידה</th>${hasDiscount ? '<th>הנחה</th>' : ''}<th>סה"כ שורה</th>
   </tr></thead><tbody>${linesHtml}</tbody></table>
   <table class="bottom-table">
   <tr>
