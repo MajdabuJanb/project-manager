@@ -1249,7 +1249,6 @@
           <div><div class="page-title">נתוני החברה</div></div>
           <button class="btn btn-primary" onclick="saveCompany()">💾 שמור שינויים</button>
           <button id="go-live-btn" class="btn" style="background:#f59e0b;color:white;display:none" onclick="confirmGoLive()">🚀 העלה לאוויר</button>
-          <img id="company-bg-img" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);height:120%;max-width:340px;object-fit:contain;opacity:0.10;pointer-events:none;z-index:0">
         </div>
 
         <div class="company-layout">
@@ -1354,21 +1353,11 @@
             <button class="btn btn-primary" onclick="savePrintConfig()">💾 שמור עיצוב</button>
           </div>
 
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px">
+          <div style="display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:16px">
             <!-- עמודות שורות הדפסה -->
             <div class="card">
               <div class="card-title">עמודות שורות הדפסה</div>
-              <div id="print-columns-list" style="display:flex;flex-direction:column;gap:10px;margin-top:8px"></div>
-            </div>
-            <!-- עמודות רשימת הצעות -->
-            <div class="card">
-              <div class="card-title">עמודות רשימת הצעות</div>
-              <div id="list-cols-quote" style="display:flex;flex-direction:column;gap:10px;margin-top:8px"></div>
-            </div>
-            <!-- עמודות רשימת חשבוניות -->
-            <div class="card">
-              <div class="card-title">עמודות רשימת חשבוניות</div>
-              <div id="list-cols-inv" style="display:flex;flex-direction:column;gap:10px;margin-top:8px"></div>
+              <div id="print-columns-list" style="display:flex;flex-direction:row;flex-wrap:wrap;gap:12px 24px;margin-top:8px"></div>
             </div>
           </div>
 
@@ -1962,6 +1951,14 @@
           <div style="margin-right:auto;display:flex;gap:6px;align-items:center">
             <button class="btn btn-sm" id="q-search-btn" onclick="toggleQuoteSearchMode()" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7">🔍 חיפוש</button>
             <button class="btn btn-sm pri-list-btn" id="q-list-btn" onclick="toggleQuoteListView()" title="תצוגת רשימה / כרטיס" style="border:1px solid var(--border);padding:0 8px;height:28px">☰</button>
+            <div style="position:relative">
+              <button class="btn btn-sm" id="q-col-btn" onclick="toggleColDropdown('q')" style="border:1px solid var(--border);padding:0 10px;height:28px;font-size:12px" title="בחר עמודות תצוגה">⚙ עמודות</button>
+              <div id="q-col-dropdown" style="display:none;position:absolute;top:32px;left:0;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;min-width:170px;z-index:300;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
+                <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px">עמודות רשימת הצעות</div>
+                <div id="q-col-checks" style="display:flex;flex-direction:column;gap:8px"></div>
+                <button class="btn btn-primary btn-sm" style="width:100%;margin-top:10px" onclick="saveColDropdown('q')">💾 שמור</button>
+              </div>
+            </div>
             <button class="btn btn-sm" onclick="quoteShowAll()" title="טען את כל הצעות המחיר" style="background:#f1f5f9;color:#475569;border:1px solid var(--border);font-size:12px">הצג הכל</button>
             <button class="btn btn-ghost btn-sm" id="q-cancel-btn" onclick="quoteCancel()">✕ בטל</button>
             <div id="q-print-btn" style="display:none;position:relative">
@@ -2099,6 +2096,14 @@
           <div style="margin-right:auto;display:flex;gap:6px;align-items:center">
             <button class="btn btn-sm" id="inv-search-btn" onclick="toggleInvSearchMode()" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7">🔍 חיפוש</button>
             <button class="btn btn-sm pri-list-btn" id="inv-list-btn" onclick="toggleInvListView()" title="תצוגת רשימה / כרטיס" style="border:1px solid var(--border);padding:0 8px;height:28px">☰</button>
+            <div style="position:relative">
+              <button class="btn btn-sm" id="inv-col-btn" onclick="toggleColDropdown('inv')" style="border:1px solid var(--border);padding:0 10px;height:28px;font-size:12px" title="בחר עמודות תצוגה">⚙ עמודות</button>
+              <div id="inv-col-dropdown" style="display:none;position:absolute;top:32px;left:0;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;min-width:170px;z-index:300;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
+                <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px">עמודות רשימת חשבוניות</div>
+                <div id="inv-col-checks" style="display:flex;flex-direction:column;gap:8px"></div>
+                <button class="btn btn-primary btn-sm" style="width:100%;margin-top:10px" onclick="saveColDropdown('inv')">💾 שמור</button>
+              </div>
+            </div>
             <button class="btn btn-sm" onclick="invShowAll()" style="background:#f1f5f9;color:#475569;border:1px solid var(--border);font-size:12px">הצג הכל</button>
             <button class="btn btn-ghost btn-sm" onclick="invCancel()">✕ בטל</button>
             <div id="inv-print-btn" style="display:none;position:relative">
@@ -2771,13 +2776,13 @@ function overlayClose(e, id) {
 
 // ─── Navigation ───
 // ─── Tab bar ───
-const _TAB_SECTIONS = new Set(['clients','projects','tasks','parts','quotes','invoices']);
+const _TAB_SECTIONS = new Set(['clients','projects','tasks','parts','quotes','invoices','company']);
 const _sectionLoaded = new Set();
 let _openTabs = [];
 let _currentSection = 'dashboard';
 
 function getTabLabel(section) {
-  const base = { clients:'לקוחות', projects:'פרויקטים', tasks:'משימות', parts:'מוצרים', quotes:'הצעות מחיר', invoices:'חשבוניות' }[section] || section;
+  const base = { clients:'לקוחות', projects:'פרויקטים', tasks:'משימות', parts:'מוצרים', quotes:'הצעות מחיר', invoices:'חשבוניות', company:'נתוני חברה' }[section] || section;
   if (section === 'quotes'   && quoteState?.current) return `הצעה ${quoteState.current.quotenum || '—'}`;
   if (section === 'invoices' && invState?.current)   return `חשבונית ${invState.current.invnum || '—'}`;
   if (section === 'clients'  && state.selectedCustomer) return state.selectedCustomer.custname || base;
@@ -5239,8 +5244,8 @@ async function quotePrint(previewOnly = false) {
   const footerHtml  = _printFooter(co, cfg);
   const totalsLeft  = cfg.totalsPos === 'left';
   const bottomRow   = totalsLeft
-    ? `<td style="width:50%">${totalsHtml}${footerHtml}</td><td style="width:50%;direction:rtl;font-size:12px;line-height:1.8;padding-right:20px">${q.validdate ? `<b>בתוקף עד:</b> ${_pfmtDate(q.validdate)}<br>` : ''}</td>`
-    : `<td style="width:50%;direction:rtl;font-size:12px;line-height:1.8;padding-left:20px">${q.validdate ? `<b>בתוקף עד:</b> ${_pfmtDate(q.validdate)}<br>` : ''}</td><td style="width:50%">${totalsHtml}${footerHtml}</td>`;
+    ? `<td style="width:50%">${totalsHtml}${footerHtml}</td><td style="width:50%;direction:rtl;font-size:12px;line-height:1.8;padding-right:20px">${q.ponum ? `<b>מספר PO:</b> ${_pEsc(q.ponum)}<br>` : ''}${q.validdate ? `<b>בתוקף עד:</b> ${_pfmtDate(q.validdate)}<br>` : ''}</td>`
+    : `<td style="width:50%;direction:rtl;font-size:12px;line-height:1.8;padding-left:20px">${q.ponum ? `<b>מספר PO:</b> ${_pEsc(q.ponum)}<br>` : ''}${q.validdate ? `<b>בתוקף עד:</b> ${_pfmtDate(q.validdate)}<br>` : ''}</td><td style="width:50%">${totalsHtml}${footerHtml}</td>`;
 
   const body = `
   ${demoWatermark}
@@ -6131,9 +6136,6 @@ function loadPrintConfigUI(saved) {
 
   // עמודות הדפסה
   _buildColCheckboxes('print-columns-list', PRINT_COLUMNS, cfg.columns, 'pc-col');
-  // עמודות רשימות
-  _buildColCheckboxes('list-cols-quote', LIST_COLUMNS_QUOTE, cfg.listColsQuote, 'lc-q');
-  _buildColCheckboxes('list-cols-inv',   LIST_COLUMNS_INV,   cfg.listColsInv,   'lc-i');
 
   // מיקומים
   document.getElementById('pc-logo-pos').value      = cfg.logoPos;
@@ -6158,14 +6160,10 @@ function loadPrintConfigUI(saved) {
 async function savePrintConfig() {
   const cols = {};
   PRINT_COLUMNS.forEach(c => { cols[c.field] = document.getElementById(`pc-col-${c.field}`)?.checked ?? c.defaultShow; });
-  const listQ = {};
-  LIST_COLUMNS_QUOTE.forEach(c => { listQ[c.field] = document.getElementById(`lc-q-${c.field}`)?.checked ?? c.defaultShow; });
-  const listI = {};
-  LIST_COLUMNS_INV.forEach(c => { listI[c.field] = document.getElementById(`lc-i-${c.field}`)?.checked ?? c.defaultShow; });
   const config = {
     columns:       cols,
-    listColsQuote: listQ,
-    listColsInv:   listI,
+    listColsQuote: _listCfg?.listColsQuote || getPrintConfig({}).listColsQuote,
+    listColsInv:   _listCfg?.listColsInv   || getPrintConfig({}).listColsInv,
     logoPos:       document.getElementById('pc-logo-pos').value,
     customerPos:   document.getElementById('pc-customer-pos').value,
     totalsPos:     document.getElementById('pc-totals-pos').value,
@@ -6179,6 +6177,53 @@ async function savePrintConfig() {
   _listCfg = config; // רענן cache
   showToast('עיצוב הדפסה נשמר', 'success');
 }
+
+// ─── Per-screen column designer ───
+function toggleColDropdown(entity) {
+  const id = entity === 'q' ? 'q-col-dropdown' : 'inv-col-dropdown';
+  const dd = document.getElementById(id);
+  if (!dd) return;
+  const isOpen = dd.style.display !== 'none';
+  document.querySelectorAll('#q-col-dropdown,#inv-col-dropdown').forEach(el => el.style.display = 'none');
+  if (!isOpen) { _populateColDropdown(entity); dd.style.display = 'block'; }
+}
+
+function _populateColDropdown(entity) {
+  const registry = entity === 'q' ? LIST_COLUMNS_QUOTE : LIST_COLUMNS_INV;
+  const cfgKey   = entity === 'q' ? 'listColsQuote' : 'listColsInv';
+  const cfg      = _listCfg?.[cfgKey] || getPrintConfig({})[cfgKey];
+  const containerId = entity === 'q' ? 'q-col-checks' : 'inv-col-checks';
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = registry.map(c => `
+    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+      <input type="checkbox" id="col-dd-${entity}-${c.field}" ${cfg?.[c.field] !== false ? 'checked' : ''} style="width:16px;height:16px">
+      ${c.label}
+    </label>`).join('');
+}
+
+async function saveColDropdown(entity) {
+  const registry = entity === 'q' ? LIST_COLUMNS_QUOTE : LIST_COLUMNS_INV;
+  const cfgKey   = entity === 'q' ? 'listColsQuote' : 'listColsInv';
+  const map = {};
+  registry.forEach(c => { map[c.field] = document.getElementById(`col-dd-${entity}-${c.field}`)?.checked ?? c.defaultShow; });
+  if (!_listCfg) _listCfg = getPrintConfig({});
+  _listCfg[cfgKey] = map;
+  if (entity === 'q') renderQuoteListView(); else renderInvListView();
+  document.getElementById(entity === 'q' ? 'q-col-dropdown' : 'inv-col-dropdown').style.display = 'none';
+  const { data: co } = await db.from('company').select('id,print_config').single();
+  if (co) {
+    const merged = { ...(co.print_config || {}), [cfgKey]: map };
+    const { error } = await db.from('company').update({ print_config: merged }).eq('id', co.id);
+    if (error) showToast('שגיאה בשמירת עמודות', 'error');
+    else showToast('עמודות נשמרו', 'success');
+  }
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#q-col-btn') && !e.target.closest('#q-col-dropdown'))   document.getElementById('q-col-dropdown')?.style && (document.getElementById('q-col-dropdown').style.display = 'none');
+  if (!e.target.closest('#inv-col-btn') && !e.target.closest('#inv-col-dropdown')) document.getElementById('inv-col-dropdown')?.style && (document.getElementById('inv-col-dropdown').style.display = 'none');
+});
 
 async function loadDemoBanner() {
   const { data } = await db.from('company').select('isdemo').limit(1);
@@ -6237,9 +6282,6 @@ function showLogoPreview(src) {
   img.src = src; img.style.display = 'block';
   document.getElementById('logo-placeholder').style.display = 'none';
   document.getElementById('remove-logo-btn').style.display  = 'block';
-  const bgImg = document.getElementById('company-bg-img');
-  bgImg.src = src;
-  bgImg.style.display = 'block';
 }
 
 function removeLogo() {
@@ -6249,8 +6291,6 @@ function removeLogo() {
   document.getElementById('logo-placeholder').style.display = 'block';
   document.getElementById('remove-logo-btn').style.display  = 'none';
   document.getElementById('logo-input').value = '';
-  const bgImg = document.getElementById('company-bg-img');
-  bgImg.src = ''; bgImg.style.display = 'none';
 }
 
 async function saveCompany() {
