@@ -1345,6 +1345,88 @@
             <button type="button" class="btn btn-ghost" id="remove-logo-btn" style="width:100%;margin-top:10px;display:none" onclick="removeLogo()">🗑 הסר לוגו</button>
           </div>
         </div>
+
+        <!-- ═══ עיצוב הדפסה ═══ -->
+        <div style="margin-top:24px">
+          <div class="page-header" style="margin-bottom:16px">
+            <div><div class="page-title" style="font-size:18px">🖨 עיצוב הדפסה</div>
+            <div class="page-subtitle">הגדרות אלו חלות על הדפסת הצעות מחיר וחשבוניות</div></div>
+            <button class="btn btn-primary" onclick="savePrintConfig()">💾 שמור עיצוב</button>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+            <!-- עמודות שורות -->
+            <div class="card">
+              <div class="card-title">עמודות שורות תעודה</div>
+              <div id="print-columns-list" style="display:flex;flex-direction:column;gap:10px;margin-top:8px"></div>
+            </div>
+
+            <!-- מיקום בלוקים -->
+            <div class="card">
+              <div class="card-title">מיקום בלוקים</div>
+              <div style="display:flex;flex-direction:column;gap:14px;margin-top:8px">
+                <div class="form-group" style="margin:0">
+                  <label>לוגו</label>
+                  <select id="pc-logo-pos" class="form-control">
+                    <option value="right">ימין</option>
+                    <option value="center">מרכז</option>
+                    <option value="left">שמאל</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin:0">
+                  <label>פרטי לקוח</label>
+                  <select id="pc-customer-pos" class="form-control">
+                    <option value="left">שמאל</option>
+                    <option value="right">ימין</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin:0">
+                  <label>סיכום סכומים</label>
+                  <select id="pc-totals-pos" class="form-control">
+                    <option value="right">ימין</option>
+                    <option value="left">שמאל</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin:0">
+                  <label>חתימה</label>
+                  <select id="pc-signature-pos" class="form-control">
+                    <option value="center">מרכז</option>
+                    <option value="left">שמאל</option>
+                    <option value="right">ימין</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- צבעים ופונט -->
+            <div class="card">
+              <div class="card-title">צבעים ופונט</div>
+              <div style="display:flex;flex-direction:column;gap:14px;margin-top:8px">
+                <div class="form-group" style="margin:0">
+                  <label>צבע כותרת טבלה</label>
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <input type="color" id="pc-header-bg" style="width:48px;height:34px;padding:2px;border-radius:6px;cursor:pointer;border:1px solid var(--border)">
+                    <span id="pc-header-bg-val" style="font-size:12px;color:var(--text-muted)"></span>
+                  </div>
+                </div>
+                <div class="form-group" style="margin:0">
+                  <label>צבע טקסט כותרת</label>
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <input type="color" id="pc-header-text" style="width:48px;height:34px;padding:2px;border-radius:6px;cursor:pointer;border:1px solid var(--border)">
+                    <span id="pc-header-text-val" style="font-size:12px;color:var(--text-muted)"></span>
+                  </div>
+                </div>
+                <div class="form-group" style="margin:0">
+                  <label>גודל פונט (px)</label>
+                  <input type="number" id="pc-font-size" min="9" max="18" style="width:80px" class="form-control">
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
       </section>
 
       <!-- ════ SECURITY ════ -->
@@ -4886,6 +4968,38 @@ function _pEsc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 // ─── ITA (Israel Tax Authority) — Allocation Number API ───
+// ─── Print Column Registry ───────────────────────────────────────────────────
+// כל עמודה שתוסיף לטבלת השורות — הוסף כאן. תופיע אוטומטית בהגדרות עיצוב הדפסה.
+const PRINT_COLUMNS = [
+  { field: 'partid',     label: 'מק"ט',         defaultShow: true  },
+  { field: 'linedes',    label: 'תיאור',         defaultShow: true  },
+  { field: 'qty',        label: 'כמות',          defaultShow: true  },
+  { field: 'unitprice',  label: 'מחיר יחידה',   defaultShow: true  },
+  { field: 'discount',   label: 'הנחה %',        defaultShow: false },
+  { field: 'linetotal',  label: 'סה"כ שורה',    defaultShow: true  },
+];
+
+// ברירות מחדל לעיצוב הדפסה
+const PRINT_CONFIG_DEFAULTS = {
+  columns:       {},           // { partid: true, linedes: true, ... }
+  logoPos:       'right',      // right / center / left
+  customerPos:   'left',       // left / right
+  totalsPos:     'right',      // right / left
+  signaturePos:  'center',     // left / center / right
+  headerBg:      '#1e3a5f',
+  headerText:    '#ffffff',
+  fontSize:      12,
+};
+
+function getPrintConfig(co) {
+  const saved = co?.print_config || {};
+  const cols = {};
+  PRINT_COLUMNS.forEach(c => {
+    cols[c.field] = saved.columns?.[c.field] ?? c.defaultShow;
+  });
+  return { ...PRINT_CONFIG_DEFAULTS, ...saved, columns: cols };
+}
+
 const ITA_THRESHOLD     = 5000; // ₪5,000 לפני מע"מ (מיוני 2026)
 const ITA_SANDBOX_URL   = 'https://api.taxes.gov.il/shaam/tsandbox/Invoices/v2/Approval';
 const ITA_PRODUCTION_URL = 'https://api.taxes.gov.il/shaam/production/Invoices/v2/Approval';
@@ -4952,7 +5066,9 @@ async function invPrintAction(mode) {
 function _printStatusLabel(s) {
   return {draft:'טיוטה',sent:'נשלחה',approved:'מאושרת',rejected:'נדחתה',cancelled:'מבוטלת'}[s] || s || '';
 }
-function _printCompanyHeader(co) {
+function _printCompanyHeader(co, cfg) {
+  const logoPos = cfg?.logoPos || 'right';
+  const logoAlign = logoPos === 'right' ? 'right' : logoPos === 'left' ? 'left' : 'center';
   const logo = co.logo ? `<img src="${co.logo}" style="max-height:80px;max-width:150px;object-fit:contain">` : '';
   const parts = [
     co.compname && `<b style="font-size:15px">${_pEsc(co.compname)}</b>`,
@@ -4963,12 +5079,11 @@ function _printCompanyHeader(co) {
     co.taxnum && `ח.פ / ע.מ: ${_pEsc(co.taxnum)}`,
     co.taxconst && `קבוע רשות המסים: ${co.taxconst}`,
   ].filter(Boolean).join('<br>');
-  // RTL table: first TD = right side (company info), second TD = left side (logo)
+  const infoSide = `<td style="text-align:right;direction:rtl;vertical-align:top;font-size:12px;line-height:1.6">${parts}</td>`;
+  const logoSide = logo ? `<td style="text-align:${logoAlign};vertical-align:middle;width:170px">${logo}</td>` : '';
+  const cells = logoPos === 'left' ? logoSide + infoSide : infoSide + logoSide;
   return `<table width="100%" style="margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #e3eeff">
-  <tr>
-    <td style="text-align:right;direction:rtl;vertical-align:top;font-size:12px;line-height:1.6">${parts}</td>
-    <td style="text-align:center;vertical-align:middle;width:170px">${logo}</td>
-  </tr></table>`;
+  <tr>${cells}</tr></table>`;
 }
 function _printCustomerBlock(cust) {
   const parts = [
@@ -4984,15 +5099,17 @@ function _printCustomerBlock(cust) {
     <b>לכבוד:</b><br>${parts.join('<br>')}
   </div>`;
 }
-function _printTotalsBlock(subtotal, vatrate) {
-  const sub = Number(subtotal||0);
-  const vat = Number(vatrate||0);
+function _printTotalsBlock(subtotal, vatrate, cfg) {
+  const sub    = Number(subtotal||0);
+  const vat    = Number(vatrate||0);
   const vatAmt = sub * vat / 100;
   const total  = sub + vatAmt;
+  const hBg    = cfg?.headerBg   || '#1e3a5f';
+  const hTxt   = cfg?.headerText || '#ffffff';
   return `<table width="100%" border="1" cellpadding="6" style="border-collapse:collapse;border-color:#dde2e6;font-size:12px">
-    <tr>
-      <td align="right" dir="rtl" style="background:#f8faff"><b>סה"כ לפני מע"מ</b></td>
-      <td align="left" style="background:#f8faff"><b>${_pfmtMoney(sub)}</b></td>
+    <tr style="background:${hBg};color:${hTxt}">
+      <td align="right" dir="rtl"><b>סה"כ לפני מע"מ</b></td>
+      <td align="left"><b>${_pfmtMoney(sub)}</b></td>
     </tr><tr>
       <td align="right" dir="rtl"><b>מע"מ (${vat}%)</b></td>
       <td align="left"><b>${_pfmtMoney(vatAmt)}</b></td>
@@ -5002,11 +5119,31 @@ function _printTotalsBlock(subtotal, vatrate) {
     </tr>
   </table>`;
 }
-function _printFooter(co) {
+function _printFooter(co, cfg) {
+  const pos  = cfg?.signaturePos || 'center';
+  const align = pos === 'right' ? 'right' : pos === 'left' ? 'left' : 'center';
   const name = [co.ownname, co.compname].filter(Boolean).map(_pEsc).join('<br>');
-  return `<div style="margin-top:50px;direction:rtl;font-size:12px">
+  return `<div style="margin-top:50px;direction:rtl;font-size:12px;text-align:${align}">
     <div style="display:inline-block;min-width:180px;border-top:1px solid #333;padding-top:5px;text-align:right">${name}</div>
   </div>`;
+}
+function _printLinesHtml(lines, cfg) {
+  const cols   = cfg?.columns || {};
+  const hBg    = cfg?.headerBg   || '#1e3a5f';
+  const hTxt   = cfg?.headerText || '#ffffff';
+  const active = PRINT_COLUMNS.filter(c => cols[c.field] !== false);
+  const thead  = active.map(c => `<th>${c.label}</th>`).join('');
+  const tbody  = lines.map(l => {
+    const lineTotal = (parseFloat(l.qty)||0) * (parseFloat(l.unitprice)||0) * (1 - (parseFloat(l.discount)||0) / 100);
+    const vals = { partid: _pEsc(l.partid||''), linedes: _pEsc(l.linedes||''),
+      qty: Number(l.qty||0).toLocaleString('he-IL',{maximumFractionDigits:4}),
+      unitprice: _pfmtMoney(l.unitprice), discount: parseFloat(l.discount||0) > 0 ? parseFloat(l.discount)+'%' : '',
+      linetotal: _pfmtMoney(lineTotal) };
+    return `<tr>${active.map(c => `<td align="right" dir="rtl">${vals[c.field]??''}</td>`).join('')}</tr>`;
+  }).join('');
+  return `<table class="lines-table"><thead>
+    <tr style="background:${hBg};color:${hTxt}">${thead}</tr>
+  </thead><tbody>${tbody}</tbody></table>`;
 }
 function _printOpenWindow(html) {
   const w = window.open('', '_blank');
@@ -5014,12 +5151,12 @@ function _printOpenWindow(html) {
   w.document.write(html);
   w.document.close();
 }
-function _printBase(title, body, autoPrint = true) {
+function _printBase(title, body, autoPrint = true, fontSize = 12) {
   return `<!DOCTYPE html><html lang="he" dir="rtl"><head>
   <meta charset="UTF-8"><title>${title}</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:Arial,sans-serif;font-size:12px;direction:rtl;color:#17223d;padding:22px}
+    body{font-family:Arial,sans-serif;font-size:${fontSize}px;direction:rtl;color:#17223d;padding:22px}
     table{border-collapse:collapse;width:100%}
     .doc-title{text-align:center;font-size:17px;font-weight:bold;text-decoration:underline;margin:14px 0 10px}
     .lines-table th{background:#e3eeff;border:1px solid #dde2e6;padding:6px 8px;text-align:center;font-size:11px}
@@ -5043,52 +5180,38 @@ async function quotePrint(previewOnly = false) {
   const co    = coR.data?.[0] || {};
   const lines = lr.data  || [];
   const today = _pfmtDate(new Date().toISOString().slice(0,10));
+  const cfg   = getPrintConfig(co);
 
   const demoWatermark = co.isdemo !== false
     ? `<div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-35deg);
         font-size:90px;font-weight:900;color:rgba(239,68,68,0.13);pointer-events:none;white-space:nowrap;z-index:9999;letter-spacing:6px">מסמך הדגמה</div>`
     : '';
 
-  const hasDiscount = lines.some(l => parseFloat(l.discount) > 0);
-  const linesHtml = lines.map(l => {
-    const lineTotal = (parseFloat(l.qty)||0) * (parseFloat(l.unitprice)||0) * (1 - (parseFloat(l.discount)||0) / 100);
-    return `<tr>
-    <td align="right" dir="rtl">${_pEsc(l.partid||'')}</td>
-    <td align="right" dir="rtl">${_pEsc(l.linedes||'')}</td>
-    <td align="right">${Number(l.qty||0).toLocaleString('he-IL',{maximumFractionDigits:4})}</td>
-    <td align="right">${_pfmtMoney(l.unitprice)}</td>
-    ${hasDiscount ? `<td align="right">${parseFloat(l.discount||0) > 0 ? parseFloat(l.discount)+'%' : ''}</td>` : ''}
-    <td align="right">${_pfmtMoney(lineTotal)}</td>
-  </tr>`;
-  }).join('');
+  const custBlock  = _printCustomerBlock(cust);
+  const infoBlock  = `<div style="text-align:right;direction:rtl;font-size:12px;line-height:1.8">
+    <b>תאריך הצעה:</b> ${_pfmtDate(q.qdate)}<br><b>תאריך הדפסה:</b> ${today}</div>`;
+  const custLeft   = cfg.customerPos === 'left';
+  const custRow    = custLeft
+    ? `<td style="width:50%;vertical-align:top">${custBlock}</td><td style="width:50%;vertical-align:top">${infoBlock}</td>`
+    : `<td style="width:50%;vertical-align:top">${infoBlock}</td><td style="width:50%;vertical-align:top">${custBlock}</td>`;
+
+  const totalsHtml  = _printTotalsBlock(q.subtotal, q.vatrate, cfg);
+  const footerHtml  = _printFooter(co, cfg);
+  const totalsLeft  = cfg.totalsPos === 'left';
+  const bottomRow   = totalsLeft
+    ? `<td style="width:50%">${totalsHtml}${footerHtml}</td><td style="width:50%;direction:rtl;font-size:12px;line-height:1.8;padding-right:20px">${q.validdate ? `<b>בתוקף עד:</b> ${_pfmtDate(q.validdate)}<br>` : ''}</td>`
+    : `<td style="width:50%;direction:rtl;font-size:12px;line-height:1.8;padding-left:20px">${q.validdate ? `<b>בתוקף עד:</b> ${_pfmtDate(q.validdate)}<br>` : ''}</td><td style="width:50%">${totalsHtml}${footerHtml}</td>`;
 
   const body = `
   ${demoWatermark}
-  ${_printCompanyHeader(co)}
-  <table style="margin-bottom:12px"><tr>
-    <td style="width:50%;vertical-align:top">${_printCustomerBlock(cust)}</td>
-    <td style="width:50%;text-align:right;direction:rtl;vertical-align:top;font-size:12px;line-height:1.8">
-      <b>תאריך הצעה:</b> ${_pfmtDate(q.qdate)}<br>
-      <b>תאריך הדפסה:</b> ${today}
-    </td>
-  </tr></table>
+  ${_printCompanyHeader(co, cfg)}
+  <table style="margin-bottom:12px"><tr>${custRow}</tr></table>
   <div class="doc-title">הצעת מחיר מספר ${_pEsc(q.quotenum||'')} — ${_printStatusLabel(q.status)}</div>
-  <table class="lines-table"><thead><tr>
-    <th>מק"ט</th><th>תיאור מוצר</th><th>כמות</th><th>מחיר יחידה</th>${hasDiscount ? '<th>הנחה</th>' : ''}<th>סה"כ שורה</th>
-  </tr></thead><tbody>${linesHtml}</tbody></table>
-  <table class="bottom-table">
-  <tr>
-    <td style="width:50%;direction:rtl;font-size:12px;line-height:1.8;padding-left:20px">
-      ${q.validdate ? `<b>בתוקף עד:</b> ${_pfmtDate(q.validdate)}<br>` : ''}
-    </td>
-    <td style="width:50%">
-      ${_printTotalsBlock(q.subtotal, q.vatrate)}
-      ${_printFooter(co)}
-    </td>
-  </tr></table>
+  ${_printLinesHtml(lines, cfg)}
+  <table class="bottom-table"><tr>${bottomRow}</tr></table>
   ${q.notes ? `<div style="margin-top:14px;direction:rtl"><b>הערות:</b> ${_pEsc(q.notes)}</div>` : ''}`;
 
-  _printOpenWindow(_printBase(`הצעת מחיר ${q.quotenum||''}`, body, !previewOnly));
+  _printOpenWindow(_printBase(`הצעת מחיר ${q.quotenum||''}`, body, !previewOnly, cfg.fontSize));
 }
 
 async function openInvFromQuote() {
@@ -5137,6 +5260,7 @@ async function invPrint(previewOnly = false) {
   const co    = coR.data?.[0] || {};
   const lines = lr.data  || [];
   const today = _pfmtDate(new Date().toISOString().slice(0,10));
+  const cfg   = getPrintConfig(co);
 
   // Determine label
   let docLabel = 'העתק';
@@ -5161,48 +5285,33 @@ async function invPrint(previewOnly = false) {
         font-size:90px;font-weight:bold;color:rgba(220,0,0,0.13);pointer-events:none;white-space:nowrap;z-index:9999">מבוטלת</div>`
     : demoWatermark;
 
-  const hasDiscount = lines.some(l => parseFloat(l.discount) > 0);
-  const linesHtml = lines.map(l => {
-    const lineTotal = (parseFloat(l.qty)||0) * (parseFloat(l.unitprice)||0) * (1 - (parseFloat(l.discount)||0) / 100);
-    return `<tr>
-    <td align="right" dir="rtl">${_pEsc(l.partid||'')}</td>
-    <td align="right" dir="rtl">${_pEsc(l.linedes||'')}</td>
-    <td align="right">${Number(l.qty||0).toLocaleString('he-IL',{maximumFractionDigits:4})}</td>
-    <td align="right">${_pfmtMoney(l.unitprice)}</td>
-    ${hasDiscount ? `<td align="right">${parseFloat(l.discount||0) > 0 ? parseFloat(l.discount)+'%' : ''}</td>` : ''}
-    <td align="right">${_pfmtMoney(lineTotal)}</td>
-  </tr>`;
-  }).join('');
-
   const titleLabel = isWatermark ? 'מבוטלת' : docLabel;
+
+  const custBlock = _printCustomerBlock(cust);
+  const infoBlock = `<div style="text-align:right;direction:rtl;font-size:12px;line-height:1.8">
+    <b>תאריך חשבונית:</b> ${_pfmtDate(inv.idate)}<br><b>תאריך הדפסה:</b> ${today}</div>`;
+  const custLeft  = cfg.customerPos === 'left';
+  const custRow   = custLeft
+    ? `<td style="width:50%;vertical-align:top">${custBlock}</td><td style="width:50%;vertical-align:top">${infoBlock}</td>`
+    : `<td style="width:50%;vertical-align:top">${infoBlock}</td><td style="width:50%;vertical-align:top">${custBlock}</td>`;
+
+  const totalsHtml = _printTotalsBlock(inv.subtotal, inv.vatrate, cfg);
+  const footerHtml = _printFooter(co, cfg);
+  const totalsLeft = cfg.totalsPos === 'left';
+  const bottomRow  = totalsLeft
+    ? `<td style="width:50%">${totalsHtml}${footerHtml}</td><td style="width:50%;direction:rtl;font-size:12px;line-height:1.8;padding-right:20px">${inv.allocnum ? `<b>מספר הקצאה:</b> ${_pEsc(inv.allocnum)}<br>` : ''}</td>`
+    : `<td style="width:50%;direction:rtl;font-size:12px;line-height:1.8;padding-left:20px">${inv.allocnum ? `<b>מספר הקצאה:</b> ${_pEsc(inv.allocnum)}<br>` : ''}</td><td style="width:50%">${totalsHtml}${footerHtml}</td>`;
 
   const body = `
   ${watermark}
-  ${_printCompanyHeader(co)}
-  <table style="margin-bottom:12px"><tr>
-    <td style="width:50%;vertical-align:top">${_printCustomerBlock(cust)}</td>
-    <td style="width:50%;text-align:right;direction:rtl;vertical-align:top;font-size:12px;line-height:1.8">
-      <b>תאריך חשבונית:</b> ${_pfmtDate(inv.idate)}<br>
-      <b>תאריך הדפסה:</b> ${today}
-    </td>
-  </tr></table>
+  ${_printCompanyHeader(co, cfg)}
+  <table style="margin-bottom:12px"><tr>${custRow}</tr></table>
   <div class="doc-title">חשבונית מספר ${_pEsc(inv.invnum||'')} — ${titleLabel}</div>
-  <table class="lines-table"><thead><tr>
-    <th>מק"ט</th><th>תיאור</th><th>כמות</th><th>מחיר יחידה</th>${hasDiscount ? '<th>הנחה</th>' : ''}<th>סה"כ שורה</th>
-  </tr></thead><tbody>${linesHtml}</tbody></table>
-  <table class="bottom-table">
-  <tr>
-    <td style="width:50%;direction:rtl;font-size:12px;line-height:1.8;padding-left:20px">
-      ${inv.allocnum ? `<b>מספר הקצאה:</b> ${_pEsc(inv.allocnum)}<br>` : ''}
-    </td>
-    <td style="width:50%">
-      ${_printTotalsBlock(inv.subtotal, inv.vatrate)}
-      ${_printFooter(co)}
-    </td>
-  </tr></table>
+  ${_printLinesHtml(lines, cfg)}
+  <table class="bottom-table"><tr>${bottomRow}</tr></table>
   ${inv.notes ? `<div style="margin-top:14px;direction:rtl"><b>הערות:</b> ${_pEsc(inv.notes)}</div>` : ''}`;
 
-  _printOpenWindow(_printBase(`חשבונית ${inv.invnum||''}`, body, !previewOnly));
+  _printOpenWindow(_printBase(`חשבונית ${inv.invnum||''}`, body, !previewOnly, cfg.fontSize));
 }
 
 // ─── INVOICES ───
@@ -5943,6 +6052,59 @@ async function loadCompany() {
   document.getElementById('co-ita-sandbox').checked = data.ita_sandbox !== false;
   if (data.logo) { companyLogo = data.logo; showLogoPreview(data.logo); }
   updateDemoBanner(data.isdemo !== false);
+  loadPrintConfigUI(data.print_config);
+}
+
+function loadPrintConfigUI(saved) {
+  const cfg = getPrintConfig({ print_config: saved });
+
+  // עמודות
+  const list = document.getElementById('print-columns-list');
+  list.innerHTML = PRINT_COLUMNS.map(col => `
+    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px">
+      <input type="checkbox" id="pc-col-${col.field}" ${cfg.columns[col.field] ? 'checked' : ''}
+        style="width:16px;height:16px">
+      ${col.label}
+    </label>`).join('');
+
+  // מיקומים
+  document.getElementById('pc-logo-pos').value      = cfg.logoPos;
+  document.getElementById('pc-customer-pos').value  = cfg.customerPos;
+  document.getElementById('pc-totals-pos').value    = cfg.totalsPos;
+  document.getElementById('pc-signature-pos').value = cfg.signaturePos;
+
+  // צבעים
+  const bgEl   = document.getElementById('pc-header-bg');
+  const txtEl  = document.getElementById('pc-header-text');
+  bgEl.value   = cfg.headerBg;
+  txtEl.value  = cfg.headerText;
+  document.getElementById('pc-header-bg-val').textContent  = cfg.headerBg;
+  document.getElementById('pc-header-text-val').textContent = cfg.headerText;
+  bgEl.oninput  = () => document.getElementById('pc-header-bg-val').textContent  = bgEl.value;
+  txtEl.oninput = () => document.getElementById('pc-header-text-val').textContent = txtEl.value;
+
+  // פונט
+  document.getElementById('pc-font-size').value = cfg.fontSize;
+}
+
+async function savePrintConfig() {
+  const cols = {};
+  PRINT_COLUMNS.forEach(c => {
+    cols[c.field] = document.getElementById(`pc-col-${c.field}`)?.checked ?? c.defaultShow;
+  });
+  const config = {
+    columns:      cols,
+    logoPos:      document.getElementById('pc-logo-pos').value,
+    customerPos:  document.getElementById('pc-customer-pos').value,
+    totalsPos:    document.getElementById('pc-totals-pos').value,
+    signaturePos: document.getElementById('pc-signature-pos').value,
+    headerBg:     document.getElementById('pc-header-bg').value,
+    headerText:   document.getElementById('pc-header-text').value,
+    fontSize:     parseInt(document.getElementById('pc-font-size').value) || 12,
+  };
+  const { error } = await db.from('company').update({ print_config: config }).not('id', 'is', null);
+  if (error) { showToast('שגיאה בשמירת עיצוב הדפסה', 'error'); return; }
+  showToast('עיצוב הדפסה נשמר', 'success');
 }
 
 async function loadDemoBanner() {

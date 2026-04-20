@@ -95,8 +95,9 @@ CREATE TABLE IF NOT EXISTS company (
   taxconst    NUMERIC,
   ita_token   TEXT,
   ita_sandbox BOOLEAN DEFAULT true,
-  isdemo   BOOLEAN DEFAULT true,
-  udate    TIMESTAMPTZ DEFAULT NOW()
+  isdemo       BOOLEAN DEFAULT true,
+  print_config JSONB,
+  udate        TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS client_connections (
