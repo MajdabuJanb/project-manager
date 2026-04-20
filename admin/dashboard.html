@@ -1354,13 +1354,25 @@
             <button class="btn btn-primary" onclick="savePrintConfig()">💾 שמור עיצוב</button>
           </div>
 
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-
-            <!-- עמודות שורות -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px">
+            <!-- עמודות שורות הדפסה -->
             <div class="card">
-              <div class="card-title">עמודות שורות תעודה</div>
+              <div class="card-title">עמודות שורות הדפסה</div>
               <div id="print-columns-list" style="display:flex;flex-direction:column;gap:10px;margin-top:8px"></div>
             </div>
+            <!-- עמודות רשימת הצעות -->
+            <div class="card">
+              <div class="card-title">עמודות רשימת הצעות</div>
+              <div id="list-cols-quote" style="display:flex;flex-direction:column;gap:10px;margin-top:8px"></div>
+            </div>
+            <!-- עמודות רשימת חשבוניות -->
+            <div class="card">
+              <div class="card-title">עמודות רשימת חשבוניות</div>
+              <div id="list-cols-inv" style="display:flex;flex-direction:column;gap:10px;margin-top:8px"></div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
 
             <!-- מיקום בלוקים -->
             <div class="card">
@@ -2063,18 +2075,7 @@
         <!-- List view -->
         <div id="q-list-view" class="pri-list-view" style="display:none">
           <table class="pri-list-tbl">
-            <thead>
-              <tr>
-                <th style="width:40px">#</th>
-                <th style="width:100px">מספר</th>
-                <th>לקוח</th>
-                <th style="width:100px">תאריך</th>
-                <th style="width:100px">בתוקף</th>
-                <th style="width:90px">סטטוס</th>
-                <th style="width:80px">חויבה</th>
-                <th style="width:120px">סה"כ</th>
-              </tr>
-            </thead>
+            <thead><tr></tr></thead>
             <tbody id="q-list-tbody"></tbody>
           </table>
         </div>
@@ -2216,17 +2217,7 @@
         <!-- List view -->
         <div id="inv-list-view" class="pri-list-view" style="display:none">
           <table class="pri-list-tbl">
-            <thead>
-              <tr>
-                <th style="width:40px">#</th>
-                <th style="width:110px">מספר</th>
-                <th>לקוח</th>
-                <th style="width:100px">תאריך</th>
-                <th style="width:95px">סטטוס</th>
-                <th style="width:80px">הודפסה</th>
-                <th style="width:120px">סה"כ</th>
-              </tr>
-            </thead>
+            <thead><tr></tr></thead>
             <tbody id="inv-list-tbody"></tbody>
           </table>
         </div>
@@ -4323,27 +4314,38 @@ function toggleQuoteListView() {
   btn.classList.toggle('active', _qListMode);
   if (_qListMode) renderQuoteListView();
 }
-function renderQuoteListView() {
+async function renderQuoteListView() {
   const tbody = document.getElementById('q-list-tbody');
+  const thead = document.querySelector('#q-list-view thead tr');
   const quotes = (state.quotes || []);
+  const cfg   = await getListCfg();
+  const active = LIST_COLUMNS_QUOTE.filter(c => cfg.listColsQuote[c.field] !== false);
+  const span   = active.length;
+
+  // עדכן header דינמי
+  if (thead) thead.innerHTML = active.map(c =>
+    `<th style="${c.width ? `width:${c.width}` : ''}">${c.label}</th>`).join('');
+
   if (!quotes.length) {
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">אין רשומות — לחץ "הצג הכל" לטעינה</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${span}" style="text-align:center;padding:40px;color:var(--text-muted)">אין רשומות — לחץ "הצג הכל" לטעינה</td></tr>`;
     return;
   }
   tbody.innerHTML = quotes.map((q, i) => {
-    const c = state.clients.find(x => x.custid === q.custid);
+    const c   = state.clients.find(x => x.custid === q.custid);
     const idx = quoteState.list.findIndex(x => x.quoteid === q.quoteid);
     const sel = quoteState.current?.quoteid === q.quoteid ? 'selected' : '';
-    return `<tr class="${sel}" onclick="quoteNavFromList('${q.quoteid}', ${idx >= 0 ? idx : i})">
-      <td>${i+1}</td>
-      <td style="font-family:monospace">${esc(q.quotenum||'—')}</td>
-      <td>${esc(c?.custname||'—')}</td>
-      <td>${q.qdate ? fmtDate(q.qdate) : '—'}</td>
-      <td>${q.validdate ? fmtDate(q.validdate) : '—'}</td>
-      <td>${badge2(q.status, QUOTE_STATUS[q.status]||q.status)}</td>
-      <td style="text-align:center">${q.invoiced ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;font-weight:700;padding:2px 8px;border-radius:12px">✓ חויבה</span>' : ''}</td>
-      <td style="font-weight:600;color:var(--primary)">${fmtMoney(q.total||0)}</td>
-    </tr>`;
+    const vals = {
+      num:       i+1,
+      quotenum:  `<span style="font-family:monospace">${esc(q.quotenum||'—')}</span>`,
+      custname:  esc(c?.custname||'—'),
+      qdate:     q.qdate ? fmtDate(q.qdate) : '—',
+      validdate: q.validdate ? fmtDate(q.validdate) : '—',
+      status:    badge2(q.status, QUOTE_STATUS[q.status]||q.status),
+      invoiced:  q.invoiced ? '<span style="background:#d1fae5;color:#065f46;font-size:11px;font-weight:700;padding:2px 8px;border-radius:12px">✓ חויבה</span>' : '',
+      total:     `<span style="font-weight:600;color:var(--primary)">${fmtMoney(q.total||0)}</span>`,
+    };
+    const cells = active.map(c => `<td style="text-align:${c.field==='total'||c.field==='invoiced'?'center':'right'}">${vals[c.field]??''}</td>`).join('');
+    return `<tr class="${sel}" onclick="quoteNavFromList('${q.quoteid}', ${idx >= 0 ? idx : i})">${cells}</tr>`;
   }).join('');
 }
 async function quoteNavFromList(quoteid, idx) {
@@ -4970,6 +4972,29 @@ function _pEsc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 // ─── ITA (Israel Tax Authority) — Allocation Number API ───
+// ─── List Column Registry ────────────────────────────────────────────────────
+// כל עמודה שתוסיף לרשימה — הוסף כאן. תופיע אוטומטית בהגדרות עמודות רשימה.
+const LIST_COLUMNS_QUOTE = [
+  { field: 'num',       label: '#',          width: '40px',  defaultShow: true  },
+  { field: 'quotenum',  label: 'מספר',       width: '110px', defaultShow: true  },
+  { field: 'custname',  label: 'לקוח',       width: '',      defaultShow: true  },
+  { field: 'qdate',     label: 'תאריך',      width: '100px', defaultShow: true  },
+  { field: 'validdate', label: 'בתוקף',      width: '100px', defaultShow: true  },
+  { field: 'status',    label: 'סטטוס',      width: '90px',  defaultShow: true  },
+  { field: 'invoiced',  label: 'חויבה',      width: '80px',  defaultShow: true  },
+  { field: 'total',     label: 'סה"כ',       width: '120px', defaultShow: true  },
+];
+const LIST_COLUMNS_INV = [
+  { field: 'num',       label: '#',          width: '40px',  defaultShow: true  },
+  { field: 'invnum',    label: 'מספר',       width: '110px', defaultShow: true  },
+  { field: 'custname',  label: 'לקוח',       width: '',      defaultShow: true  },
+  { field: 'idate',     label: 'תאריך',      width: '100px', defaultShow: true  },
+  { field: 'status',    label: 'סטטוס',      width: '95px',  defaultShow: true  },
+  { field: 'printed',   label: 'הודפסה',     width: '80px',  defaultShow: true  },
+  { field: 'allocnum',  label: 'מס\' הקצאה', width: '110px', defaultShow: false },
+  { field: 'total',     label: 'סה"כ',       width: '120px', defaultShow: true  },
+];
+
 // ─── Print Column Registry ───────────────────────────────────────────────────
 // כל עמודה שתוסיף לטבלת השורות — הוסף כאן. תופיע אוטומטית בהגדרות עיצוב הדפסה.
 const PRINT_COLUMNS = [
@@ -4983,11 +5008,13 @@ const PRINT_COLUMNS = [
 
 // ברירות מחדל לעיצוב הדפסה
 const PRINT_CONFIG_DEFAULTS = {
-  columns:       {},           // { partid: true, linedes: true, ... }
-  logoPos:       'right',      // right / center / left
-  customerPos:   'left',       // left / right
-  totalsPos:     'right',      // right / left
-  signaturePos:  'center',     // left / center / right
+  columns:       {},
+  listColsQuote: {},
+  listColsInv:   {},
+  logoPos:       'right',
+  customerPos:   'left',
+  totalsPos:     'right',
+  signaturePos:  'center',
   headerBg:      '#1e3a5f',
   headerText:    '#ffffff',
   fontSize:      12,
@@ -4996,10 +5023,21 @@ const PRINT_CONFIG_DEFAULTS = {
 function getPrintConfig(co) {
   const saved = co?.print_config || {};
   const cols = {};
-  PRINT_COLUMNS.forEach(c => {
-    cols[c.field] = saved.columns?.[c.field] ?? c.defaultShow;
-  });
-  return { ...PRINT_CONFIG_DEFAULTS, ...saved, columns: cols };
+  PRINT_COLUMNS.forEach(c => { cols[c.field] = saved.columns?.[c.field] ?? c.defaultShow; });
+  const listQ = {};
+  LIST_COLUMNS_QUOTE.forEach(c => { listQ[c.field] = saved.listColsQuote?.[c.field] ?? c.defaultShow; });
+  const listI = {};
+  LIST_COLUMNS_INV.forEach(c => { listI[c.field] = saved.listColsInv?.[c.field] ?? c.defaultShow; });
+  return { ...PRINT_CONFIG_DEFAULTS, ...saved, columns: cols, listColsQuote: listQ, listColsInv: listI };
+}
+
+// cache config for list rendering (loaded once with company data)
+let _listCfg = null;
+async function getListCfg() {
+  if (_listCfg) return _listCfg;
+  const { data } = await db.from('company').select('print_config').limit(1);
+  _listCfg = getPrintConfig({ print_config: data?.[0]?.print_config });
+  return _listCfg;
 }
 
 const ITA_THRESHOLD     = 5000; // ₪5,000 לפני מע"מ (מיוני 2026)
@@ -5702,28 +5740,39 @@ function toggleInvListView() {
   document.getElementById('inv-list-btn').classList.toggle('active', _invListMode);
   if (_invListMode) renderInvListView();
 }
-function renderInvListView() {
+async function renderInvListView() {
   const tbody = document.getElementById('inv-list-tbody');
+  const thead = document.querySelector('#inv-list-view thead tr');
   const invs  = state.invoices || [];
+  const cfg   = await getListCfg();
+  const active = LIST_COLUMNS_INV.filter(c => cfg.listColsInv[c.field] !== false);
+  const span   = active.length;
+
+  if (thead) thead.innerHTML = active.map(c =>
+    `<th style="${c.width ? `width:${c.width}` : ''}">${c.label}</th>`).join('');
+
   if (!invs.length) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)">אין רשומות — לחץ "הצג הכל" לטעינה</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${span}" style="text-align:center;padding:40px;color:var(--text-muted)">אין רשומות — לחץ "הצג הכל" לטעינה</td></tr>`;
     return;
   }
+  const stColors = { draft:'#f1f5f9;color:#475569', final:'#ecfdf5;color:#059669', cancelled:'#fef2f2;color:#dc2626' };
   tbody.innerHTML = invs.map((inv, i) => {
     const c   = state.clients.find(x => x.custid === inv.custid);
     const idx = invState.list.findIndex(x => x.invid === inv.invid);
     const sel = invState.current?.invid === inv.invid ? 'selected' : '';
-    const stColors = { draft:'#f1f5f9;color:#475569', final:'#ecfdf5;color:#059669', cancelled:'#fef2f2;color:#dc2626' };
     const stBg = stColors[inv.status] || stColors.draft;
-    return `<tr class="${sel}" onclick="invNavFromList('${inv.invid}', ${idx >= 0 ? idx : i})">
-      <td>${i+1}</td>
-      <td style="font-family:monospace;font-weight:600">${esc(inv.invnum||'—')}</td>
-      <td>${esc(c?.custname||'—')}</td>
-      <td>${inv.idate ? fmtDate(inv.idate) : '—'}</td>
-      <td><span style="padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;background:${stBg}">${INV_STATUS[inv.status]||inv.status}</span></td>
-      <td style="text-align:center">${inv.printed ? '✅' : '—'}</td>
-      <td style="font-weight:600;color:var(--primary)">${fmtMoney(inv.total||0)}</td>
-    </tr>`;
+    const vals = {
+      num:      i+1,
+      invnum:   `<span style="font-family:monospace;font-weight:600">${esc(inv.invnum||'—')}</span>`,
+      custname: esc(c?.custname||'—'),
+      idate:    inv.idate ? fmtDate(inv.idate) : '—',
+      status:   `<span style="padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;background:${stBg}">${INV_STATUS[inv.status]||inv.status}</span>`,
+      printed:  inv.printed ? '✅' : '—',
+      allocnum: esc(inv.allocnum||'—'),
+      total:    `<span style="font-weight:600;color:var(--primary)">${fmtMoney(inv.total||0)}</span>`,
+    };
+    const cells = active.map(c => `<td style="text-align:${['total','printed','allocnum'].includes(c.field)?'center':'right'}">${vals[c.field]??''}</td>`).join('');
+    return `<tr class="${sel}" onclick="invNavFromList('${inv.invid}', ${idx >= 0 ? idx : i})">${cells}</tr>`;
   }).join('');
 }
 async function invNavFromList(invid, idx) {
@@ -6065,17 +6114,26 @@ async function loadCompany() {
   loadPrintConfigUI(data.print_config);
 }
 
-function loadPrintConfigUI(saved) {
-  const cfg = getPrintConfig({ print_config: saved });
-
-  // עמודות
-  const list = document.getElementById('print-columns-list');
-  list.innerHTML = PRINT_COLUMNS.map(col => `
+function _buildColCheckboxes(containerId, registry, cfgMap, prefix) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = registry.map(col => `
     <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px">
-      <input type="checkbox" id="pc-col-${col.field}" ${cfg.columns[col.field] ? 'checked' : ''}
+      <input type="checkbox" id="${prefix}-${col.field}" ${cfgMap[col.field] ? 'checked' : ''}
         style="width:16px;height:16px">
       ${col.label}
     </label>`).join('');
+}
+
+function loadPrintConfigUI(saved) {
+  const cfg = getPrintConfig({ print_config: saved });
+  _listCfg = cfg;
+
+  // עמודות הדפסה
+  _buildColCheckboxes('print-columns-list', PRINT_COLUMNS, cfg.columns, 'pc-col');
+  // עמודות רשימות
+  _buildColCheckboxes('list-cols-quote', LIST_COLUMNS_QUOTE, cfg.listColsQuote, 'lc-q');
+  _buildColCheckboxes('list-cols-inv',   LIST_COLUMNS_INV,   cfg.listColsInv,   'lc-i');
 
   // מיקומים
   document.getElementById('pc-logo-pos').value      = cfg.logoPos;
@@ -6099,21 +6157,26 @@ function loadPrintConfigUI(saved) {
 
 async function savePrintConfig() {
   const cols = {};
-  PRINT_COLUMNS.forEach(c => {
-    cols[c.field] = document.getElementById(`pc-col-${c.field}`)?.checked ?? c.defaultShow;
-  });
+  PRINT_COLUMNS.forEach(c => { cols[c.field] = document.getElementById(`pc-col-${c.field}`)?.checked ?? c.defaultShow; });
+  const listQ = {};
+  LIST_COLUMNS_QUOTE.forEach(c => { listQ[c.field] = document.getElementById(`lc-q-${c.field}`)?.checked ?? c.defaultShow; });
+  const listI = {};
+  LIST_COLUMNS_INV.forEach(c => { listI[c.field] = document.getElementById(`lc-i-${c.field}`)?.checked ?? c.defaultShow; });
   const config = {
-    columns:      cols,
-    logoPos:      document.getElementById('pc-logo-pos').value,
-    customerPos:  document.getElementById('pc-customer-pos').value,
-    totalsPos:    document.getElementById('pc-totals-pos').value,
-    signaturePos: document.getElementById('pc-signature-pos').value,
-    headerBg:     document.getElementById('pc-header-bg').value,
-    headerText:   document.getElementById('pc-header-text').value,
-    fontSize:     parseInt(document.getElementById('pc-font-size').value) || 12,
+    columns:       cols,
+    listColsQuote: listQ,
+    listColsInv:   listI,
+    logoPos:       document.getElementById('pc-logo-pos').value,
+    customerPos:   document.getElementById('pc-customer-pos').value,
+    totalsPos:     document.getElementById('pc-totals-pos').value,
+    signaturePos:  document.getElementById('pc-signature-pos').value,
+    headerBg:      document.getElementById('pc-header-bg').value,
+    headerText:    document.getElementById('pc-header-text').value,
+    fontSize:      parseInt(document.getElementById('pc-font-size').value) || 12,
   };
   const { error } = await db.from('company').update({ print_config: config }).not('id', 'is', null);
   if (error) { showToast('שגיאה בשמירת עיצוב הדפסה', 'error'); return; }
+  _listCfg = config; // רענן cache
   showToast('עיצוב הדפסה נשמר', 'success');
 }
 
