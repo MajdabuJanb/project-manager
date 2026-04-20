@@ -5044,13 +5044,16 @@ async function quotePrint(previewOnly = false) {
   const lines = lr.data  || [];
   const today = _pfmtDate(new Date().toISOString().slice(0,10));
 
-  const linesHtml = lines.map(l => `<tr>
+  const linesHtml = lines.map(l => {
+    const lineTotal = (parseFloat(l.qty)||0) * (parseFloat(l.unitprice)||0) * (1 - (parseFloat(l.discount)||0) / 100);
+    return `<tr>
     <td align="right" dir="rtl">${_pEsc(l.partid||'')}</td>
     <td align="right" dir="rtl">${_pEsc(l.linedes||'')}</td>
     <td align="right">${Number(l.qty||0).toLocaleString('he-IL',{maximumFractionDigits:4})}</td>
     <td align="right">${_pfmtMoney(l.unitprice)}</td>
-    <td align="right">${_pfmtMoney(l.linetotal)}</td>
-  </tr>`).join('');
+    <td align="right">${_pfmtMoney(lineTotal)}</td>
+  </tr>`;
+  }).join('');
 
   const body = `
   ${_printCompanyHeader(co)}
@@ -5146,13 +5149,16 @@ async function invPrint(previewOnly = false) {
         font-size:90px;font-weight:bold;color:rgba(220,0,0,0.13);pointer-events:none;white-space:nowrap;z-index:9999">מבוטלת</div>`
     : '';
 
-  const linesHtml = lines.map(l => `<tr>
+  const linesHtml = lines.map(l => {
+    const lineTotal = (parseFloat(l.qty)||0) * (parseFloat(l.unitprice)||0) * (1 - (parseFloat(l.discount)||0) / 100);
+    return `<tr>
     <td align="right" dir="rtl">${_pEsc(l.partid||'')}</td>
     <td align="right" dir="rtl">${_pEsc(l.linedes||'')}</td>
     <td align="right">${Number(l.qty||0).toLocaleString('he-IL',{maximumFractionDigits:4})}</td>
     <td align="right">${_pfmtMoney(l.unitprice)}</td>
-    <td align="right">${_pfmtMoney(l.linetotal)}</td>
-  </tr>`).join('');
+    <td align="right">${_pfmtMoney(lineTotal)}</td>
+  </tr>`;
+  }).join('');
 
   const titleLabel = isWatermark ? 'מבוטלת' : docLabel;
 
