@@ -5044,6 +5044,11 @@ async function quotePrint(previewOnly = false) {
   const lines = lr.data  || [];
   const today = _pfmtDate(new Date().toISOString().slice(0,10));
 
+  const demoWatermark = co.isdemo !== false
+    ? `<div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-35deg);
+        font-size:90px;font-weight:900;color:rgba(239,68,68,0.13);pointer-events:none;white-space:nowrap;z-index:9999;letter-spacing:6px">מסמך הדגמה</div>`
+    : '';
+
   const linesHtml = lines.map(l => {
     const lineTotal = (parseFloat(l.qty)||0) * (parseFloat(l.unitprice)||0) * (1 - (parseFloat(l.discount)||0) / 100);
     return `<tr>
@@ -5056,6 +5061,7 @@ async function quotePrint(previewOnly = false) {
   }).join('');
 
   const body = `
+  ${demoWatermark}
   ${_printCompanyHeader(co)}
   <table style="margin-bottom:12px"><tr>
     <td style="width:50%;vertical-align:top">${_printCustomerBlock(cust)}</td>
@@ -5144,10 +5150,14 @@ async function invPrint(previewOnly = false) {
     document.getElementById('ivf-printed').checked = true;
   }
 
+  const demoWatermark = co.isdemo !== false
+    ? `<div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-35deg);
+        font-size:90px;font-weight:900;color:rgba(239,68,68,0.13);pointer-events:none;white-space:nowrap;z-index:9999;letter-spacing:6px">מסמך הדגמה</div>`
+    : '';
   const watermark = isWatermark
     ? `<div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-35deg);
         font-size:90px;font-weight:bold;color:rgba(220,0,0,0.13);pointer-events:none;white-space:nowrap;z-index:9999">מבוטלת</div>`
-    : '';
+    : demoWatermark;
 
   const linesHtml = lines.map(l => {
     const lineTotal = (parseFloat(l.qty)||0) * (parseFloat(l.unitprice)||0) * (1 - (parseFloat(l.discount)||0) / 100);
