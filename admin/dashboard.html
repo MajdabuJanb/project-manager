@@ -1514,7 +1514,7 @@
             <button class="btn btn-sm pri-list-btn" id="cl-list-btn" onclick="toggleClientListView()" title="תצוגת רשימה / כרטיס" style="border:1px solid var(--border);padding:0 8px;height:28px">☰</button>
             <div style="position:relative">
               <button class="btn btn-sm" id="cl-col-btn" onclick="toggleColDropdown('cl')" style="border:1px solid var(--border);padding:0 10px;height:28px;font-size:12px">עיצוב עמודות</button>
-              <div id="cl-col-dropdown" style="display:none;position:fixed;top:0;left:0;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;min-width:170px;z-index:9000;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
+              <div id="cl-col-dropdown" style="display:none;position:fixed;top:0;left:0;background:var(--card-bg,#fff);border:1px solid var(--border);border-radius:8px;padding:12px;min-width:170px;z-index:9000;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
                 <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px">עמודות רשימת לקוחות</div>
                 <div id="cl-col-checks" style="display:flex;flex-direction:column;gap:8px"></div>
                 <button class="btn btn-primary btn-sm" style="width:100%;margin-top:10px" onclick="saveColDropdown('cl')">💾 שמור</button>
@@ -1548,14 +1548,14 @@
           <!-- Master: Client Form -->
           <div class="pri-master">
             <div class="pri-master-grid">
-              <div class="pri-field"><label>שם לקוח</label><input type="text" id="clf-custname" class="pri-input" onchange="markClientDirty()"></div>
-              <div class="pri-field"><label>שם חברה</label><input type="text" id="clf-custcomp" class="pri-input" onchange="markClientDirty()"></div>
-              <div class="pri-field"><label>טלפון</label><input type="tel" id="clf-phone" class="pri-input" onchange="markClientDirty()"></div>
-              <div class="pri-field"><label>אימייל</label><input type="email" id="clf-email" class="pri-input" onchange="markClientDirty()"></div>
+              <div class="pri-field" data-col-field="custname"><label>שם לקוח</label><input type="text" id="clf-custname" class="pri-input" onchange="markClientDirty()"></div>
+              <div class="pri-field" data-col-field="custcomp"><label>שם חברה</label><input type="text" id="clf-custcomp" class="pri-input" onchange="markClientDirty()"></div>
+              <div class="pri-field" data-col-field="phone"><label>טלפון</label><input type="tel" id="clf-phone" class="pri-input" onchange="markClientDirty()"></div>
+              <div class="pri-field" data-col-field="email"><label>אימייל</label><input type="email" id="clf-email" class="pri-input" onchange="markClientDirty()"></div>
               <div class="pri-field"><label>כתובת</label><input type="text" id="clf-address" class="pri-input" onchange="markClientDirty()"></div>
-              <div class="pri-field"><label>מספר לקוח</label><input type="text" id="clf-custnum" class="pri-input" onchange="markClientDirty()"></div>
+              <div class="pri-field" data-col-field="custnum"><label>מספר לקוח</label><input type="text" id="clf-custnum" class="pri-input" onchange="markClientDirty()"></div>
               <div class="pri-field"><label>תאריך פתיחה</label><input type="date" id="clf-odate" class="pri-input" onchange="markClientDirty()"></div>
-              <div class="pri-field"><label>סטטוס</label>
+              <div class="pri-field" data-col-field="status"><label>סטטוס</label>
                 <select id="clf-status" class="pri-input" onchange="markClientDirty()">
                   <option value="active">פעיל</option><option value="inactive">לא פעיל</option>
                 </select>
@@ -1666,7 +1666,7 @@
             <button class="btn btn-sm pri-list-btn" id="pr-list-btn" onclick="toggleProjListView()" title="תצוגת רשימה / כרטיס" style="border:1px solid var(--border);padding:0 8px;height:28px">☰</button>
             <div style="position:relative">
               <button class="btn btn-sm" id="pr-col-btn" onclick="toggleColDropdown('pr')" style="border:1px solid var(--border);padding:0 10px;height:28px;font-size:12px">עיצוב עמודות</button>
-              <div id="pr-col-dropdown" style="display:none;position:fixed;top:0;left:0;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;min-width:170px;z-index:9000;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
+              <div id="pr-col-dropdown" style="display:none;position:fixed;top:0;left:0;background:var(--card-bg,#fff);border:1px solid var(--border);border-radius:8px;padding:12px;min-width:170px;z-index:9000;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
                 <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px">עמודות רשימת פרויקטים</div>
                 <div id="pr-col-checks" style="display:flex;flex-direction:column;gap:8px"></div>
                 <button class="btn btn-primary btn-sm" style="width:100%;margin-top:10px" onclick="saveColDropdown('pr')">💾 שמור</button>
@@ -1684,7 +1684,7 @@
           <!-- Master: Project Header -->
           <div class="pri-master" id="pr-master">
             <div class="pri-master-grid">
-              <div class="pri-field">
+              <div class="pri-field" data-col-field="projnum">
                 <label>מספר פרויקט</label>
                 <input type="text" id="prf-num" readonly placeholder="יווצר אוטומטית">
               </div>
@@ -1692,17 +1692,17 @@
                 <label>תאריך פתיחה</label>
                 <input type="date" id="prf-odate" onchange="markProjDirty()">
               </div>
-              <div class="pri-field wide">
+              <div class="pri-field wide" data-col-field="projname">
                 <label>שם פרויקט *</label>
                 <input type="text" id="prf-name" placeholder="שם הפרויקט" onchange="markProjDirty()">
               </div>
-              <div class="pri-field">
+              <div class="pri-field" data-col-field="custname">
                 <label>לקוח *</label>
                 <select id="prf-cust" onchange="markProjDirty()">
                   <option value="">-- בחר לקוח --</option>
                 </select>
               </div>
-              <div class="pri-field">
+              <div class="pri-field" data-col-field="status">
                 <label>סטטוס</label>
                 <select id="prf-status" onchange="markProjDirty()">
                   <option value="planning">📋 תכנון</option>
@@ -1712,7 +1712,7 @@
                   <option value="cancelled">❌ בוטל</option>
                 </select>
               </div>
-              <div class="pri-field">
+              <div class="pri-field" data-col-field="priority">
                 <label>עדיפות</label>
                 <select id="prf-priority" onchange="markProjDirty()">
                   <option value="low">נמוכה</option>
@@ -1720,7 +1720,7 @@
                   <option value="high">גבוהה</option>
                 </select>
               </div>
-              <div class="pri-field">
+              <div class="pri-field" data-col-field="sdate">
                 <label>תאריך התחלה</label>
                 <input type="date" id="prf-sdate" onchange="markProjDirty()">
               </div>
@@ -1736,7 +1736,7 @@
                 <label>כמות שעות</label>
                 <input type="number" id="prf-hours" min="0" step="0.5" onfocus="this.select()" onchange="markProjDirty()">
               </div>
-              <div class="pri-field">
+              <div class="pri-field" data-col-field="progress">
                 <label>התקדמות (%)</label>
                 <input type="number" id="prf-progress" min="0" max="100" onfocus="this.select()" onchange="markProjDirty()">
               </div>
@@ -1805,7 +1805,7 @@
             <button class="btn btn-sm pri-list-btn" id="tk-list-btn" onclick="toggleTaskListView()" title="תצוגת רשימה / כרטיס" style="border:1px solid var(--border);padding:0 8px;height:28px">☰</button>
             <div style="position:relative">
               <button class="btn btn-sm" id="tk-col-btn" onclick="toggleColDropdown('tk')" style="border:1px solid var(--border);padding:0 10px;height:28px;font-size:12px">עיצוב עמודות</button>
-              <div id="tk-col-dropdown" style="display:none;position:fixed;top:0;left:0;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;min-width:170px;z-index:9000;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
+              <div id="tk-col-dropdown" style="display:none;position:fixed;top:0;left:0;background:var(--card-bg,#fff);border:1px solid var(--border);border-radius:8px;padding:12px;min-width:170px;z-index:9000;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
                 <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px">עמודות רשימת משימות</div>
                 <div id="tk-col-checks" style="display:flex;flex-direction:column;gap:8px"></div>
                 <button class="btn btn-primary btn-sm" style="width:100%;margin-top:10px" onclick="saveColDropdown('tk')">💾 שמור</button>
@@ -1823,7 +1823,7 @@
           <!-- Master: Task Header -->
           <div class="pri-master" id="tk-master">
             <div class="pri-master-grid">
-              <div class="pri-field">
+              <div class="pri-field" data-col-field="tasknum">
                 <label>מספר משימה</label>
                 <input type="text" id="tkf-num" readonly placeholder="יווצר אוטומטית">
               </div>
@@ -1831,17 +1831,17 @@
                 <label>תאריך פתיחה</label>
                 <input type="date" id="tkf-odate" onchange="markTaskDirty()">
               </div>
-              <div class="pri-field wide">
+              <div class="pri-field wide" data-col-field="taskname">
                 <label>כותרת *</label>
                 <input type="text" id="tkf-name" placeholder="כותרת המשימה" onchange="markTaskDirty()">
               </div>
-              <div class="pri-field">
+              <div class="pri-field" data-col-field="projname">
                 <label>פרויקט *</label>
                 <select id="tkf-proj" onchange="markTaskDirty()">
                   <option value="">-- בחר פרויקט --</option>
                 </select>
               </div>
-              <div class="pri-field">
+              <div class="pri-field" data-col-field="status">
                 <label>סטטוס</label>
                 <select id="tkf-status" onchange="markTaskDirty()">
                   <option value="pending">⏳ ממתין</option>
@@ -1850,7 +1850,7 @@
                   <option value="blocked">🚫 חסום</option>
                 </select>
               </div>
-              <div class="pri-field">
+              <div class="pri-field" data-col-field="priority">
                 <label>עדיפות</label>
                 <select id="tkf-priority" onchange="markTaskDirty()">
                   <option value="low">נמוכה</option>
@@ -1859,7 +1859,7 @@
                   <option value="urgent">דחוף</option>
                 </select>
               </div>
-              <div class="pri-field">
+              <div class="pri-field" data-col-field="duedate">
                 <label>תאריך יעד</label>
                 <input type="date" id="tkf-due" onchange="markTaskDirty()">
               </div>
@@ -1933,7 +1933,7 @@
             <button class="btn btn-sm pri-list-btn" id="q-list-btn" onclick="toggleQuoteListView()" title="תצוגת רשימה / כרטיס" style="border:1px solid var(--border);padding:0 8px;height:28px">☰</button>
             <div style="position:relative">
               <button class="btn btn-sm" id="q-col-btn" onclick="toggleColDropdown('q')" style="border:1px solid var(--border);padding:0 10px;height:28px;font-size:12px" title="בחר עמודות תצוגה">עיצוב עמודות</button>
-              <div id="q-col-dropdown" style="display:none;position:fixed;top:0;left:0;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;min-width:170px;z-index:9000;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
+              <div id="q-col-dropdown" style="display:none;position:fixed;top:0;left:0;background:var(--card-bg,#fff);border:1px solid var(--border);border-radius:8px;padding:12px;min-width:170px;z-index:9000;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
                 <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px">עמודות רשימת הצעות</div>
                 <div id="q-col-checks" style="display:flex;flex-direction:column;gap:8px"></div>
                 <button class="btn btn-primary btn-sm" style="width:100%;margin-top:10px" onclick="saveColDropdown('q')">💾 שמור</button>
@@ -2078,7 +2078,7 @@
             <button class="btn btn-sm pri-list-btn" id="inv-list-btn" onclick="toggleInvListView()" title="תצוגת רשימה / כרטיס" style="border:1px solid var(--border);padding:0 8px;height:28px">☰</button>
             <div style="position:relative">
               <button class="btn btn-sm" id="inv-col-btn" onclick="toggleColDropdown('inv')" style="border:1px solid var(--border);padding:0 10px;height:28px;font-size:12px" title="בחר עמודות תצוגה">עיצוב עמודות</button>
-              <div id="inv-col-dropdown" style="display:none;position:fixed;top:0;left:0;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;min-width:170px;z-index:9000;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
+              <div id="inv-col-dropdown" style="display:none;position:fixed;top:0;left:0;background:var(--card-bg,#fff);border:1px solid var(--border);border-radius:8px;padding:12px;min-width:170px;z-index:9000;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
                 <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px">עמודות רשימת חשבוניות</div>
                 <div id="inv-col-checks" style="display:flex;flex-direction:column;gap:8px"></div>
                 <button class="btn btn-primary btn-sm" style="width:100%;margin-top:10px" onclick="saveColDropdown('inv')">💾 שמור</button>
@@ -2228,7 +2228,7 @@
             <button class="btn btn-sm pri-list-btn" id="pt-list-btn" onclick="togglePartListView()" title="תצוגת רשימה / כרטיס" style="border:1px solid var(--border);padding:0 8px;height:28px">☰</button>
             <div style="position:relative">
               <button class="btn btn-sm" id="pt-col-btn" onclick="toggleColDropdown('pt')" style="border:1px solid var(--border);padding:0 10px;height:28px;font-size:12px">עיצוב עמודות</button>
-              <div id="pt-col-dropdown" style="display:none;position:fixed;top:0;left:0;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;min-width:170px;z-index:9000;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
+              <div id="pt-col-dropdown" style="display:none;position:fixed;top:0;left:0;background:var(--card-bg,#fff);border:1px solid var(--border);border-radius:8px;padding:12px;min-width:170px;z-index:9000;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
                 <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px">עמודות רשימת מוצרים</div>
                 <div id="pt-col-checks" style="display:flex;flex-direction:column;gap:8px"></div>
                 <button class="btn btn-primary btn-sm" style="width:100%;margin-top:10px" onclick="saveColDropdown('pt')">💾 שמור</button>
@@ -2804,6 +2804,10 @@ function showSection(name) {
   const isTabSection = _TAB_SECTIONS.has(name);
   const alreadyLoaded = _sectionLoaded.has(name);
 
+  const _sectionEntityMap = { clients:'cl', projects:'pr', tasks:'tk', parts:'pt', quotes:'q', invoices:'inv' };
+  const _entity = _sectionEntityMap[name];
+  if (_entity && _listCfg) _applyColsToCard(_entity, _listCfg[_COL_REGISTRY[_entity]?.cfgKey]);
+
   if (isTabSection && alreadyLoaded) {
     // Just switch display — state preserved
     if (name === 'quotes')   renderQuoteLines?.();
@@ -3294,9 +3298,7 @@ async function loadCustomerConnections(custid) {
   if (connErr) { showToast('שגיאה בטעינת חיבורים: ' + connErr.message, 'error'); return; }
   const list  = document.getElementById('cd-connections-list');
   const empty = document.getElementById('cd-connections-empty');
-  const badge = document.getElementById('cd-conn-count');
   const conns = data || [];
-  badge.textContent = conns.length || '';
   if (!conns.length) { list.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
   list.innerHTML = conns.map(c => `
@@ -6237,6 +6239,19 @@ function toggleColDropdown(entity) {
   }
 }
 
+const _ENTITY_SECTION = { cl:'section-clients', pr:'section-projects', tk:'section-tasks', pt:'section-parts', q:'section-quotes', inv:'section-invoices' };
+
+function _applyColsToCard(entity, cfg) {
+  const sectionId = _ENTITY_SECTION[entity];
+  if (!sectionId) return;
+  const section = document.getElementById(sectionId);
+  if (!section) return;
+  section.querySelectorAll('[data-col-field]').forEach(el => {
+    const field = el.dataset.colField;
+    if (cfg && field in cfg) el.style.display = cfg[field] === false ? 'none' : '';
+  });
+}
+
 function _populateColDropdown(entity) {
   const meta = _COL_REGISTRY[entity];
   if (!meta) return;
@@ -6257,6 +6272,7 @@ async function saveColDropdown(entity) {
   meta.registry().forEach(c => { map[c.field] = document.getElementById(`col-dd-${entity}-${c.field}`)?.checked ?? c.defaultShow; });
   if (!_listCfg) _listCfg = getPrintConfig({});
   _listCfg[meta.cfgKey] = map;
+  _applyColsToCard(entity, map);
   meta.render();
   document.getElementById(`${entity}-col-dropdown`).style.display = 'none';
   const { data: co } = await db.from('company').select('id,print_config').single();
