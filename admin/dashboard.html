@@ -1496,99 +1496,106 @@
       </section>
 
       <!-- ════ CLIENTS ════ -->
-      <section id="section-clients" class="section md-section">
+      <section id="section-clients" class="section pri-section">
 
-        <!-- ══ MASTER PANEL ══ -->
-        <div class="md-master">
-          <div class="md-master-header">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-              <span class="page-title" style="font-size:18px">לקוחות</span>
-              <button class="btn btn-primary btn-sm" onclick="openModal('client')">+ חדש</button>
+        <!-- Toolbar -->
+        <div class="pri-toolbar">
+          <span class="pri-toolbar-title">👥 לקוחות</span>
+          <div style="width:1px;height:24px;background:var(--border);margin:0 4px"></div>
+          <button class="pri-nav-btn" id="cl-btn-first" onclick="clientNav('first')" title="ראשון">⏮</button>
+          <button class="pri-nav-btn" id="cl-btn-prev"  onclick="clientNav('prev')"  title="קודם">◀</button>
+          <span class="pri-pos" id="cl-pos">—</span>
+          <button class="pri-nav-btn" id="cl-btn-next"  onclick="clientNav('next')"  title="הבא">▶</button>
+          <button class="pri-nav-btn" id="cl-btn-last"  onclick="clientNav('last')"  title="אחרון">⏭</button>
+          <div style="width:1px;height:24px;background:var(--border);margin:0 4px"></div>
+          <div class="pri-docnum" id="cl-docnum">לקוח חדש</div>
+          <div style="margin-right:auto;display:flex;gap:6px;align-items:center">
+            <button class="btn btn-sm" id="cl-search-btn" onclick="toggleClientSearchMode()" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7">🔍 חיפוש</button>
+            <button class="btn btn-sm pri-list-btn" id="cl-list-btn" onclick="toggleClientListView()" title="תצוגת רשימה / כרטיס" style="border:1px solid var(--border);padding:0 8px;height:28px">☰</button>
+            <div style="position:relative">
+              <button class="btn btn-sm" id="cl-col-btn" onclick="toggleColDropdown('cl')" style="border:1px solid var(--border);padding:0 10px;height:28px;font-size:12px">עיצוב עמודות</button>
+              <div id="cl-col-dropdown" style="display:none;position:fixed;top:0;left:0;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;min-width:170px;z-index:9000;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
+                <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px">עמודות רשימת לקוחות</div>
+                <div id="cl-col-checks" style="display:flex;flex-direction:column;gap:8px"></div>
+                <button class="btn btn-primary btn-sm" style="width:100%;margin-top:10px" onclick="saveColDropdown('cl')">💾 שמור</button>
+              </div>
             </div>
-            <input type="text" id="client-search" class="md-search" placeholder="🔍  חיפוש..." oninput="renderClientsList()">
-            <div style="display:flex;gap:6px;margin-top:8px">
-              <button class="md-filter-btn active" id="cf-all"      onclick="setClientFilter('all')">הכל</button>
-              <button class="md-filter-btn"        id="cf-active"   onclick="setClientFilter('active')">פעיל</button>
-              <button class="md-filter-btn"        id="cf-inactive" onclick="setClientFilter('inactive')">לא פעיל</button>
-            </div>
-          </div>
-          <div id="clients-list" class="md-list"></div>
-          <div id="clients-empty" class="empty" style="display:none;padding:32px 16px;text-align:center">
-            <div style="font-size:32px;margin-bottom:8px">👥</div>
-            <p style="font-size:13px;color:var(--text-muted)">לא נמצאו לקוחות</p>
+            <button class="btn btn-sm" onclick="clientShowAll()" style="background:#f1f5f9;color:#475569;border:1px solid var(--border);font-size:12px">הצג הכל</button>
+            <button class="btn btn-ghost btn-sm" onclick="clientCancel()">✕ בטל</button>
+            <button class="btn btn-danger btn-sm" id="cl-delete-btn" onclick="clientDelete()" style="display:none">🗑 מחק</button>
+            <button class="btn btn-primary btn-sm" onclick="clientNew()">🗋 חדש</button>
           </div>
         </div>
 
-        <!-- ══ DETAIL PANEL ══ -->
-        <div class="md-detail" id="client-detail">
-          <div class="md-empty-state" id="client-detail-empty">
-            <div style="font-size:56px;margin-bottom:16px">👤</div>
-            <div style="font-weight:600;font-size:16px;margin-bottom:8px">בחר לקוח</div>
-            <div style="color:var(--text-muted);font-size:13px">בחר לקוח מהרשימה כדי לצפות בפרטיו</div>
+        <!-- Search Panel -->
+        <div id="cl-search-panel" style="display:none;border-bottom:1px solid var(--border);padding:12px 20px;background:#f8fafc;flex-shrink:0">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+            <div class="form-group" style="margin:0"><label>שם לקוח</label><input type="text" id="csf-name" class="form-control" style="height:32px"></div>
+            <div class="form-group" style="margin:0"><label>טלפון</label><input type="text" id="csf-phone" class="form-control" style="height:32px"></div>
+            <div class="form-group" style="margin:0"><label>סטטוס</label>
+              <select id="csf-status" class="form-control" style="height:32px">
+                <option value="">הכל</option><option value="active">פעיל</option><option value="inactive">לא פעיל</option>
+              </select>
+            </div>
           </div>
-          <div id="client-detail-content" style="display:none;height:100%;overflow-y:auto">
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="btn btn-primary btn-sm" onclick="clientSearch()">🔍 חיפוש</button>
+            <button class="btn btn-ghost btn-sm" onclick="exitClientSearchMode(true)">✕ נקה</button>
+          </div>
+        </div>
 
-            <!-- Detail Header -->
-            <div class="md-detail-header">
-              <div style="display:flex;align-items:center;gap:14px;flex:1;min-width:0">
-                <div class="md-avatar" id="cd-avatar"></div>
-                <div style="min-width:0">
-                  <div style="font-size:20px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="cd-name"></div>
-                  <div style="font-size:13px;color:var(--text-muted);margin-top:2px" id="cd-company"></div>
-                </div>
-                <div id="cd-status-badge" style="margin-right:auto"></div>
+        <div class="pri-body" id="cl-body">
+          <!-- Master: Client Form -->
+          <div class="pri-master">
+            <div class="pri-master-grid">
+              <div class="pri-field"><label>שם לקוח</label><input type="text" id="clf-custname" class="pri-input" onchange="markClientDirty()"></div>
+              <div class="pri-field"><label>שם חברה</label><input type="text" id="clf-custcomp" class="pri-input" onchange="markClientDirty()"></div>
+              <div class="pri-field"><label>טלפון</label><input type="tel" id="clf-phone" class="pri-input" onchange="markClientDirty()"></div>
+              <div class="pri-field"><label>אימייל</label><input type="email" id="clf-email" class="pri-input" onchange="markClientDirty()"></div>
+              <div class="pri-field"><label>כתובת</label><input type="text" id="clf-address" class="pri-input" onchange="markClientDirty()"></div>
+              <div class="pri-field"><label>מספר לקוח</label><input type="text" id="clf-custnum" class="pri-input" onchange="markClientDirty()"></div>
+              <div class="pri-field"><label>תאריך פתיחה</label><input type="date" id="clf-odate" class="pri-input" onchange="markClientDirty()"></div>
+              <div class="pri-field"><label>סטטוס</label>
+                <select id="clf-status" class="pri-input" onchange="markClientDirty()">
+                  <option value="active">פעיל</option><option value="inactive">לא פעיל</option>
+                </select>
               </div>
-              <div style="display:flex;gap:8px;flex-shrink:0">
-                <button class="btn btn-ghost btn-sm" onclick="showPortalLink(state.selectedCustomer?.token)" title="קישור פורטל">🔗 פורטל</button>
-                <button class="btn btn-ghost btn-sm" onclick="toggleClientStatus(state.selectedCustomer?.custid, state.selectedCustomer?.status)" id="cd-toggle-btn"></button>
-                <button class="btn btn-primary btn-sm" onclick="editClient(state.selectedCustomer?.custid)">✏️ ערוך</button>
-              </div>
-            </div>
-
-            <!-- Info Chips -->
-            <div class="md-chips" id="cd-chips"></div>
-
-            <!-- Tabs -->
-            <div class="md-tabs">
-              <button class="md-tab active" onclick="switchDetailTab('projects', this)">פרויקטים <span id="cd-proj-count" class="md-tab-badge"></span></button>
-              <button class="md-tab" onclick="switchDetailTab('connections', this)">🔐 חיבורים <span id="cd-conn-count" class="md-tab-badge"></span></button>
-              <button class="md-tab" onclick="switchDetailTab('info', this)">פרטים</button>
-              <button class="md-tab" onclick="switchDetailTab('history', this)">היסטוריה</button>
-            </div>
-
-            <!-- Tab: Projects (read-only history) -->
-            <div id="cd-tab-projects" class="md-tab-body">
-              <div id="cd-projects-list"></div>
-              <div id="cd-projects-empty" class="empty" style="display:none;padding:40px 0;text-align:center">
-                <div style="font-size:36px;margin-bottom:8px">📁</div>
-                <p style="font-size:13px;color:var(--text-muted)">אין פרויקטים ללקוח זה</p>
+              <div class="pri-field"><label>הערות</label><input type="text" id="clf-notes" class="pri-input" onchange="markClientDirty()"></div>
+              <div class="pri-field" style="display:flex;gap:8px;align-items:flex-end;padding-top:18px">
+                <button class="btn btn-primary btn-sm" id="cl-save-btn" onclick="saveClientHeader()" style="display:none">💾 שמור</button>
+                <button class="btn btn-ghost btn-sm" id="cl-portal-btn" onclick="showPortalLink(clientState.current?.token)" style="display:none">🔗 פורטל</button>
               </div>
             </div>
+          </div>
 
-            <!-- Tab: Connections -->
-            <div id="cd-tab-connections" class="md-tab-body" style="display:none">
-              <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
-                <button class="btn btn-primary btn-sm" onclick="addConn()">+ חיבור חדש</button>
-              </div>
-              <div id="cd-connections-list"></div>
-              <div id="cd-connections-empty" class="empty" style="display:none;padding:40px 0;text-align:center">
-                <div style="font-size:36px;margin-bottom:8px">🔐</div>
-                <p style="font-size:13px;color:var(--text-muted)">אין פרטי חיבור ללקוח זה</p>
-              </div>
+          <!-- Son label -->
+          <div class="pri-son-label">
+            <button class="son-tab active" id="cl-tab-proj-btn" onclick="switchClientSonTab('projects')">📁 פרויקטים</button>
+            <button class="son-tab" id="cl-tab-conn-btn" onclick="switchClientSonTab('connections')">🔐 חיבורים</button>
+          </div>
+
+          <!-- Son: Projects -->
+          <div id="cl-son-projects" class="pri-son-body">
+            <div id="cl-projects-list"></div>
+            <div id="cl-projects-empty" style="display:none;padding:40px;text-align:center">
+              <div style="font-size:36px;margin-bottom:8px">📁</div>
+              <p style="font-size:13px;color:var(--text-muted)">אין פרויקטים ללקוח זה</p>
             </div>
+          </div>
 
-            <!-- Connection inline form (hidden by default) -->
-            <div id="cd-conn-form" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;margin:0 0 14px">
+          <!-- Son: Connections -->
+          <div id="cl-son-connections" class="pri-son-body" style="display:none">
+            <div style="display:flex;justify-content:flex-end;padding:8px 20px 0">
+              <button class="btn btn-primary btn-sm" onclick="addConn()">+ חיבור חדש</button>
+            </div>
+            <!-- Inline connection form -->
+            <div id="cd-conn-form" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;margin:10px 20px">
               <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px">
                 <span id="cd-conn-form-title">הוספת חיבור</span>
               </div>
               <div class="form-grid" style="gap:10px">
-                <div class="form-group">
-                  <label>שם/תיאור חיבור</label>
-                  <input type="text" id="conn-name" placeholder="לדוג׳: Priority ERP, VPN ראשי...">
-                </div>
-                <div class="form-group">
-                  <label>סוג VPN</label>
+                <div class="form-group"><label>שם/תיאור חיבור</label><input type="text" id="conn-name" placeholder="לדוג׳: Priority ERP, VPN ראשי..."></div>
+                <div class="form-group"><label>סוג VPN</label>
                   <select id="conn-vpn-type">
                     <option value="">בחר...</option>
                     <option value="Cisco AnyConnect">Cisco AnyConnect</option>
@@ -1598,65 +1605,44 @@
                     <option value="Other">אחר</option>
                   </select>
                 </div>
-                <div class="form-group">
-                  <label>כתובת שרת VPN / IP</label>
-                  <input type="text" id="conn-server" placeholder="vpn.company.com">
-                </div>
-                <div class="form-group">
-                  <label>שם משתמש VPN</label>
-                  <input type="text" id="conn-vpn-user" autocomplete="off">
-                </div>
-                <div class="form-group">
-                  <label>סיסמה VPN</label>
+                <div class="form-group"><label>כתובת שרת VPN / IP</label><input type="text" id="conn-server" placeholder="vpn.company.com"></div>
+                <div class="form-group"><label>שם משתמש VPN</label><input type="text" id="conn-vpn-user" autocomplete="off"></div>
+                <div class="form-group"><label>סיסמה VPN</label>
                   <div style="position:relative">
                     <input type="password" id="conn-vpn-pass" autocomplete="new-password" style="padding-left:36px">
                     <button type="button" onclick="togglePass('conn-vpn-pass',this)" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;font-size:14px;padding:0">👁</button>
                   </div>
                 </div>
-                <div class="form-group">
-                  <label>שם משתמש ERP</label>
-                  <input type="text" id="conn-erp-user" autocomplete="off">
-                </div>
-                <div class="form-group">
-                  <label>סיסמה ERP</label>
+                <div class="form-group"><label>שם משתמש ERP</label><input type="text" id="conn-erp-user" autocomplete="off"></div>
+                <div class="form-group"><label>סיסמה ERP</label>
                   <div style="position:relative">
                     <input type="password" id="conn-erp-pass" autocomplete="new-password" style="padding-left:36px">
                     <button type="button" onclick="togglePass('conn-erp-pass',this)" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;font-size:14px;padding:0">👁</button>
                   </div>
                 </div>
-                <div class="form-group full">
-                  <label>כתובת URL להתחברות</label>
-                  <input type="text" id="conn-url" placeholder="https://...">
-                </div>
-                <div class="form-group">
-                  <label>פורט</label>
-                  <input type="text" id="conn-port" placeholder="443">
-                </div>
-                <div class="form-group">
-                  <label>הערות</label>
-                  <input type="text" id="conn-notes" placeholder="הערה קצרה...">
-                </div>
+                <div class="form-group full"><label>כתובת URL</label><input type="text" id="conn-url" placeholder="https://..."></div>
+                <div class="form-group"><label>פורט</label><input type="text" id="conn-port" placeholder="443"></div>
+                <div class="form-group"><label>הערות</label><input type="text" id="conn-notes"></div>
               </div>
               <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
                 <button class="btn btn-ghost btn-sm" onclick="cancelConnForm()">ביטול</button>
                 <button class="btn btn-primary btn-sm" onclick="saveConn()">💾 שמור</button>
               </div>
             </div>
-
-            <!-- Tab: Info -->
-            <div id="cd-tab-info" class="md-tab-body" style="display:none">
-              <div class="md-info-grid" id="cd-info-grid"></div>
+            <div id="cd-connections-list" style="padding:0 20px"></div>
+            <div id="cd-connections-empty" style="display:none;padding:40px;text-align:center">
+              <div style="font-size:36px">🔐</div>
+              <p style="font-size:13px;color:var(--text-muted)">אין פרטי חיבור ללקוח זה</p>
             </div>
-
-            <!-- Tab: History -->
-            <div id="cd-tab-history" class="md-tab-body" style="display:none">
-              <div id="cd-history-list"></div>
-              <div id="cd-history-empty" class="empty" style="display:none;padding:40px 0;text-align:center">
-                <p style="font-size:13px;color:var(--text-muted)">אין פעילות רשומה</p>
-              </div>
-            </div>
-
           </div>
+        </div>
+
+        <!-- List view -->
+        <div id="cl-list-view" class="pri-list-view" style="display:none">
+          <table class="pri-list-tbl">
+            <thead><tr></tr></thead>
+            <tbody id="cl-list-tbody"></tbody>
+          </table>
         </div>
 
       </section>
@@ -1678,6 +1664,14 @@
           <div style="margin-right:auto;display:flex;gap:6px;align-items:center">
             <button class="btn btn-sm" id="pr-search-btn" onclick="toggleProjSearchMode()" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7">🔍 חיפוש</button>
             <button class="btn btn-sm pri-list-btn" id="pr-list-btn" onclick="toggleProjListView()" title="תצוגת רשימה / כרטיס" style="border:1px solid var(--border);padding:0 8px;height:28px">☰</button>
+            <div style="position:relative">
+              <button class="btn btn-sm" id="pr-col-btn" onclick="toggleColDropdown('pr')" style="border:1px solid var(--border);padding:0 10px;height:28px;font-size:12px">עיצוב עמודות</button>
+              <div id="pr-col-dropdown" style="display:none;position:fixed;top:0;left:0;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;min-width:170px;z-index:9000;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
+                <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px">עמודות רשימת פרויקטים</div>
+                <div id="pr-col-checks" style="display:flex;flex-direction:column;gap:8px"></div>
+                <button class="btn btn-primary btn-sm" style="width:100%;margin-top:10px" onclick="saveColDropdown('pr')">💾 שמור</button>
+              </div>
+            </div>
             <button class="btn btn-sm" onclick="projShowAll()" title="טען את כל הפרויקטים" style="background:#f1f5f9;color:#475569;border:1px solid var(--border);font-size:12px">הצג הכל</button>
             <button class="btn btn-ghost btn-sm" onclick="projCancel()">✕ בטל</button>
             <button class="btn btn-danger btn-sm" id="pr-delete-btn" onclick="projDelete()" style="display:none">🗑 מחק</button>
@@ -1785,18 +1779,7 @@
         <!-- List view -->
         <div id="pr-list-view" class="pri-list-view" style="display:none">
           <table class="pri-list-tbl">
-            <thead>
-              <tr>
-                <th style="width:40px">#</th>
-                <th style="width:100px">מספר</th>
-                <th>שם פרויקט</th>
-                <th style="width:160px">לקוח</th>
-                <th style="width:110px">סטטוס</th>
-                <th style="width:90px">עדיפות</th>
-                <th style="width:100px">התחלה</th>
-                <th style="width:70px">התקדמות</th>
-              </tr>
-            </thead>
+            <thead><tr></tr></thead>
             <tbody id="pr-list-tbody"></tbody>
           </table>
         </div>
@@ -1820,6 +1803,14 @@
           <div style="margin-right:auto;display:flex;gap:6px;align-items:center">
             <button class="btn btn-sm" id="tk-search-btn" onclick="toggleTaskSearchMode()" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7">🔍 חיפוש</button>
             <button class="btn btn-sm pri-list-btn" id="tk-list-btn" onclick="toggleTaskListView()" title="תצוגת רשימה / כרטיס" style="border:1px solid var(--border);padding:0 8px;height:28px">☰</button>
+            <div style="position:relative">
+              <button class="btn btn-sm" id="tk-col-btn" onclick="toggleColDropdown('tk')" style="border:1px solid var(--border);padding:0 10px;height:28px;font-size:12px">עיצוב עמודות</button>
+              <div id="tk-col-dropdown" style="display:none;position:fixed;top:0;left:0;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;min-width:170px;z-index:9000;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
+                <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px">עמודות רשימת משימות</div>
+                <div id="tk-col-checks" style="display:flex;flex-direction:column;gap:8px"></div>
+                <button class="btn btn-primary btn-sm" style="width:100%;margin-top:10px" onclick="saveColDropdown('tk')">💾 שמור</button>
+              </div>
+            </div>
             <button class="btn btn-sm" onclick="taskShowAll()" title="טען את כל המשימות" style="background:#f1f5f9;color:#475569;border:1px solid var(--border);font-size:12px">הצג הכל</button>
             <button class="btn btn-ghost btn-sm" onclick="taskCancel()">✕ בטל</button>
             <button class="btn btn-danger btn-sm" id="tk-delete-btn" onclick="taskDelete()" style="display:none">🗑 מחק</button>
@@ -1896,18 +1887,7 @@
         <!-- List view -->
         <div id="tk-list-view" class="pri-list-view" style="display:none">
           <table class="pri-list-tbl">
-            <thead>
-              <tr>
-                <th style="width:40px">#</th>
-                <th style="width:100px">מספר</th>
-                <th>כותרת</th>
-                <th style="width:170px">פרויקט</th>
-                <th style="width:110px">סטטוס</th>
-                <th style="width:90px">עדיפות</th>
-                <th style="width:100px">תאריך יעד</th>
-                <th style="width:120px">אחראי</th>
-              </tr>
-            </thead>
+            <thead><tr></tr></thead>
             <tbody id="tk-list-tbody"></tbody>
           </table>
         </div>
@@ -1952,8 +1932,8 @@
             <button class="btn btn-sm" id="q-search-btn" onclick="toggleQuoteSearchMode()" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7">🔍 חיפוש</button>
             <button class="btn btn-sm pri-list-btn" id="q-list-btn" onclick="toggleQuoteListView()" title="תצוגת רשימה / כרטיס" style="border:1px solid var(--border);padding:0 8px;height:28px">☰</button>
             <div style="position:relative">
-              <button class="btn btn-sm" id="q-col-btn" onclick="toggleColDropdown('q')" style="border:1px solid var(--border);padding:0 10px;height:28px;font-size:12px" title="בחר עמודות תצוגה">⚙ עמודות</button>
-              <div id="q-col-dropdown" style="display:none;position:absolute;top:32px;left:0;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;min-width:170px;z-index:300;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
+              <button class="btn btn-sm" id="q-col-btn" onclick="toggleColDropdown('q')" style="border:1px solid var(--border);padding:0 10px;height:28px;font-size:12px" title="בחר עמודות תצוגה">עיצוב עמודות</button>
+              <div id="q-col-dropdown" style="display:none;position:fixed;top:0;left:0;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;min-width:170px;z-index:9000;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
                 <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px">עמודות רשימת הצעות</div>
                 <div id="q-col-checks" style="display:flex;flex-direction:column;gap:8px"></div>
                 <button class="btn btn-primary btn-sm" style="width:100%;margin-top:10px" onclick="saveColDropdown('q')">💾 שמור</button>
@@ -2097,8 +2077,8 @@
             <button class="btn btn-sm" id="inv-search-btn" onclick="toggleInvSearchMode()" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7">🔍 חיפוש</button>
             <button class="btn btn-sm pri-list-btn" id="inv-list-btn" onclick="toggleInvListView()" title="תצוגת רשימה / כרטיס" style="border:1px solid var(--border);padding:0 8px;height:28px">☰</button>
             <div style="position:relative">
-              <button class="btn btn-sm" id="inv-col-btn" onclick="toggleColDropdown('inv')" style="border:1px solid var(--border);padding:0 10px;height:28px;font-size:12px" title="בחר עמודות תצוגה">⚙ עמודות</button>
-              <div id="inv-col-dropdown" style="display:none;position:absolute;top:32px;left:0;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;min-width:170px;z-index:300;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
+              <button class="btn btn-sm" id="inv-col-btn" onclick="toggleColDropdown('inv')" style="border:1px solid var(--border);padding:0 10px;height:28px;font-size:12px" title="בחר עמודות תצוגה">עיצוב עמודות</button>
+              <div id="inv-col-dropdown" style="display:none;position:fixed;top:0;left:0;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;min-width:170px;z-index:9000;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
                 <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px">עמודות רשימת חשבוניות</div>
                 <div id="inv-col-checks" style="display:flex;flex-direction:column;gap:8px"></div>
                 <button class="btn btn-primary btn-sm" style="width:100%;margin-top:10px" onclick="saveColDropdown('inv')">💾 שמור</button>
@@ -2246,6 +2226,14 @@
           <div style="margin-right:auto;display:flex;gap:6px;align-items:center">
             <button class="btn btn-sm" id="pt-search-btn" onclick="togglePartSearchMode()" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7">🔍 חיפוש</button>
             <button class="btn btn-sm pri-list-btn" id="pt-list-btn" onclick="togglePartListView()" title="תצוגת רשימה / כרטיס" style="border:1px solid var(--border);padding:0 8px;height:28px">☰</button>
+            <div style="position:relative">
+              <button class="btn btn-sm" id="pt-col-btn" onclick="toggleColDropdown('pt')" style="border:1px solid var(--border);padding:0 10px;height:28px;font-size:12px">עיצוב עמודות</button>
+              <div id="pt-col-dropdown" style="display:none;position:fixed;top:0;left:0;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;min-width:170px;z-index:9000;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
+                <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px">עמודות רשימת מוצרים</div>
+                <div id="pt-col-checks" style="display:flex;flex-direction:column;gap:8px"></div>
+                <button class="btn btn-primary btn-sm" style="width:100%;margin-top:10px" onclick="saveColDropdown('pt')">💾 שמור</button>
+              </div>
+            </div>
             <button class="btn btn-sm" onclick="partShowAll()" title="טען את כל המוצרים" style="background:#f1f5f9;color:#475569;border:1px solid var(--border);font-size:12px">הצג הכל</button>
             <button class="btn btn-ghost btn-sm" onclick="partCancel()">✕ בטל</button>
             <button class="btn btn-danger btn-sm" id="pt-delete-btn" onclick="partDelete()" style="display:none">🗑 מחק</button>
@@ -2281,14 +2269,7 @@
         <!-- List view -->
         <div id="pt-list-view" class="pri-list-view" style="display:none">
           <table class="pri-list-tbl">
-            <thead>
-              <tr>
-                <th style="width:40px">#</th>
-                <th style="width:120px">מק"ט</th>
-                <th style="width:260px">שם מוצר / שירות</th>
-                <th>תיאור</th>
-              </tr>
-            </thead>
+            <thead><tr></tr></thead>
             <tbody id="pt-list-tbody"></tbody>
           </table>
         </div>
@@ -2739,12 +2720,8 @@ function showToast(msg, type = 'default') {
 async function openModal(type) {
   const today = new Date().toISOString().split('T')[0];
   if (type === 'client') {
-    state.editingId = null;
-    document.getElementById('client-modal-title').textContent = 'הוסף לקוח';
-    document.getElementById('client-form').reset();
-    document.getElementById('c-opening-date').value = today;
-    document.getElementById('c-number').value = '';
-    document.getElementById('modal-client').classList.add('open');
+    showSection('clients');
+    clientNew();
   } else if (type === 'project') {
     showSection('projects');
     projNew();
@@ -2986,7 +2963,9 @@ async function loadDashboard() {
 }
 
 // ─── CLIENTS ───
-let clientFilter = 'all';
+// ─── CLIENTS (ERP Style) ───
+const clientState = { list:[], idx:-1, current:null, dirty:false };
+let _clListMode = false, _clSearchMode = false;
 
 async function loadClients() {
   const [clientsRes, projectCountRes] = await Promise.all([
@@ -2997,156 +2976,255 @@ async function loadClients() {
   const counts = {};
   (projectCountRes.data || []).forEach(p => { counts[p.custid] = (counts[p.custid]||0)+1; });
   state.clients = state.clients.map(c => ({ ...c, _projectCount: counts[c.custid]||0 }));
-  renderClientsList();
-  if (state.selectedCustomer) {
-    const updated = state.clients.find(c => c.custid === state.selectedCustomer.custid);
-    if (updated) renderCustomerDetail(updated);
+  clientState.list = state.clients;
+  if (clientState.current) {
+    const idx = clientState.list.findIndex(c => c.custid === clientState.current.custid);
+    if (idx >= 0) { clientState.idx = idx; clientState.current = clientState.list[idx]; state.selectedCustomer = clientState.current; }
   }
+  _updateClientNav();
+  if (_clListMode) renderClientListView();
 }
 
-function setClientFilter(f) {
-  clientFilter = f;
-  ['all','active','inactive'].forEach(k => {
-    const btn = document.getElementById('cf-' + k);
-    if (btn) btn.className = 'md-filter-btn' + (k === f ? ' active' : '');
-  });
-  renderClientsList();
+function _updateClientNav() {
+  const n = clientState.list.length, i = clientState.idx;
+  document.getElementById('cl-pos').textContent = n ? `${i+1} / ${n}` : '—';
+  document.getElementById('cl-btn-first').disabled = i <= 0;
+  document.getElementById('cl-btn-prev').disabled  = i <= 0;
+  document.getElementById('cl-btn-next').disabled  = i >= n-1;
+  document.getElementById('cl-btn-last').disabled  = i >= n-1;
 }
 
-function renderClientsList() {
-  const search = document.getElementById('client-search').value.toLowerCase();
-  const filtered = state.clients.filter(c => {
-    const matchFilter = clientFilter === 'all' || c.status === clientFilter;
-    const matchSearch = !search ||
-      c.custname.toLowerCase().includes(search) ||
-      (c.custcomp||'').toLowerCase().includes(search) ||
-      (c.email||'').toLowerCase().includes(search);
-    return matchFilter && matchSearch;
-  });
-  const list  = document.getElementById('clients-list');
-  const empty = document.getElementById('clients-empty');
-  if (filtered.length === 0) { list.innerHTML = ''; empty.style.display = 'block'; return; }
-  empty.style.display = 'none';
-  list.innerHTML = filtered.map(c => {
-    const initials = c.custname.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
-    const isSelected = state.selectedCustomer?.custid === c.custid;
-    return `<div class="md-list-item${isSelected?' selected':''}" onclick="selectCustomer('${c.custid}')">
-      <div class="md-list-avatar" style="opacity:${c.status==='inactive'?'0.5':'1'}">${esc(initials)}</div>
-      <div class="md-list-info">
-        <div class="md-list-name">${esc(c.custname)}</div>
-        <div class="md-list-sub">${esc(c.custcomp||c.email||'')}</div>
-      </div>
-      <div class="md-list-meta">
-        <span style="font-family:monospace;font-size:10px;color:var(--text-muted)">${esc(c.custnum||'')}</span>
-        <span style="font-size:10px;color:${c.status==='active'?'#10b981':'#94a3b8'}">${c.status==='active'?'●':'○'}</span>
-      </div>
-    </div>`;
+async function clientNav(dir) {
+  if (!clientState.list.length) return;
+  let i = clientState.idx;
+  if (dir === 'first') i = 0;
+  else if (dir === 'prev')  i = Math.max(0, i-1);
+  else if (dir === 'next')  i = Math.min(clientState.list.length-1, i+1);
+  else if (dir === 'last')  i = clientState.list.length-1;
+  if (i === clientState.idx && clientState.current) return;
+  await loadClientById(clientState.list[i].custid, i);
+}
+
+async function loadClientById(custid, idx) {
+  if (_clListMode) { _clListMode = false; document.getElementById('cl-list-view').style.display='none'; document.getElementById('cl-body').style.display=''; document.getElementById('cl-list-btn').classList.remove('active'); }
+  const c = state.clients.find(x => x.custid === custid);
+  if (!c) return;
+  clientState.idx = idx ?? state.clients.findIndex(x=>x.custid===custid);
+  clientState.current = c;
+  clientState.dirty = false;
+  state.selectedCustomer = c;
+  renderClientForm(c);
+  _updateClientNav();
+  renderTabsBar?.();
+  await loadClientProjects(custid);
+  const connTab = document.getElementById('cl-son-connections');
+  if (connTab && connTab.style.display !== 'none') loadCustomerConnections(custid);
+}
+
+function renderClientForm(c) {
+  document.getElementById('cl-docnum').textContent = c.custname || 'לקוח';
+  document.getElementById('clf-custname').value = c.custname||'';
+  document.getElementById('clf-custcomp').value = c.custcomp||'';
+  document.getElementById('clf-phone').value    = c.phone||'';
+  document.getElementById('clf-email').value    = c.email||'';
+  document.getElementById('clf-address').value  = c.address||'';
+  document.getElementById('clf-custnum').value  = c.custnum||'';
+  document.getElementById('clf-odate').value    = c.odate||'';
+  document.getElementById('clf-status').value   = c.status||'active';
+  document.getElementById('clf-notes').value    = c.notes||'';
+  document.getElementById('cl-save-btn').style.display   = 'none';
+  document.getElementById('cl-portal-btn').style.display = '';
+  document.getElementById('cl-delete-btn').style.display = '';
+  clientState.dirty = false;
+}
+
+function markClientDirty() {
+  clientState.dirty = true;
+  document.getElementById('cl-save-btn').style.display = '';
+}
+
+async function saveClientHeader() {
+  if (!clientState.dirty) return;
+  const custname = document.getElementById('clf-custname').value.trim();
+  if (!custname) { showToast('שם לקוח הוא שדה חובה', 'error'); return; }
+  const payload = {
+    custname,
+    custcomp: document.getElementById('clf-custcomp').value.trim()||null,
+    phone:    document.getElementById('clf-phone').value.trim()||null,
+    email:    document.getElementById('clf-email').value.trim()||null,
+    address:  document.getElementById('clf-address').value.trim()||null,
+    custnum:  document.getElementById('clf-custnum').value.trim()||null,
+    odate:    document.getElementById('clf-odate').value||null,
+    status:   document.getElementById('clf-status').value||'active',
+    notes:    document.getElementById('clf-notes').value.trim()||null,
+  };
+  let error, id;
+  if (clientState.current) {
+    id = clientState.current.custid;
+    ({ error } = await db.from('customers').update(payload).eq('custid', id));
+    if (!error) await logActivity('client', id, custname, 'updated');
+  } else {
+    const r = await db.from('customers').insert(payload).select().single();
+    error = r.error; id = r.data?.custid;
+    if (!error) await logActivity('client', id, custname, 'created');
+  }
+  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+  showToast('נשמר', 'success');
+  await loadClients();
+  const idx = clientState.list.findIndex(c => c.custid === id);
+  if (idx >= 0) await loadClientById(id, idx);
+}
+
+function clientNew() {
+  if (_clSearchMode) exitClientSearchMode(false);
+  if (_clListMode) { _clListMode=false; document.getElementById('cl-list-view').style.display='none'; document.getElementById('cl-body').style.display=''; document.getElementById('cl-list-btn').classList.remove('active'); }
+  clientState.idx=-1; clientState.current=null; clientState.dirty=false; state.selectedCustomer=null;
+  document.getElementById('cl-docnum').textContent = 'לקוח חדש';
+  ['clf-custname','clf-custcomp','clf-phone','clf-email','clf-address','clf-custnum','clf-notes'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('clf-odate').value  = new Date().toISOString().slice(0,10);
+  document.getElementById('clf-status').value = 'active';
+  document.getElementById('cl-save-btn').style.display   = 'none';
+  document.getElementById('cl-portal-btn').style.display = 'none';
+  document.getElementById('cl-delete-btn').style.display = 'none';
+  document.getElementById('cl-projects-list').innerHTML  = '';
+  document.getElementById('cl-projects-empty').style.display = 'none';
+  document.getElementById('cd-connections-list').innerHTML = '';
+  _updateClientNav();
+}
+
+function clientCancel() {
+  if (clientState.current) { renderClientForm(clientState.current); }
+  else clientNew();
+}
+
+async function clientDelete() {
+  if (!clientState.current) return;
+  const c = clientState.current;
+  if (!confirm(`למחוק את הלקוח "${c.custname}"?`)) return;
+  const { error } = await db.from('customers').delete().eq('custid', c.custid);
+  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+  await logActivity('client', c.custid, c.custname, 'deleted');
+  showToast('נמחק', 'success');
+  clientState.current = null; state.selectedCustomer = null;
+  await loadClients();
+  if (clientState.list.length) await loadClientById(clientState.list[0].custid, 0);
+  else clientNew();
+}
+
+async function clientShowAll() {
+  if (_clSearchMode) exitClientSearchMode(false);
+  const { data } = await db.from('customers').select('*').order('cdate', { ascending: false });
+  state.clients = data || [];
+  clientState.list = state.clients;
+  if (!clientState.list.length) { showToast('אין לקוחות', 'info'); return; }
+  showToast(`${clientState.list.length} לקוחות`, 'info');
+  if (_clListMode) { renderClientListView(); return; }
+  await loadClientById(clientState.list[0].custid, 0);
+}
+
+function toggleClientListView() {
+  _clListMode = !_clListMode;
+  document.getElementById('cl-body').style.display      = _clListMode ? 'none' : '';
+  document.getElementById('cl-list-view').style.display = _clListMode ? '' : 'none';
+  document.getElementById('cl-list-btn').classList.toggle('active', _clListMode);
+  if (_clListMode) renderClientListView();
+}
+
+function renderClientListView() {
+  const cfg   = _listCfg?.listColsClient || getPrintConfig({}).listColsClient || {};
+  const cols  = LIST_COLUMNS_CLIENT.filter(c => cfg[c.field] !== false);
+  const thead = document.querySelector('#cl-list-view thead tr');
+  if (thead) thead.innerHTML = cols.map(c => `<th${c.width?` style="width:${c.width}"`:''}>${c.label}</th>`).join('');
+  const tbody = document.getElementById('cl-list-tbody');
+  const clients = clientState.list.length ? clientState.list : state.clients;
+  if (!clients.length) {
+    tbody.innerHTML = `<tr><td colspan="${cols.length}" style="text-align:center;padding:40px;color:var(--text-muted)">אין רשומות — לחץ "הצג הכל" לטעינה</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = clients.map((c, i) => {
+    const sel = clientState.current?.custid === c.custid ? 'selected' : '';
+    const cellOf = {
+      num:      i+1,
+      custnum:  esc(c.custnum||'—'),
+      custname: `<span style="font-weight:500">${esc(c.custname)}</span>`,
+      custcomp: esc(c.custcomp||'—'),
+      phone:    esc(c.phone||'—'),
+      email:    esc(c.email||'—'),
+      status:   badge2(c.status, c.status==='active'?'פעיל':'לא פעיל'),
+    };
+    return `<tr class="${sel}" onclick="clientNavFromList('${c.custid}', ${i})">${cols.map(col=>`<td>${cellOf[col.field]??'—'}</td>`).join('')}</tr>`;
   }).join('');
 }
 
-async function selectCustomer(custid) {
-  const c = state.clients.find(x => x.custid === custid);
-  if (!c) return;
-  state.selectedCustomer = c;
-  renderClientsList();
-  renderCustomerDetail(c);
-  switchDetailTab('projects', document.querySelector('.md-tab'));
-  await loadCustomerProjects(custid);
+async function clientNavFromList(custid, idx) {
+  _clListMode=false;
+  document.getElementById('cl-body').style.display='';
+  document.getElementById('cl-list-view').style.display='none';
+  document.getElementById('cl-list-btn').classList.remove('active');
+  await loadClientById(custid, idx);
 }
 
-function renderCustomerDetail(c) {
-  document.getElementById('client-detail-empty').style.display   = 'none';
-  document.getElementById('client-detail-content').style.display = 'flex';
-
-  const initials = c.custname.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
-  document.getElementById('cd-avatar').textContent  = initials;
-  document.getElementById('cd-name').textContent    = c.custname;
-  document.getElementById('cd-company').textContent = c.custcomp || c.email || '';
-  document.getElementById('cd-status-badge').innerHTML =
-    `<span class="badge ${c.status==='active'?'b-active':'b-paused'}">${c.status==='active'?'פעיל':'לא פעיל'}</span>`;
-
-  const toggleBtn = document.getElementById('cd-toggle-btn');
-  toggleBtn.textContent = c.status === 'active' ? '⏸ השבת' : '▶ הפעל';
-
-  // Chips
-  const chips = [];
-  if (c.email) chips.push(`<span class="md-chip">✉️ ${esc(c.email)}</span>`);
-  if (c.phone) chips.push(`<span class="md-chip">📞 ${esc(c.phone)}</span>`);
-  if (c.custnum) chips.push(`<span class="md-chip">🔖 ${esc(c.custnum)}</span>`);
-  if (c.odate) chips.push(`<span class="md-chip">📅 פתיחה: ${fmtDate(c.odate)}</span>`);
-  document.getElementById('cd-chips').innerHTML = chips.join('');
-
-  // Info tab
-  const infoFields = [
-    { label: 'שם מלא',    value: c.custname },
-    { label: 'חברה',      value: c.custcomp },
-    { label: 'אימייל',    value: c.email },
-    { label: 'טלפון',     value: c.phone },
-    { label: 'מס\' לקוח', value: c.custnum },
-    { label: 'תאריך פתיחה', value: fmtDate(c.odate) },
-    { label: 'נוצר',      value: fmtDate(c.cdate) },
-    { label: 'הערות',     value: c.notes },
-  ].filter(f => f.value);
-  document.getElementById('cd-info-grid').innerHTML = infoFields.map(f => `
-    <div class="md-info-card">
-      <div class="md-info-label">${f.label}</div>
-      <div class="md-info-value">${esc(f.value)}</div>
-    </div>`).join('');
+function toggleClientSearchMode() {
+  _clSearchMode = !_clSearchMode;
+  document.getElementById('cl-search-panel').style.display = _clSearchMode ? '' : 'none';
+  document.getElementById('cl-search-btn').classList.toggle('active', _clSearchMode);
+  if (!_clSearchMode) exitClientSearchMode(false);
 }
 
-async function loadCustomerProjects(custid) {
-  const { data: projects } = await db
-    .from('projects')
-    .select('*, tasks(*)')
-    .eq('custid', custid)
-    .order('cdate', { ascending: false });
+function exitClientSearchMode(clear) {
+  _clSearchMode = false;
+  document.getElementById('cl-search-panel').style.display = 'none';
+  document.getElementById('cl-search-btn').classList.remove('active');
+  if (clear) { ['csf-name','csf-phone'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; }); document.getElementById('csf-status').value=''; clientState.list = state.clients; }
+}
 
-  const list  = document.getElementById('cd-projects-list');
-  const empty = document.getElementById('cd-projects-empty');
-  const badge = document.getElementById('cd-proj-count');
+async function clientSearch() {
+  const name   = document.getElementById('csf-name').value.trim().toLowerCase();
+  const phone  = document.getElementById('csf-phone').value.trim().toLowerCase();
+  const status = document.getElementById('csf-status').value;
+  let q = db.from('customers').select('*').order('cdate', { ascending: false });
+  if (name)   q = q.ilike('custname', `%${name}%`);
+  if (phone)  q = q.ilike('phone', `%${phone}%`);
+  if (status) q = q.eq('status', status);
+  const { data, error } = await q;
+  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
+  clientState.list = data || [];
+  if (!clientState.list.length) { showToast('לא נמצאו לקוחות', 'info'); return; }
+  showToast(`נמצאו ${clientState.list.length} לקוחות`, 'info');
+  if (_clListMode) { renderClientListView(); return; }
+  await loadClientById(clientState.list[0].custid, 0);
+  exitClientSearchMode(false);
+}
+
+function switchClientSonTab(tab) {
+  ['projects','connections'].forEach(t => {
+    const el = document.getElementById(`cl-son-${t}`);
+    const btn = document.getElementById(`cl-tab-${t==='projects'?'proj':'conn'}-btn`);
+    if (el)  el.style.display  = t === tab ? '' : 'none';
+    if (btn) btn.classList.toggle('active', t === tab);
+  });
+  if (tab === 'connections' && clientState.current) { cancelConnForm(); loadCustomerConnections(clientState.current.custid); }
+}
+
+async function loadClientProjects(custid) {
+  const { data: projects } = await db.from('projects').select('*, tasks(*)').eq('custid', custid).order('cdate', { ascending: false });
+  const list  = document.getElementById('cl-projects-list');
+  const empty = document.getElementById('cl-projects-empty');
   const proj  = projects || [];
-  badge.textContent = proj.length || '';
-
-  // Load history
-  const { data: history } = await db
-    .from('activity_log')
-    .select('*')
-    .eq('eid', custid)
-    .order('cdate', { ascending: false })
-    .limit(30);
-  renderCustomerHistory(history || []);
-
-  if (proj.length === 0) { list.innerHTML = ''; empty.style.display = 'block'; return; }
+  if (!proj.length) { list.innerHTML=''; empty.style.display='block'; return; }
   empty.style.display = 'none';
-
   const taskDotColor = { pending:'#94a3b8', in_progress:'#3b82f6', completed:'#10b981', blocked:'#ef4444' };
-
   list.innerHTML = proj.map(p => {
     const tasks = p.tasks || [];
     const done  = tasks.filter(t => t.status === 'completed').length;
     const tasksHtml = tasks.length > 0
-      ? tasks.map(t => `
-          <div class="cd-task-row">
-            <div class="cd-task-dot" style="background:${taskDotColor[t.status]||'#94a3b8'}"></div>
-            <span style="flex:1">${esc(t.taskname)}</span>
-            <span style="font-size:11px;color:var(--text-muted)">${esc(t.tasknum||'')}</span>
-            ${badge2(t.status, LABELS.status[t.status]||t.status)}
-            ${t.duedate ? `<span style="font-size:11px;color:var(--text-muted)">${fmtDate(t.duedate)}</span>` : ''}
-          </div>`).join('')
-      : `<div style="padding:12px 16px;font-size:13px;color:var(--text-muted)">אין משימות לפרויקט זה</div>`;
-
+      ? tasks.map(t => `<div class="cd-task-row"><div class="cd-task-dot" style="background:${taskDotColor[t.status]||'#94a3b8'}"></div><span style="flex:1">${esc(t.taskname)}</span>${badge2(t.status, LABELS.status[t.status]||t.status)}</div>`).join('')
+      : `<div style="padding:12px 16px;font-size:13px;color:var(--text-muted)">אין משימות</div>`;
     return `<div class="cd-project-card" id="cdp-${p.projid}">
       <div class="cd-project-header" onclick="toggleCdProject('${p.projid}')">
-        <div style="flex:1;min-width:0">
-          <div style="font-size:14px;font-weight:600;margin-bottom:4px">${esc(p.projname)}</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-            ${badge2(p.status, LABELS.status[p.status]||p.status)}
-            ${badge2(p.priority, LABELS.priority[p.priority]||p.priority)}
-            <span style="font-size:11px;color:var(--text-muted)">${tasks.length} משימות · ${done} הושלמו</span>
-          </div>
-        </div>
-        <div class="cd-project-actions" onclick="event.stopPropagation()"></div>
-        <span class="cd-project-chevron">▼</span>
+        <div style="flex:1"><div style="font-size:14px;font-weight:600;margin-bottom:4px">${esc(p.projname)}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">${badge2(p.status, LABELS.status[p.status]||p.status)} ${badge2(p.priority, LABELS.priority[p.priority]||p.priority)} <span style="font-size:11px;color:var(--text-muted)">${tasks.length} משימות · ${done} הושלמו</span></div>
+        </div><span class="cd-project-chevron">▼</span>
       </div>
       <div class="cd-project-body">${tasksHtml}</div>
     </div>`;
@@ -3164,114 +3242,6 @@ function badge2(key, label) {
   const colors = { purple:'#eef2ff;color:#4f46e5', green:'#ecfdf5;color:#059669', yellow:'#fffbeb;color:#d97706',
                    blue:'#eff6ff;color:#2563eb', gray:'#f1f5f9;color:#64748b', red:'#fef2f2;color:#dc2626' };
   return `<span style="display:inline-flex;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;background:${colors[c]}">${esc(label)}</span>`;
-}
-
-function renderCustomerHistory(history) {
-  const list  = document.getElementById('cd-history-list');
-  const empty = document.getElementById('cd-history-empty');
-  if (!history.length) { list.innerHTML = ''; empty.style.display = 'block'; return; }
-  empty.style.display = 'none';
-  list.innerHTML = history.map(a => `
-    <div class="activity-item">
-      <div class="activity-dot"></div>
-      <div class="activity-text">
-        <strong>${esc(a.ename||'?')}</strong>
-        <span style="color:var(--text-muted)"> — ${LABELS.entity?.[a.etype]||a.etype} ${LABELS.action?.[a.action]||a.action}</span>
-      </div>
-      <span class="activity-time">${fmtDateTime(a.cdate)}</span>
-    </div>`).join('');
-}
-
-function switchDetailTab(tab, btn) {
-  ['projects','connections','info','history'].forEach(t => {
-    const el = document.getElementById('cd-tab-' + t);
-    if (el) el.style.display = t === tab ? '' : 'none';
-  });
-  // connection form resets when switching away
-  if (tab !== 'connections') cancelConnForm();
-  document.querySelectorAll('.md-tab').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  if (tab === 'connections' && state.selectedCustomer) loadCustomerConnections(state.selectedCustomer.custid);
-}
-
-function openModalForCustomer() {
-  // Navigate to projects ERP section and open new project with client pre-filled
-  showSection('projects');
-  projNew();
-  if (state.selectedCustomer) {
-    setTimeout(() => {
-      document.getElementById('prf-cust').value = state.selectedCustomer.custid;
-      markProjDirty();
-    }, 80);
-  }
-}
-
-async function toggleClientStatus(id, currentStatus) {
-  const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-  const { error } = await db.from('customers').update({ status: newStatus }).eq('custid', id);
-  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
-  showToast(newStatus === 'active' ? 'הלקוח הופעל' : 'הלקוח הושבת', 'success');
-  await loadClients();
-  if (state.selectedCustomer?.custid === id) {
-    state.selectedCustomer = state.clients.find(c => c.custid === id);
-    renderCustomerDetail(state.selectedCustomer);
-  }
-}
-
-async function editClient(id) {
-  const c = state.clients.find(x => x.custid === id);
-  if (!c) return;
-  state.editingId = id;
-  document.getElementById('client-modal-title').textContent = 'עריכת לקוח';
-  document.getElementById('c-opening-date').value = c.odate||'';
-  document.getElementById('c-number').value        = c.custnum||'';
-  document.getElementById('c-name').value    = c.custname;
-  document.getElementById('c-status').value  = c.status||'active';
-  document.getElementById('c-company').value = c.custcomp||'';
-  document.getElementById('c-email').value   = c.email;
-  document.getElementById('c-phone').value   = c.phone||'';
-  document.getElementById('c-address').value = c.address||'';
-  document.getElementById('c-notes').value   = c.notes||'';
-  document.getElementById('modal-client').classList.add('open');
-}
-
-async function saveClient(e) {
-  e.preventDefault();
-  const btn = document.getElementById('client-submit-btn');
-  btn.disabled = true;
-  btn.textContent = 'שומר...';
-  const payload = {
-    custname: document.getElementById('c-name').value.trim(),
-    custcomp: document.getElementById('c-company').value.trim()||null,
-    email:    document.getElementById('c-email').value.trim(),
-    phone:    document.getElementById('c-phone').value.trim()||null,
-    address:  document.getElementById('c-address').value.trim()||null,
-    notes:    document.getElementById('c-notes').value.trim()||null,
-    odate:    document.getElementById('c-opening-date').value||null,
-    status:   document.getElementById('c-status').value||'active'
-  };
-  let error, id, name;
-  if (state.editingId) {
-    const r = await db.from('customers').update(payload).eq('custid', state.editingId).select().single();
-    error = r.error; id = state.editingId; name = payload.custname;
-    if (!error) await logActivity('client', id, name, 'updated');
-  } else {
-    const r = await db.from('customers').insert(payload).select().single();
-    error = r.error; id = r.data?.custid; name = payload.custname;
-    if (!error) await logActivity('client', id, name, 'created');
-  }
-  btn.disabled = false;
-  btn.textContent = 'שמור לקוח';
-  if (error) { showToast('שגיאה: ' + error.message, 'error'); return; }
-  showToast(state.editingId ? 'הלקוח עודכן!' : 'הלקוח נוסף!', 'success');
-  const justAddedId = state.editingId;
-  closeModal('modal-client');
-  await loadClients();
-  loadDashboard();
-  if (!justAddedId) {
-    const newest = state.clients[0];
-    if (newest) selectCustomer(newest.custid);
-  }
 }
 
 function confirmDelete(type, id, name) {
@@ -3624,7 +3594,7 @@ async function saveProjHeader(silent = false) {
   if (!projState.list.length) { projState.list = [p]; projState.idx = 0; }
   updateProjNavButtons();
   loadDashboard();
-  if (state.selectedCustomer?.custid === p.custid) loadCustomerProjects(state.selectedCustomer.custid);
+  if (clientState.current?.custid === p.custid) loadClientProjects(clientState.current.custid);
 }
 
 async function saveProjDesc() {
@@ -4161,28 +4131,33 @@ function toggleProjListView() {
   if (_prListMode) renderProjListView();
 }
 function renderProjListView() {
+  const cfg   = _listCfg?.listColsProject || getPrintConfig({}).listColsProject || {};
+  const cols  = LIST_COLUMNS_PROJECT.filter(c => cfg[c.field] !== false);
+  const thead = document.querySelector('#pr-list-view thead tr');
+  if (thead) thead.innerHTML = cols.map(c => `<th${c.width?` style="width:${c.width}"`:''}>${c.label}</th>`).join('');
   const tbody = document.getElementById('pr-list-tbody');
   const projs = projState.list.length
     ? state.projects.filter(p => projState.list.some(x => x.projid === p.projid))
     : state.projects;
   if (!projs.length) {
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">אין רשומות — לחץ "הצג הכל" לטעינה</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${cols.length}" style="text-align:center;padding:40px;color:var(--text-muted)">אין רשומות — לחץ "הצג הכל" לטעינה</td></tr>`;
     return;
   }
+  const custMap = Object.fromEntries(state.clients.map(c => [c.custid, c.custname]));
   tbody.innerHTML = projs.map((p, i) => {
-    const c = state.clients.find(x => x.custid === p.custid);
     const idx = projState.list.findIndex(x => x.projid === p.projid);
     const sel = projState.current?.projid === p.projid ? 'selected' : '';
-    return `<tr class="${sel}" onclick="projNavFromList('${p.projid}', ${idx >= 0 ? idx : i})">
-      <td>${i+1}</td>
-      <td style="font-family:monospace">${esc(p.projnum||'—')}</td>
-      <td style="font-weight:500">${esc(p.projname)}</td>
-      <td>${esc(c?.custname||'—')}</td>
-      <td>${badge2(p.status, LABELS.status[p.status]||p.status)}</td>
-      <td>${badge2(p.priority, LABELS.priority[p.priority]||p.priority)}</td>
-      <td>${p.sdate ? fmtDate(p.sdate) : '—'}</td>
-      <td>${p.progress ?? 0}%</td>
-    </tr>`;
+    const cellOf = {
+      num:      i+1,
+      projnum:  `<span style="font-family:monospace">${esc(p.projnum||'—')}</span>`,
+      projname: `<span style="font-weight:500">${esc(p.projname)}</span>`,
+      custname: esc(custMap[p.custid]||'—'),
+      status:   badge2(p.status, LABELS.status[p.status]||p.status),
+      priority: badge2(p.priority, LABELS.priority[p.priority]||p.priority),
+      sdate:    p.sdate ? fmtDate(p.sdate) : '—',
+      progress: `${p.progress ?? 0}%`,
+    };
+    return `<tr class="${sel}" onclick="projNavFromList('${p.projid}', ${idx >= 0 ? idx : i})">${cols.map(c => `<td>${cellOf[c.field] ?? '—'}</td>`).join('')}</tr>`;
   }).join('');
 }
 async function projNavFromList(projid, idx) {
@@ -4217,28 +4192,32 @@ function toggleTaskListView() {
   if (_tkListMode) renderTaskListView();
 }
 function renderTaskListView() {
+  const cfg   = _listCfg?.listColsTask || getPrintConfig({}).listColsTask || {};
+  const cols  = LIST_COLUMNS_TASK.filter(c => cfg[c.field] !== false);
+  const thead = document.querySelector('#tk-list-view thead tr');
+  if (thead) thead.innerHTML = cols.map(c => `<th${c.width?` style="width:${c.width}"`:''}>${c.label}</th>`).join('');
   const tbody = document.getElementById('tk-list-tbody');
   const tasks = taskState.list.length
     ? state.tasks.filter(t => taskState.list.some(x => x.taskid === t.taskid))
     : state.tasks;
   if (!tasks.length) {
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">אין רשומות — לחץ "הצג הכל" לטעינה</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${cols.length}" style="text-align:center;padding:40px;color:var(--text-muted)">אין רשומות — לחץ "הצג הכל" לטעינה</td></tr>`;
     return;
   }
+  const projMap = Object.fromEntries(state.projects.map(p => [p.projid, p.projname]));
   tbody.innerHTML = tasks.map((t, i) => {
-    const p = state.projects.find(x => x.projid === t.projid);
     const idx = taskState.list.findIndex(x => x.taskid === t.taskid);
     const sel = taskState.current?.taskid === t.taskid ? 'selected' : '';
-    return `<tr class="${sel}" onclick="taskNavFromList('${t.taskid}', ${idx >= 0 ? idx : i})">
-      <td>${i+1}</td>
-      <td style="font-family:monospace">${esc(t.tasknum||'—')}</td>
-      <td style="font-weight:500">${esc(t.taskname)}</td>
-      <td>${esc(p?.projname||'—')}</td>
-      <td>${badge2(t.status, LABELS.status[t.status]||t.status)}</td>
-      <td>${badge2(t.priority, LABELS.priority[t.priority]||t.priority)}</td>
-      <td>${t.duedate ? fmtDate(t.duedate) : '—'}</td>
-      <td>${esc(t.assignto||'—')}</td>
-    </tr>`;
+    const cellOf = {
+      num:      i+1,
+      tasknum:  `<span style="font-family:monospace">${esc(t.tasknum||'—')}</span>`,
+      taskname: `<span style="font-weight:500">${esc(t.taskname)}</span>`,
+      projname: esc(projMap[t.projid]||'—'),
+      status:   badge2(t.status, LABELS.status[t.status]||t.status),
+      priority: badge2(t.priority, LABELS.priority[t.priority]||t.priority),
+      duedate:  t.duedate ? fmtDate(t.duedate) : '—',
+    };
+    return `<tr class="${sel}" onclick="taskNavFromList('${t.taskid}', ${idx >= 0 ? idx : i})">${cols.map(c => `<td>${cellOf[c.field] ?? '—'}</td>`).join('')}</tr>`;
   }).join('');
 }
 async function taskNavFromList(taskid, idx) {
@@ -4271,21 +4250,28 @@ function togglePartListView() {
   if (_ptListMode) renderPartListView();
 }
 function renderPartListView() {
+  const cfg   = _listCfg?.listColsPart || getPrintConfig({}).listColsPart || {};
+  const cols  = LIST_COLUMNS_PART.filter(c => cfg[c.field] !== false);
+  const thead = document.querySelector('#pt-list-view thead tr');
+  if (thead) thead.innerHTML = cols.map(c => `<th${c.width?` style="width:${c.width}"`:''}>${c.label}</th>`).join('');
   const tbody = document.getElementById('pt-list-tbody');
   const parts = state.parts;
   if (!parts.length) {
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:40px;color:var(--text-muted)">אין רשומות — לחץ "הצג הכל" לטעינה</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${cols.length}" style="text-align:center;padding:40px;color:var(--text-muted)">אין רשומות — לחץ "הצג הכל" לטעינה</td></tr>`;
     return;
   }
   tbody.innerHTML = parts.map((p, i) => {
     const idx = partState.list.findIndex(x => x.partid === p.partid);
     const sel = partState.current?.partid === p.partid ? 'selected' : '';
-    return `<tr class="${sel}" onclick="partNavFromList('${p.partid}', ${idx >= 0 ? idx : i})">
-      <td>${i+1}</td>
-      <td style="font-family:monospace">${esc(p.partid||'—')}</td>
-      <td style="font-weight:500">${esc(p.partname)}</td>
-      <td style="color:var(--text-muted);font-size:12px">${esc(p.partdes||'')}</td>
-    </tr>`;
+    const cellOf = {
+      num:       i+1,
+      partid:    `<span style="font-family:monospace">${esc(p.partid||'—')}</span>`,
+      partname:  `<span style="font-weight:500">${esc(p.partname)}</span>`,
+      unitprice: p.unitprice != null ? `₪${Number(p.unitprice).toLocaleString()}` : '—',
+      unit:      esc(p.unit||'—'),
+      notes:     `<span style="color:var(--text-muted);font-size:12px">${esc(p.notes||'')}</span>`,
+    };
+    return `<tr class="${sel}" onclick="partNavFromList('${p.partid}', ${idx >= 0 ? idx : i})">${cols.map(c => `<td>${cellOf[c.field] ?? '—'}</td>`).join('')}</tr>`;
   }).join('');
 }
 async function partNavFromList(partid, idx) {
@@ -5000,6 +4986,44 @@ const LIST_COLUMNS_INV = [
   { field: 'total',     label: 'סה"כ',       width: '120px', defaultShow: true  },
 ];
 
+const LIST_COLUMNS_CLIENT = [
+  { field: 'num',      label: '#',        width: '40px',  defaultShow: true  },
+  { field: 'custnum',  label: 'מספר',     width: '100px', defaultShow: true  },
+  { field: 'custname', label: 'שם לקוח',  width: '',      defaultShow: true  },
+  { field: 'custcomp', label: 'חברה',     width: '150px', defaultShow: true  },
+  { field: 'email',    label: 'אימייל',   width: '160px', defaultShow: true  },
+  { field: 'phone',    label: 'טלפון',    width: '120px', defaultShow: true  },
+  { field: 'status',   label: 'סטטוס',   width: '80px',  defaultShow: true  },
+];
+
+const LIST_COLUMNS_PROJECT = [
+  { field: 'num',       label: '#',         width: '40px',  defaultShow: true  },
+  { field: 'projnum',   label: 'מספר',      width: '110px', defaultShow: true  },
+  { field: 'projname',  label: 'שם פרויקט', width: '',      defaultShow: true  },
+  { field: 'custname',  label: 'לקוח',      width: '140px', defaultShow: true  },
+  { field: 'status',    label: 'סטטוס',     width: '90px',  defaultShow: true  },
+  { field: 'priority',  label: 'עדיפות',    width: '80px',  defaultShow: true  },
+  { field: 'sdate',     label: 'תאריך',     width: '100px', defaultShow: true  },
+  { field: 'progress',  label: 'התקדמות',   width: '80px',  defaultShow: true  },
+];
+const LIST_COLUMNS_TASK = [
+  { field: 'num',       label: '#',         width: '40px',  defaultShow: true  },
+  { field: 'tasknum',   label: 'מספר',      width: '110px', defaultShow: true  },
+  { field: 'taskname',  label: 'שם משימה',  width: '',      defaultShow: true  },
+  { field: 'projname',  label: 'פרויקט',    width: '140px', defaultShow: true  },
+  { field: 'status',    label: 'סטטוס',     width: '90px',  defaultShow: true  },
+  { field: 'priority',  label: 'עדיפות',    width: '80px',  defaultShow: false },
+  { field: 'duedate',   label: 'תאריך יעד', width: '100px', defaultShow: true  },
+];
+const LIST_COLUMNS_PART = [
+  { field: 'num',       label: '#',         width: '40px',  defaultShow: true  },
+  { field: 'partid',    label: 'מק"ט',      width: '110px', defaultShow: true  },
+  { field: 'partname',  label: 'שם מוצר',   width: '',      defaultShow: true  },
+  { field: 'unitprice', label: 'מחיר',      width: '110px', defaultShow: true  },
+  { field: 'unit',      label: 'יחידה',     width: '80px',  defaultShow: true  },
+  { field: 'notes',     label: 'הערות',     width: '160px', defaultShow: false },
+];
+
 // ─── Print Column Registry ───────────────────────────────────────────────────
 // כל עמודה שתוסיף לטבלת השורות — הוסף כאן. תופיע אוטומטית בהגדרות עיצוב הדפסה.
 const PRINT_COLUMNS = [
@@ -5029,11 +5053,15 @@ function getPrintConfig(co) {
   const saved = co?.print_config || {};
   const cols = {};
   PRINT_COLUMNS.forEach(c => { cols[c.field] = saved.columns?.[c.field] ?? c.defaultShow; });
-  const listQ = {};
-  LIST_COLUMNS_QUOTE.forEach(c => { listQ[c.field] = saved.listColsQuote?.[c.field] ?? c.defaultShow; });
-  const listI = {};
-  LIST_COLUMNS_INV.forEach(c => { listI[c.field] = saved.listColsInv?.[c.field] ?? c.defaultShow; });
-  return { ...PRINT_CONFIG_DEFAULTS, ...saved, columns: cols, listColsQuote: listQ, listColsInv: listI };
+  const listQ = {}; LIST_COLUMNS_QUOTE.forEach(c => { listQ[c.field] = saved.listColsQuote?.[c.field] ?? c.defaultShow; });
+  const listI = {}; LIST_COLUMNS_INV.forEach(c => { listI[c.field] = saved.listColsInv?.[c.field] ?? c.defaultShow; });
+  const listPr = {}; LIST_COLUMNS_PROJECT.forEach(c => { listPr[c.field] = saved.listColsProject?.[c.field] ?? c.defaultShow; });
+  const listTk = {}; LIST_COLUMNS_TASK.forEach(c => { listTk[c.field] = saved.listColsTask?.[c.field] ?? c.defaultShow; });
+  const listPt = {}; LIST_COLUMNS_PART.forEach(c => { listPt[c.field] = saved.listColsPart?.[c.field] ?? c.defaultShow; });
+  const listCl = {}; LIST_COLUMNS_CLIENT.forEach(c => { listCl[c.field] = saved.listColsClient?.[c.field] ?? c.defaultShow; });
+  return { ...PRINT_CONFIG_DEFAULTS, ...saved, columns: cols,
+    listColsQuote: listQ, listColsInv: listI,
+    listColsProject: listPr, listColsTask: listTk, listColsPart: listPt, listColsClient: listCl };
 }
 
 // cache config for list rendering (loaded once with company data)
@@ -6162,8 +6190,12 @@ async function savePrintConfig() {
   PRINT_COLUMNS.forEach(c => { cols[c.field] = document.getElementById(`pc-col-${c.field}`)?.checked ?? c.defaultShow; });
   const config = {
     columns:       cols,
-    listColsQuote: _listCfg?.listColsQuote || getPrintConfig({}).listColsQuote,
-    listColsInv:   _listCfg?.listColsInv   || getPrintConfig({}).listColsInv,
+    listColsClient:  _listCfg?.listColsClient  || getPrintConfig({}).listColsClient,
+    listColsQuote:   _listCfg?.listColsQuote   || getPrintConfig({}).listColsQuote,
+    listColsInv:     _listCfg?.listColsInv     || getPrintConfig({}).listColsInv,
+    listColsProject: _listCfg?.listColsProject || getPrintConfig({}).listColsProject,
+    listColsTask:    _listCfg?.listColsTask    || getPrintConfig({}).listColsTask,
+    listColsPart:    _listCfg?.listColsPart    || getPrintConfig({}).listColsPart,
     logoPos:       document.getElementById('pc-logo-pos').value,
     customerPos:   document.getElementById('pc-customer-pos').value,
     totalsPos:     document.getElementById('pc-totals-pos').value,
@@ -6179,41 +6211,57 @@ async function savePrintConfig() {
 }
 
 // ─── Per-screen column designer ───
+const _COL_REGISTRY = {
+  cl:  { registry: () => LIST_COLUMNS_CLIENT,  cfgKey: 'listColsClient',  render: () => renderClientListView() },
+  q:   { registry: () => LIST_COLUMNS_QUOTE,   cfgKey: 'listColsQuote',   render: () => renderQuoteListView() },
+  inv: { registry: () => LIST_COLUMNS_INV,     cfgKey: 'listColsInv',     render: () => renderInvListView()   },
+  pr:  { registry: () => LIST_COLUMNS_PROJECT, cfgKey: 'listColsProject', render: () => renderProjListView()  },
+  tk:  { registry: () => LIST_COLUMNS_TASK,    cfgKey: 'listColsTask',    render: () => renderTaskListView()  },
+  pt:  { registry: () => LIST_COLUMNS_PART,    cfgKey: 'listColsPart',    render: () => renderPartListView()  },
+};
+
 function toggleColDropdown(entity) {
-  const id = entity === 'q' ? 'q-col-dropdown' : 'inv-col-dropdown';
-  const dd = document.getElementById(id);
-  if (!dd) return;
+  const ddId = `${entity}-col-dropdown`;
+  const btnId = `${entity}-col-btn`;
+  const dd  = document.getElementById(ddId);
+  const btn = document.getElementById(btnId);
+  if (!dd || !btn) return;
   const isOpen = dd.style.display !== 'none';
-  document.querySelectorAll('#q-col-dropdown,#inv-col-dropdown').forEach(el => el.style.display = 'none');
-  if (!isOpen) { _populateColDropdown(entity); dd.style.display = 'block'; }
+  document.querySelectorAll('[id$="-col-dropdown"]').forEach(el => el.style.display = 'none');
+  if (!isOpen) {
+    _populateColDropdown(entity);
+    const rect = btn.getBoundingClientRect();
+    dd.style.top  = (rect.bottom + 4) + 'px';
+    dd.style.left = rect.left + 'px';
+    dd.style.display = 'block';
+  }
 }
 
 function _populateColDropdown(entity) {
-  const registry = entity === 'q' ? LIST_COLUMNS_QUOTE : LIST_COLUMNS_INV;
-  const cfgKey   = entity === 'q' ? 'listColsQuote' : 'listColsInv';
-  const cfg      = _listCfg?.[cfgKey] || getPrintConfig({})[cfgKey];
-  const containerId = entity === 'q' ? 'q-col-checks' : 'inv-col-checks';
-  const container = document.getElementById(containerId);
+  const meta = _COL_REGISTRY[entity];
+  if (!meta) return;
+  const cfg       = _listCfg?.[meta.cfgKey] || getPrintConfig({})[meta.cfgKey] || {};
+  const container = document.getElementById(`${entity}-col-checks`);
   if (!container) return;
-  container.innerHTML = registry.map(c => `
+  container.innerHTML = meta.registry().map(c => `
     <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
-      <input type="checkbox" id="col-dd-${entity}-${c.field}" ${cfg?.[c.field] !== false ? 'checked' : ''} style="width:16px;height:16px">
+      <input type="checkbox" id="col-dd-${entity}-${c.field}" ${cfg[c.field] !== false ? 'checked' : ''} style="width:16px;height:16px">
       ${c.label}
     </label>`).join('');
 }
 
 async function saveColDropdown(entity) {
-  const registry = entity === 'q' ? LIST_COLUMNS_QUOTE : LIST_COLUMNS_INV;
-  const cfgKey   = entity === 'q' ? 'listColsQuote' : 'listColsInv';
+  const meta = _COL_REGISTRY[entity];
+  if (!meta) return;
   const map = {};
-  registry.forEach(c => { map[c.field] = document.getElementById(`col-dd-${entity}-${c.field}`)?.checked ?? c.defaultShow; });
+  meta.registry().forEach(c => { map[c.field] = document.getElementById(`col-dd-${entity}-${c.field}`)?.checked ?? c.defaultShow; });
   if (!_listCfg) _listCfg = getPrintConfig({});
-  _listCfg[cfgKey] = map;
-  if (entity === 'q') renderQuoteListView(); else renderInvListView();
-  document.getElementById(entity === 'q' ? 'q-col-dropdown' : 'inv-col-dropdown').style.display = 'none';
+  _listCfg[meta.cfgKey] = map;
+  meta.render();
+  document.getElementById(`${entity}-col-dropdown`).style.display = 'none';
   const { data: co } = await db.from('company').select('id,print_config').single();
   if (co) {
-    const merged = { ...(co.print_config || {}), [cfgKey]: map };
+    const merged = { ...(co.print_config || {}), [meta.cfgKey]: map };
     const { error } = await db.from('company').update({ print_config: merged }).eq('id', co.id);
     if (error) showToast('שגיאה בשמירת עמודות', 'error');
     else showToast('עמודות נשמרו', 'success');
@@ -6221,8 +6269,8 @@ async function saveColDropdown(entity) {
 }
 
 document.addEventListener('click', e => {
-  if (!e.target.closest('#q-col-btn') && !e.target.closest('#q-col-dropdown'))   document.getElementById('q-col-dropdown')?.style && (document.getElementById('q-col-dropdown').style.display = 'none');
-  if (!e.target.closest('#inv-col-btn') && !e.target.closest('#inv-col-dropdown')) document.getElementById('inv-col-dropdown')?.style && (document.getElementById('inv-col-dropdown').style.display = 'none');
+  if (!e.target.closest('[id$="-col-btn"]') && !e.target.closest('[id$="-col-dropdown"]'))
+    document.querySelectorAll('[id$="-col-dropdown"]').forEach(el => el.style.display = 'none');
 });
 
 async function loadDemoBanner() {
